@@ -5187,6 +5187,7 @@ const ProfessionalWorkflowPage = () => {
               hepAdherenceRate,
               objectiveText: o,
               assessmentText: a,
+              planText: p,
             });
             const encounterId = await encountersRepo.createEncounterCompleted({
               patientId,
@@ -5251,6 +5252,7 @@ const ProfessionalWorkflowPage = () => {
               const longitudinalSnapshot = await memoryService.buildEncounterLongitudinalSnapshot(patientId, s, {
                 objectiveText: o,
                 assessmentText: a,
+                planText: p,
               });
               const encounterId = await encountersRepo.createEncounterCompleted({
                 patientId,

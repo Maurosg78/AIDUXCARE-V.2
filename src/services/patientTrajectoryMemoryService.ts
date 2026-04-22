@@ -38,8 +38,8 @@ function hasAnyKeyword(text: string, keywords: string[]): boolean {
   return hasKeyword;
 }
 
-function joinLongitudinalTexts(subjectiveText: string, objectiveText?: string, assessmentText?: string): string {
-  const textParts = [subjectiveText, objectiveText, assessmentText];
+function joinLongitudinalTexts(subjectiveText: string, objectiveText?: string, assessmentText?: string, planText?: string): string {
+  const textParts = [subjectiveText, objectiveText, assessmentText, planText];
   const definedTextParts = textParts.filter((textPart): textPart is string => typeof textPart === 'string' && textPart.trim().length > 0);
   const joinedText = definedTextParts.join(' ');
   return joinedText;
@@ -300,7 +300,7 @@ export class PatientTrajectoryMemoryService {
   async buildEncounterLongitudinalSnapshot(
     patientId: string,
     subjectiveText: string,
-    options?: { hepAdherenceRate?: number; objectiveText?: string; assessmentText?: string }
+    options?: { hepAdherenceRate?: number; objectiveText?: string; assessmentText?: string; planText?: string }
   ): Promise<EncounterLongitudinalSnapshot> {
     const extractedPainScore = extractPainFromSubjective(subjectiveText);
     const painScore = extractedPainScore ?? null;
@@ -308,7 +308,8 @@ export class PatientTrajectoryMemoryService {
     const hepAdherenceRate = typeof rawHepAdherenceRate === 'number' ? rawHepAdherenceRate : null;
     const objectiveText = options?.objectiveText;
     const assessmentText = options?.assessmentText;
-    const combinedLongitudinalText = joinLongitudinalTexts(subjectiveText, objectiveText, assessmentText);
+    const planText = options?.planText;
+    const combinedLongitudinalText = joinLongitudinalTexts(subjectiveText, objectiveText, assessmentText, planText);
     const romStatus = extractRomStatus(combinedLongitudinalText);
     const functionStatus = extractFunctionStatus(combinedLongitudinalText);
     const adherenceLevel = extractAdherenceLevel(combinedLongitudinalText);
