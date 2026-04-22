@@ -157,6 +157,24 @@ export function extractFunctionStatus(text: string): 'improved' | 'stable' | 'de
 
 export function extractAdherenceLevel(text: string): 'high' | 'medium' | 'low' | null {
   const normalizedText = normalizeClinicalText(text);
+  const percentageMatches = [...normalizedText.matchAll(/(\d+)\s*%/g)];
+  const percentageValues = percentageMatches.map((match) => {
+    const rawValue = match[1];
+    const numericValue = Number(rawValue);
+    return numericValue;
+  });
+  const hasHighPercentage = percentageValues.some((value) => value >= 90);
+  if (hasHighPercentage) {
+    return 'high';
+  }
+  const hasMediumPercentage = percentageValues.some((value) => value >= 50 && value < 90);
+  if (hasMediumPercentage) {
+    return 'medium';
+  }
+  const hasLowPercentage = percentageValues.some((value) => value > 0 && value < 50);
+  if (hasLowPercentage) {
+    return 'low';
+  }
   const highKeywords = [
     '100%',
     'realizo todos',

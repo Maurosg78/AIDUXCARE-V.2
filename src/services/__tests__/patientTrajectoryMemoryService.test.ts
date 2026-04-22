@@ -89,6 +89,30 @@ describe('extractFunctionStatus', () => {
 });
 
 describe('extractAdherenceLevel', () => {
+  it('returns medium when text has an intermediate adherence percentage', () => {
+    const text = 'Adherencia del 80% al programa domiciliario.';
+
+    const result = extractAdherenceLevel(text);
+
+    expect(result).toBe('medium');
+  });
+
+  it('returns high when text has a full adherence percentage', () => {
+    const text = 'Adherencia del 100% al programa domiciliario.';
+
+    const result = extractAdherenceLevel(text);
+
+    expect(result).toBe('high');
+  });
+
+  it('returns low when text has a low adherence percentage', () => {
+    const text = 'Adherencia del 30% esta semana.';
+
+    const result = extractAdherenceLevel(text);
+
+    expect(result).toBe('low');
+  });
+
   it('returns high when text has a clear high adherence signal', () => {
     const text = 'HEP 100%, completed all exercises and cumplió con el plan.';
 

@@ -325,12 +325,21 @@ Include ONLY NEW information from today's session
 Do NOT repeat prior history already documented in the record
 Use concise consensus abbreviations when clinically appropriate: EVA, ROM, HEP, Cx, Rx, AINE
 
-Update the Objective using only newly observed, measured, or explicitly documented objective findings from today
+O: OBJETIVO — Extract from the transcript:
+- Patient's observable response to techniques applied today
+  (e.g., 'tolerated cervical mobilization without pain',
+  'TENS applied 15min to cervical region, well tolerated')
+- Any ROM or functional observation mentioned, even if informal
+  (e.g., 'cervical rotation estimated 60° bilaterally')
+- Physical findings observed during session
+- If and ONLY IF no objective data whatsoever appears in the transcript,
+  write: 'No se registraron medidas objetivas formales.
+  [technique applied] aplicado/a, tolerado/a sin incidencias.'
+- NEVER write only 'No se registraron nuevas medidas objetivas hoy.'
+  without mentioning what treatment was applied and how it was tolerated.
 Objective MUST be MAX 2 lines
-If no new objective measures or examination findings are documented today, state clearly that no new objective measures were recorded today
-If there are no new measurements, prefer a single brief line on general condition only
 Do NOT restate baseline objective findings as if they were newly measured today
-Do NOT place progress, stability, response to treatment, or general clinical interpretation in Objective
+Do NOT place progress, stability, response to treatment, or general clinical interpretation in Objective unless they are directly observable during the session
 Only include attachment-derived findings in Objective when they are present in the "attachments reviewed today" section
 If attachment-derived findings are included, make clear that they come from material reviewed today rather than from direct measurement by the physiotherapist
 You may reference previous objective findings only as prior clinical reference when needed for continuity
@@ -363,6 +372,9 @@ HEP:
 - [item]
 Use HEP exactly as the section label
 Do NOT expand HEP to "programa de ejercicios en casa" inside the Plan section label
+CRITICAL RULE: The home exercise section label MUST be exactly 'HEP:'
+in uppercase. NEVER write 'programa de ejercicios en casa' as a section label.
+This rule has no exceptions.
 Do NOT include any "additional recommendations" section
 Do NOT include duplicate labels or expanded duplicate headings
 
