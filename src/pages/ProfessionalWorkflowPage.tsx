@@ -1438,6 +1438,10 @@ const ProfessionalWorkflowPage = () => {
           SessionStorage.saveLatestInitialSession(state.patientId, state.userId, {
             transcript: state.transcript,
             physioNotes: state.physioNotes,
+            // TODO (LONGITUDINAL):
+            // future: extract structured clinical update from physioNotes
+            // (treatment, response, tolerance, functional change)
+            physioNotesStructured: null,
             evaluationTests: state.evaluationTests,
             activeTab: state.activeTab,
             selectedEntityIds: state.selectedEntityIds,
@@ -1921,6 +1925,10 @@ const ProfessionalWorkflowPage = () => {
         const workflowState = {
           transcript: transcript || '',
           physioNotes: physioNotes || '',
+          // TODO (LONGITUDINAL):
+          // future: extract structured clinical update from physioNotes
+          // (treatment, response, tolerance, functional change)
+          physioNotesStructured: null,
           niagaraResults: niagaraResults || null,
           evaluationTests: evaluationTests || [],
           activeTab: activeTab,
@@ -3396,7 +3404,7 @@ const ProfessionalWorkflowPage = () => {
       ? `[CLINICAL TRANSCRIPT]\n${normalizedTranscript}`
       : '';
     const additionalNotesBlock = normalizedAdditionalNotes
-      ? `[ADDITIONAL PROFESSIONAL NOTES]\n${normalizedAdditionalNotes}`
+      ? `[CLINICIAN ADDITIONS — VERIFIED]\n${normalizedAdditionalNotes}`
       : '';
     const combinedBlocks = [transcriptBlock, additionalNotesBlock].filter(Boolean);
 
@@ -5016,6 +5024,10 @@ const ProfessionalWorkflowPage = () => {
       SessionStorage.saveSession(pid, {
         transcript: transcript || '',
         physioNotes: physioNotes || '',
+        // TODO (LONGITUDINAL):
+        // future: extract structured clinical update from physioNotes
+        // (treatment, response, tolerance, functional change)
+        physioNotesStructured: null,
         niagaraResults: niagaraResults || null,
         evaluationTests: evaluationTests || [],
         activeTab,
@@ -6572,6 +6584,7 @@ const ProfessionalWorkflowPage = () => {
                     soapTokenOptimization={soapTokenOptimization}
                     niagaraResults={visitType === 'follow-up' ? null : niagaraResults}
                     transcript={transcript}
+                    physioNotes={physioNotes}
                     physicalExamResults={physicalExamResults}
                     treatmentReminder={treatmentReminder}
                     analysisError={analysisError}
@@ -6871,6 +6884,7 @@ const ProfessionalWorkflowPage = () => {
                     soapTokenOptimization={soapTokenOptimization}
                     niagaraResults={niagaraResults}
                     transcript={transcript}
+                    physioNotes={physioNotes}
                     physicalExamResults={physicalExamResults}
                     treatmentReminder={treatmentReminder}
                     analysisError={analysisError}

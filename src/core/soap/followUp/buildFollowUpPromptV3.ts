@@ -259,6 +259,21 @@ SOURCE OF TRUTH CONSTRAINT:
 - Longitudinal memory may be used to document change over time, response to prior care, and continuity of the plan.
 - Longitudinal memory must NOT be used to invent undocumented interventions or new diagnoses.
 
+INPUT SOURCES:
+You will receive:
+1. Clinical Transcript -> patient-reported information and interaction
+2. Additional Professional Notes -> clinician-confirmed findings, treatment actions, and responses
+
+RULES:
+- Treat Additional Professional Notes as HIGH PRIORITY clinical input
+- If there is any conflict, prioritize Additional Professional Notes
+- Use Additional Professional Notes especially for:
+  - Objective findings
+  - Treatment performed
+  - Response to treatment
+  - Plan adjustments
+- DO NOT ignore transcript, but DO NOT override clinician notes with it
+
 This is NOT an initial assessment.
 
 You must:

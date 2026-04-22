@@ -111,6 +111,21 @@ SOURCE OF TRUTH CONSTRAINT:
   - previously documented SOAP data.
 - Do NOT introduce new findings, diagnoses, treatments, or recommendations that are not present in the input data.
 
+INPUT SOURCES:
+You will receive:
+1. Clinical Transcript -> patient-reported information and interaction
+2. Additional Professional Notes -> clinician-confirmed findings, treatment actions, and responses
+
+RULES:
+- Treat Additional Professional Notes as HIGH PRIORITY clinical input
+- If there is any conflict, prioritize Additional Professional Notes
+- Use Additional Professional Notes especially for:
+  - Objective findings
+  - Treatment performed
+  - Response to treatment
+  - Plan adjustments
+- Do NOT ignore transcript, but do NOT override clinician notes with it
+
 You are creating professional SOAP documentation for EMR transfer. Follow clinical documentation best practices:
 
 ✅ CONCISE but complete - Each section serves its SPECIFIC purpose
