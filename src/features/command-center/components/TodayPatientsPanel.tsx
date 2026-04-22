@@ -30,8 +30,8 @@ export interface TodayQuickItem {
   sessionType: 'initial' | 'followup' | 'ongoing';
   /** Firestore session id when the row comes from an interrupted/in-progress session. */
   resumeSessionId?: string;
-  /** pending = can press Start; done = session completed, Start disabled, recycle to set pending again */
-  status?: 'pending' | 'done' | 'incomplete';
+  /** pending = can press Start; documented = clinical evidence persisted; incomplete = interrupted session */
+  status?: 'pending' | 'documented' | 'done' | 'incomplete';
 }
 
 export interface TodayPatientsPanelProps {
@@ -49,7 +49,7 @@ export interface TodayPatientsPanelProps {
   ) => void;
   /** Remove item from today's quick list (index to remove) */
   onRemoveFromToday?: (index: number) => void;
-  /** Mark item as pending again (recycle) after it was done */
+  /** Mark item as pending again (recycle) after it was documented */
   onMarkPendingAgain?: (index: number) => void;
   /** Clear entire list to start fresh */
   onClearList?: () => void;
@@ -159,7 +159,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
         )}
       </div>
 
-      {/* Quick list: pending = Start enabled; done = Start disabled + recycle to set pending again */}
+      {/* Quick list: pending = Start enabled; documented = clinically updated; incomplete = interrupted */}
       {hasQuickItems && (
         <div className="mt-4 space-y-2">
           {onClearList && (
@@ -176,25 +176,26 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
             </div>
           )}
           {todayQuickList.map((item, index) => {
-            const isDone = item.status === 'done';
+            const currentStatus = item.status;
+            const isDocumented = currentStatus === 'documented' || currentStatus === 'done';
             const isIncomplete = item.status === 'incomplete';
-            const isOverdue = !isDone && isPastDate(displayDate); // Pasaron del día y no vistos → rojo
-            const itemStyles = isDone
-              ? 'border-gray-200 bg-gray-100/80'
+            const isOverdue = !isDocumented && !isIncomplete && isPastDate(displayDate); // Pasaron del día y no vistos → rojo
+            const itemStyles = isDocumented
+              ? 'border-emerald-200 bg-emerald-50/80'
               : isIncomplete
                 ? 'border-red-400 bg-red-50 hover:bg-red-100 ring-1 ring-red-300'
               : isOverdue
                 ? 'border-red-200 bg-red-50/60 hover:bg-red-50/80'
                 : 'border-primary-blue/40 bg-primary-blue/5 hover:bg-primary-blue/10';
-            const textStyles = isDone
-              ? 'text-gray-900'
+            const textStyles = isDocumented
+              ? 'text-emerald-900'
               : isIncomplete
                 ? 'text-red-900 font-semibold'
               : isOverdue
                 ? 'text-red-800'
                 : 'text-primary-blue';
-            const subTextStyles = isDone
-              ? 'text-gray-600'
+            const subTextStyles = isDocumented
+              ? 'text-emerald-700'
               : isIncomplete
                 ? 'text-red-700'
               : isOverdue
@@ -214,8 +215,8 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                     {item.sessionType === 'followup' && <RefreshCw className="w-3.5 h-3.5" />}
                     {item.sessionType === 'ongoing' && <FileText className="w-3.5 h-3.5" />}
                     {t(`shell.sessionType.${item.sessionType}`)}
-                    {isDone
-                      ? <span className="text-gray-400 fomal">— {t('shell.todayPatients.done')}</span>
+                    {isDocumented
+                      ? <span className="font-medium text-emerald-700">— Documented</span>
                       : isIncomplete
                         ? <span className="font-bold text-red-700">⚠ {t('shell.todayPatients.incompleteResume')}</span>
                       : isOverdue
@@ -224,9 +225,9 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {isDone ? (
+                  {isDocumented ? (
                     <>
-                      <button type="button" disabled className="p-2 rounded-lg bg-gray-200 text-gray-400 font-apple text-xs font-medium cursor-not-allowed flex items-center gap-1.5" aria-label={t('shell.todayPatients.sessionCompleted')}>
+                      <button type="button" disabled className="p-2 rounded-lg bg-emerald-100 text-emerald-700 font-apple text-xs font-medium cursor-not-allowed flex items-center gap-1.5" aria-label={t('shell.todayPatients.sessionCompleted')}>
                         <Play className="w-4 h-4" /> {t('shell.todayPatients.start')}
                       </button>
                       {onMarkPendingAgain && (

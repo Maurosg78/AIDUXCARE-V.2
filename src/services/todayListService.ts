@@ -21,10 +21,14 @@ export async function getTodayList(
     const items: TodayQuickItem[] = Array.isArray(data?.items) ? data.items : [];
     return items.map((item) => {
       const persistedStatus = item.status;
+      const normalizedDocumentedStatus =
+        persistedStatus === 'done'
+          ? 'documented'
+          : persistedStatus;
       const normalizedStatus =
-        persistedStatus === 'incomplete'
+        normalizedDocumentedStatus === 'incomplete'
           ? 'pending'
-          : persistedStatus ?? 'pending';
+          : normalizedDocumentedStatus ?? 'pending';
       const normalizedItem = {
         ...item,
         status: normalizedStatus,
