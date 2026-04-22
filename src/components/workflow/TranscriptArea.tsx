@@ -40,6 +40,10 @@ const UI = esPilot
       languageLabel: 'Idioma',
       modeLabel: 'Modo',
       transcriptPlaceholder: 'Pega la transcripción o graba directamente desde el navegador…',
+      additionalNotesToggle: 'Añadir contexto clínico adicional',
+      additionalNotesLabel: '¿Algo más que quieras añadir antes de generar la nota?',
+      additionalNotesHelper: 'Usa este campo para agregar hallazgos, parámetros, contexto o aclaraciones que no quedaron en el audio.',
+      additionalNotesPlaceholder: 'Ej.: rotación cervical estimada 65° bilateral, TENS 15 min bien tolerado, el paciente trajo RM de hombro derecho…',
       transcriptionError: 'Error de transcripción',
       audioLocalNote: 'El audio se captura localmente. No se transmiten datos hasta que inicias el análisis.',
       attachmentsTitle: 'Archivos clínicos adjuntos',
@@ -89,6 +93,10 @@ const UI = esPilot
       languageLabel: 'Language',
       modeLabel: 'Mode',
       transcriptPlaceholder: 'Paste the transcript or record directly from the browser...',
+      additionalNotesToggle: 'Add extra clinical context',
+      additionalNotesLabel: 'Anything else to add before generating the note?',
+      additionalNotesHelper: 'Use this field for findings, treatment parameters, context, or clarifications that were not captured in the audio.',
+      additionalNotesPlaceholder: 'Ex.: cervical rotation estimated 65 degrees bilaterally, TENS 15 min well tolerated, patient brought right shoulder MRI…',
       transcriptionError: 'Transcription error',
       audioLocalNote: 'Audio is captured locally. No data is transmitted until you trigger the analysis.',
       attachmentsTitle: 'Clinical attachments',
@@ -154,6 +162,8 @@ export interface TranscriptAreaProps {
   // Transcript state
   transcript: string;
   setTranscript: (value: string) => void;
+  additionalNotes: string;
+  setAdditionalNotes: (value: string) => void;
   transcriptError: string | null;
   transcriptMeta?: {
     detectedLanguage?: string | null;
@@ -196,6 +206,8 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   stopRecording,
   transcript,
   setTranscript,
+  additionalNotes,
+  setAdditionalNotes,
   transcriptError,
   transcriptMeta,
   languagePreference,
@@ -218,6 +230,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   hideAnalyzeButton = false,
 }) => {
   const [localTranscript, setLocalTranscript] = useState(transcript);
+  const [showAdditionalNotes, setShowAdditionalNotes] = useState(Boolean(additionalNotes.trim()));
   const isPastingRef = useRef(false);
   const timerRef = useRef<number | null>(null);
   const hasReadyAttachments = attachments.some((attachment) => Boolean(attachment.extractedText));
@@ -227,7 +240,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     !isProcessing &&
     !isGeneratingSOAP &&
     !hasPendingAttachments &&
-    (Boolean(transcript?.trim()) || hasReadyAttachments);
+    (Boolean(transcript?.trim()) || Boolean(additionalNotes.trim()) || hasReadyAttachments);
 
   useEffect(() => {
     return () => {
@@ -238,6 +251,12 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   useEffect(() => {
     if (!isPastingRef.current) setLocalTranscript(transcript);
   }, [transcript]);
+
+  useEffect(() => {
+    if (additionalNotes.trim()) {
+      setShowAdditionalNotes(true);
+    }
+  }, [additionalNotes]);
 
   const debouncedSetTranscript = useDebouncedCallback((value: string) => {
     isPastingRef.current = false;
@@ -414,6 +433,37 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         }}
       />
 
+      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-slate-800">{UI.additionalNotesLabel}</p>
+            <p className="mt-1 text-xs text-slate-500">{UI.additionalNotesHelper}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAdditionalNotes((currentValue) => !currentValue)}
+            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
+          >
+            {UI.additionalNotesToggle}
+          </button>
+        </div>
+
+        {showAdditionalNotes ? (
+          <textarea
+            className="mt-3 w-full min-h-[110px] rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:border-transparent transition"
+            placeholder={UI.additionalNotesPlaceholder}
+            value={additionalNotes}
+            onChange={(event) => setAdditionalNotes(event.target.value)}
+            onKeyDown={(event) => {
+              if (!hideAnalyzeButton && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                event.preventDefault();
+                handleAnalyzeWithVertex();
+              }
+            }}
+          />
+        ) : null}
+      </div>
+
       {transcriptMeta && (
         <div className="mt-2 text-xs text-slate-500 flex flex-wrap items-center gap-3">
           <span>{UI.detectedLang(transcriptMeta.detectedLanguage)}</span>
@@ -526,7 +576,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
                     : 'Wait for attachments to finish processing before analyzing.')
                 : transcript?.trim() && hasReadyAttachments
                 ? UI.analyzeHintBoth
-                : transcript?.trim()
+                : (transcript?.trim() || additionalNotes.trim())
                   ? UI.analyzeHintTranscript
                   : hasReadyAttachments
                     ? UI.analyzeHintAttachments
@@ -556,6 +606,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
 
   return (
     prevProps.transcript === nextProps.transcript &&
+    prevProps.additionalNotes === nextProps.additionalNotes &&
     prevProps.isRecording === nextProps.isRecording &&
     prevProps.isTranscribing === nextProps.isTranscribing &&
     prevProps.isProcessing === nextProps.isProcessing &&

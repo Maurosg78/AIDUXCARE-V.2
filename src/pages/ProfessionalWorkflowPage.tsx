@@ -1369,6 +1369,8 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [patientIdFromUrl, user?.uid, currentPatient, consentCheckComplete]);
 
+  const [physioNotes, setPhysioNotes] = useState<string>('');
+
   // WO-RESUME-INTERRUPTED: On unmount, persist state so user can resume after accidental leave (battery, click, etc.)
   // Placed here so evaluationTests (and all other state below) are in scope.
   const unmountPersistRef = useRef<{
@@ -1378,6 +1380,7 @@ const ProfessionalWorkflowPage = () => {
     visitType: string;
     sessionId: string | null;
     transcript: string;
+    physioNotes: string;
     evaluationTests: unknown[];
     activeTab: string;
     selectedEntityIds: string[];
@@ -1402,6 +1405,7 @@ const ProfessionalWorkflowPage = () => {
       visitType: visitType || 'initial',
       sessionId,
       transcript: transcript || '',
+      physioNotes: physioNotes || '',
       evaluationTests: evaluationTests || [],
       activeTab,
       selectedEntityIds: selectedEntityIds || [],
@@ -1417,7 +1421,7 @@ const ProfessionalWorkflowPage = () => {
     return () => {
       const state = unmountPersistRef.current;
       if (!state) return;
-      const hasProgress = state.soapStatus !== "finalized" && (state.isRecording || (state.transcript?.trim().length ?? 0) > 0 || (state.evaluationTests?.length ?? 0) > 0);
+      const hasProgress = state.soapStatus !== "finalized" && (state.isRecording || (state.transcript?.trim().length ?? 0) > 0 || (state.physioNotes?.trim().length ?? 0) > 0 || (state.evaluationTests?.length ?? 0) > 0);
       if (!hasProgress) return;
       const isInitialSession = state.visitType === 'initial' || state.visitType === '';
       if (isInitialSession) {
@@ -1433,6 +1437,7 @@ const ProfessionalWorkflowPage = () => {
         try {
           SessionStorage.saveLatestInitialSession(state.patientId, state.userId, {
             transcript: state.transcript,
+            physioNotes: state.physioNotes,
             evaluationTests: state.evaluationTests,
             activeTab: state.activeTab,
             selectedEntityIds: state.selectedEntityIds,
@@ -1471,7 +1476,7 @@ const ProfessionalWorkflowPage = () => {
         }
       }
     };
-  }, [patientIdFromUrl, user?.uid, sessionTypeFromUrl, visitType, sessionId, transcript, evaluationTests, activeTab, selectedEntityIds, localSoapNote, soapStatus, niagaraResults, selectedRedFlagIds, redFlagDecisions, initialAssessmentClosedAt, baselineIdFromSession, isRecording, currentPatient]);
+  }, [patientIdFromUrl, user?.uid, sessionTypeFromUrl, visitType, sessionId, transcript, physioNotes, evaluationTests, activeTab, selectedEntityIds, localSoapNote, soapStatus, niagaraResults, selectedRedFlagIds, redFlagDecisions, initialAssessmentClosedAt, baselineIdFromSession, isRecording, currentPatient]);
 
   const [customTestName, setCustomTestName] = useState("");
   const [customTestRegion, setCustomTestRegion] = useState<MSKRegion | "other">("shoulder");
@@ -1787,6 +1792,15 @@ const ProfessionalWorkflowPage = () => {
           });
         }
 
+        if (typeof savedState.physioNotes === 'string') {
+          setPhysioNotes(savedState.physioNotes);
+          console.log('[WORKFLOW] ✅ Restored additional professional notes', {
+            physioNotesLength: savedState.physioNotes.length,
+          });
+        } else {
+          setPhysioNotes('');
+        }
+
         // WO-IA-CLOSE-01: Restore initial assessment closed state (clear when not in savedState to avoid bleed between patients)
         setInitialAssessmentClosedAt(savedState.initialAssessmentClosedAt != null && savedState.initialAssessmentClosedAt !== '' ? savedState.initialAssessmentClosedAt : null);
         setBaselineIdFromSession(savedState.baselineId != null && savedState.baselineId !== '' ? savedState.baselineId : null);
@@ -1849,6 +1863,9 @@ const ProfessionalWorkflowPage = () => {
           if (sessionData.transcript && typeof sessionData.transcript === 'string') {
             setTranscript(sessionData.transcript);
           }
+          if (typeof (sessionData as any).physioNotes === 'string') {
+            setPhysioNotes((sessionData as any).physioNotes);
+          }
           if (sessionData.physicalTests && Array.isArray(sessionData.physicalTests) && sessionData.physicalTests.length > 0) {
             const sanitized = (sessionData.physicalTests as EvaluationTestEntry[]).map(sanitizeEvaluationEntry);
             setEvaluationTests(sanitized);
@@ -1903,6 +1920,7 @@ const ProfessionalWorkflowPage = () => {
       try {
         const workflowState = {
           transcript: transcript || '',
+          physioNotes: physioNotes || '',
           niagaraResults: niagaraResults || null,
           evaluationTests: evaluationTests || [],
           activeTab: activeTab,
@@ -1922,6 +1940,7 @@ const ProfessionalWorkflowPage = () => {
         // Create a stable key to compare states
         const stateKey = JSON.stringify({
           transcriptLength: transcript?.length || 0,
+          physioNotesLength: physioNotes?.length || 0,
           testCount: evaluationTests.length,
           activeTab: activeTab,
           selectedEntityIdsCount: selectedEntityIds.length,
@@ -1945,6 +1964,7 @@ const ProfessionalWorkflowPage = () => {
         SessionStorage.saveSession(patientId, workflowState, userId, visitType || 'initial', currentSessionId);
         console.log('[WORKFLOW] 💾 Auto-saved workflow state:', {
           transcriptLength: transcript?.length || 0,
+          physioNotesLength: physioNotes?.length || 0,
           testCount: evaluationTests.length,
           activeTab: activeTab
         });
@@ -1971,7 +1991,7 @@ const ProfessionalWorkflowPage = () => {
       // Final save on cleanup
       saveWorkflowState();
     };
-  }, [patientId, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, redFlagDecisions, localSoapNote, soapStatus, visitType, initialAssessmentClosedAt, baselineIdFromSession]);
+  }, [patientId, transcript, physioNotes, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, redFlagDecisions, localSoapNote, soapStatus, visitType, initialAssessmentClosedAt, baselineIdFromSession]);
 
   // WO-BUG-011: Auto-save transcript to Firestore every 30s while recording (survives browser close)
   useEffect(() => {
@@ -3369,6 +3389,20 @@ const ProfessionalWorkflowPage = () => {
     [filteredEvaluationTests]
   );
 
+  const buildVertexClinicalInput = useCallback((baseTranscript: string, additionalClinicalNotes: string) => {
+    const normalizedTranscript = baseTranscript.trim();
+    const normalizedAdditionalNotes = additionalClinicalNotes.trim();
+    const transcriptBlock = normalizedTranscript
+      ? `[CLINICAL TRANSCRIPT]\n${normalizedTranscript}`
+      : '';
+    const additionalNotesBlock = normalizedAdditionalNotes
+      ? `[ADDITIONAL PROFESSIONAL NOTES]\n${normalizedAdditionalNotes}`
+      : '';
+    const combinedBlocks = [transcriptBlock, additionalNotesBlock].filter(Boolean);
+
+    return combinedBlocks.join('\n\n');
+  }, []);
+
   const handleAnalyzeWithVertex = async () => {
     // Follow-up path: do NOT call Niagara (no highlights, no biopsychosocial). Only generate SOAP.
     if (visitType === 'follow-up') {
@@ -3378,9 +3412,10 @@ const ProfessionalWorkflowPage = () => {
 
     // Ensure transcript is always a string
     const transcriptText = typeof transcript === 'string' ? transcript : String(transcript || '');
+    const combinedClinicalInput = buildVertexClinicalInput(transcriptText, physioNotes);
 
     // ✅ FIX: Allow analysis with attachments only (no transcript required)
-    const hasTranscript = transcriptText.trim().length > 0;
+    const hasTranscript = combinedClinicalInput.trim().length > 0;
     const hasAttachments = attachments && attachments.length > 0 && attachments.some(att => att.extractedText);
 
     if (!hasTranscript && !hasAttachments) {
@@ -3390,7 +3425,7 @@ const ProfessionalWorkflowPage = () => {
 
     // ✅ WO-04: Track analysis requested
     trackAnalysisRequested({
-      transcriptLength: transcriptText.length,
+      transcriptLength: combinedClinicalInput.length,
       hasAttachments: hasAttachments,
       attachmentCount: attachments?.length || 0
     });
@@ -3410,7 +3445,7 @@ const ProfessionalWorkflowPage = () => {
         : undefined;
 
       const payload = {
-        text: transcriptText, // Can be empty if only analyzing attachments
+        text: combinedClinicalInput, // Can be empty if only analyzing attachments
         lang: transcriptMeta?.detectedLanguage ?? (languagePreference !== "auto" ? languagePreference : undefined),
         mode,
         timestamp: Date.now(),
@@ -3773,9 +3808,6 @@ const ProfessionalWorkflowPage = () => {
   // Treatment reminder state
   const [treatmentReminder, setTreatmentReminder] = useState<string | null>(null);
   const [previousTreatmentPlan, setPreviousTreatmentPlan] = useState<any>(null);
-
-  // Physio notes for TODAY'S PLAN section
-  const [physioNotes, setPhysioNotes] = useState<string>('');
 
   // WO-PART-C-REFERRAL-REPORT: Referral report modal state
   const [referralReportOpen, setReferralReportOpen] = useState(false);
@@ -4476,7 +4508,7 @@ const ProfessionalWorkflowPage = () => {
       setAnalysisError('Follow-up requires prior clinical baseline (complete an initial assessment first).');
       return;
     }
-    const followUpClinicalUpdate = (transcript?.trim() ?? '') || '';
+    const followUpClinicalUpdate = buildVertexClinicalInput(transcript ?? '', physioNotes);
     const hasPendingAttachmentProcessing = attachments.some(
       (attachment) => attachment.processingComplete !== true,
     );
@@ -4626,7 +4658,7 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [attachments, followUpClinicalState, transcript, inClinicItems, homeProgramItems, previousTreatmentPlan, patientIdFromUrl]);
+  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, inClinicItems, homeProgramItems, previousTreatmentPlan, patientIdFromUrl]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -4983,6 +5015,7 @@ const ProfessionalWorkflowPage = () => {
       const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
       SessionStorage.saveSession(pid, {
         transcript: transcript || '',
+        physioNotes: physioNotes || '',
         niagaraResults: niagaraResults || null,
         evaluationTests: evaluationTests || [],
         activeTab,
@@ -5007,7 +5040,7 @@ const ProfessionalWorkflowPage = () => {
       const message = err instanceof Error ? err.message : 'Failed to close initial assessment.';
       setAnalysisError(message);
     }
-  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, redFlagDecisions, visitType, currentPatient]);
+  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, physioNotes, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, redFlagDecisions, visitType, currentPatient]);
 
   const handleFinalizeSOAP = async (soap: SOAPNote) => {
     if (isFinalizingRef.current) return;
@@ -6248,6 +6281,8 @@ const ProfessionalWorkflowPage = () => {
                     stopRecording={stopRecording}
                     transcript={transcript}
                     setTranscript={setTranscript}
+                    additionalNotes={physioNotes}
+                    setAdditionalNotes={setPhysioNotes}
                     transcriptError={transcriptError}
                     transcriptMeta={transcriptMeta}
                     languagePreference={languagePreference}
@@ -6435,7 +6470,7 @@ const ProfessionalWorkflowPage = () => {
                     hideTranscriptArea={visitType === 'follow-up'}
                     followUpHasContent={
                       visitType === 'follow-up'
-                        ? Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0)
+                        ? Boolean(transcript?.trim() || physioNotes.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0)
                         : undefined
                     }
                     todayFocusBlockRenderedByParent={visitType === 'follow-up'}
@@ -6759,7 +6794,7 @@ const ProfessionalWorkflowPage = () => {
                   onFinishSession={undefined}
                   hideHeader={false}
                   hideTranscriptArea={currentSessionType === 'followup'}
-                  followUpHasContent={currentSessionType === 'followup' ? Boolean(transcript?.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0) : undefined}
+                  followUpHasContent={currentSessionType === 'followup' ? Boolean(transcript?.trim() || physioNotes.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0) : undefined}
                   resumeLoadFailed={resumeLoadFailed}
                   selectedRedFlagIds={selectedRedFlagIds}
                   onRedFlagSelectionChange={setSelectedRedFlagIds}
