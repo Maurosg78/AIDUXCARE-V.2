@@ -31,94 +31,36 @@ import { StartSessionTwoStepModal } from './components/StartSessionTwoStepModal'
 import { CreatePatientModal } from './components/CreatePatientModal';
 import { OngoingPatientIntakeModal } from './components/OngoingPatientIntakeModal';
 import { FloatingAssistant } from '../../components/FloatingAssistant';
+import { PatientWorkflowStatus } from '../../domain/patientStatus';
 
 import logger from '../../shared/utils/logger';
-import {
-  LAST_STARTED_KEY,
-  getAndClearSessionCompleted,
-} from './todayListSessionStorage';
+import { LAST_STARTED_KEY } from './todayListSessionStorage';
 import { getTodayList, saveTodayList } from '../../services/todayListService';
-import { encountersRepo } from '../../repositories/encountersRepo';
-import { PersistenceService } from '../../services/PersistenceService';
 import { buildClinicalDayView, type ClinicalDayRow } from './utils/clinicalDayView';
-
-function toDateKeyFromIsoString(value: string): string | null {
-  const parsedDate = new Date(value);
-  const isValidDate = !Number.isNaN(parsedDate.getTime());
-  if (!isValidDate) {
-    return null;
-  }
-  const dateKey = toLocalDateKey(parsedDate);
-  return dateKey;
-}
-
-async function isItemDocumentedForDate(
-  item: TodayQuickItem,
-  dateKey: string
-): Promise<boolean> {
-  const patientId = item.patientId;
-  const encounters = await encountersRepo.getEncountersByPatient(patientId, 50);
-  const matchingEncounter = encounters.find((encounter) => {
-    const encounterStatus = encounter.status;
-    const isCompletedEncounter = encounterStatus === 'completed' || encounterStatus === 'signed';
-    if (!isCompletedEncounter) {
-      return false;
-    }
-    const encounterDate = encounter.encounterDate.toDate();
-    const encounterDateKey = toLocalDateKey(encounterDate);
-    const isMatchingDate = encounterDateKey === dateKey;
-    return isMatchingDate;
-  });
-  if (matchingEncounter) {
-    return true;
-  }
-  const notes = await PersistenceService.getNotesByPatient(patientId);
-  const matchingFinalizedNote = notes.find((note) => {
-    const noteStatus = note.status ?? 'finalized';
-    const isFinalizedNote = noteStatus === 'finalized';
-    if (!isFinalizedNote) {
-      return false;
-    }
-    const noteClinicalDate = note.clinicalDate;
-    if (noteClinicalDate === dateKey) {
-      return true;
-    }
-    const noteCreatedDateKey = toDateKeyFromIsoString(note.createdAt);
-    const isMatchingCreatedDate = noteCreatedDateKey === dateKey;
-    return isMatchingCreatedDate;
-  });
-  const isDocumented = Boolean(matchingFinalizedNote);
-  return isDocumented;
-}
-
-async function applyDocumentedStatuses(
-  list: TodayQuickItem[],
-  dateKey: string
-): Promise<TodayQuickItem[]> {
-  const nextList: TodayQuickItem[] = [];
-  for (const item of list) {
-    const currentStatus = item.status ?? 'pending';
-    const isIncomplete = currentStatus === 'incomplete';
-    if (isIncomplete) {
-      nextList.push(item);
-      continue;
-    }
-    const isDocumented = await isItemDocumentedForDate(item, dateKey);
-    const nextStatus: TodayQuickItem['status'] = isDocumented ? 'documented' : 'pending';
-    const nextItem = {
-      ...item,
-      status: nextStatus,
-    };
-    nextList.push(nextItem);
-  }
-  return nextList;
-}
 
 function toLocalDateKey(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+function trackStatusTransition(
+  prev: PatientWorkflowStatus | undefined,
+  next: PatientWorkflowStatus,
+  patientId: string
+): void {
+  const hasChanged = prev != null && prev !== next;
+  if (!hasChanged) {
+    return;
+  }
+
+  console.log({
+    patientId,
+    prevStatus: prev,
+    nextStatus: next,
+    timestamp: new Date().toISOString(),
+  });
 }
 
 export const CommandCenterPageSprint3: React.FC = () => {
@@ -147,6 +89,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [clinicalDayRows, setClinicalDayRows] = useState<ClinicalDayRow[]>([]);
   const [clinicalDayLoading, setClinicalDayLoading] = useState(false);
+  const previousStatusByPatientIdRef = React.useRef(new Map<string, PatientWorkflowStatus>());
 
   // WO-UX-01: No token display in Command Center (backend/tracking may still exist)
 
@@ -185,7 +128,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
 
   const skipNextSaveRef = React.useRef(false);
 
-  // Load quick list from Firestore for selected date; documented state is recalculated from persisted clinical evidence
+  // Load quick list from Firestore for selected date; status is derived later from clinical truth.
   useEffect(() => {
     if (!user?.uid) return;
     skipNextSaveRef.current = true;
@@ -193,30 +136,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
     const dateKey = toLocalDateKey(selectedDate);
 
     getTodayList(user.uid, dateKey).then(async (list) => {
-      // Mark done when workflow explicitly completed
-      const completed = getAndClearSessionCompleted(dateKey);
-      if (completed) {
-        const idx = list.findIndex(
-          (i) =>
-            i.patientId === completed.patientId &&
-            (i.sessionType === completed.sessionType ||
-              (completed.sessionType === 'followup' && i.sessionType === 'ongoing'))
-        );
-        if (idx !== -1) list[idx] = { ...list[idx], status: 'documented' };
-      }
-      // Fallback: mark done when returning from Start (legacy)
-      const lastStartedRaw = sessionStorage.getItem(LAST_STARTED_KEY);
-      if (lastStartedRaw && !completed) {
-        const last: { patientId: string; sessionType: TodayQuickItem['sessionType'] } =
-          JSON.parse(lastStartedRaw);
-        const idx = list.findIndex(
-          (i) => i.patientId === last.patientId && i.sessionType === last.sessionType
-        );
-        if (idx !== -1) list[idx] = { ...list[idx], status: 'documented' };
-        sessionStorage.removeItem(LAST_STARTED_KEY);
-      }
-
-      // Merge in-progress sessions from Firestore as 'incomplete' items
       const mergedList = [...list];
       for (const session of inProgressSessions.data) {
         const sessionDateKey = session.dateKey;
@@ -235,25 +154,23 @@ export const CommandCenterPageSprint3: React.FC = () => {
             patientName: session.patientName || 'Patient',
             sessionType,
             resumeSessionId: session.id,
-            status: 'incomplete',
           });
         } else {
           const currentItem = mergedList[existingIndex];
-          const currentStatus = currentItem.status;
-          const isAlreadyCompleted = currentStatus === 'documented' || currentStatus === 'done';
-
-          if (!isAlreadyCompleted) {
-            mergedList[existingIndex] = {
-              ...currentItem,
-              resumeSessionId: session.id,
-              status: 'incomplete',
-            };
-          }
+          const nextItem = {
+            ...currentItem,
+            resumeSessionId: session.id,
+          };
+          mergedList[existingIndex] = nextItem;
         }
       }
 
-      const documentedList = await applyDocumentedStatuses(mergedList, dateKey);
-      setTodayQuickList(documentedList);
+      const lastStartedRaw = sessionStorage.getItem(LAST_STARTED_KEY);
+      if (lastStartedRaw) {
+        sessionStorage.removeItem(LAST_STARTED_KEY);
+      }
+
+      setTodayQuickList(mergedList);
     });
   }, [user?.uid, selectedDate, inProgressSessions.data]);
 
@@ -301,6 +218,19 @@ export const CommandCenterPageSprint3: React.FC = () => {
     };
   }, [user?.uid, selectedDate, patients, appointments, inProgressSessions.data, todayQuickList]);
 
+  useEffect(() => {
+    const nextStatusByPatientId = new Map<string, PatientWorkflowStatus>();
+
+    for (const row of clinicalDayRows) {
+      const previousStatus = previousStatusByPatientIdRef.current.get(row.patientId);
+      const nextStatus = row.status;
+      trackStatusTransition(previousStatus, nextStatus, row.patientId);
+      nextStatusByPatientId.set(row.patientId, nextStatus);
+    }
+
+    previousStatusByPatientIdRef.current = nextStatusByPatientId;
+  }, [clinicalDayRows]);
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
@@ -332,16 +262,23 @@ export const CommandCenterPageSprint3: React.FC = () => {
     selectedDate.getMonth() === new Date().getMonth() &&
     selectedDate.getFullYear() === new Date().getFullYear();
 
-  // Work queue summary — pending patients = in today's list, not yet documented
+  const scheduledClinicalRows = clinicalDayRows.filter((row) => {
+    const isScheduled = row.status === PatientWorkflowStatus.SCHEDULED;
+    return isScheduled;
+  });
+  const abandonedClinicalRows = clinicalDayRows.filter((row) => {
+    const isAbandoned = row.status === PatientWorkflowStatus.ABANDONED;
+    return isAbandoned;
+  });
   const pendingPatientsItems = isSelectedDateToday
-    ? todayQuickList.filter((i) => (i.status ?? 'pending') === 'pending')
+    ? scheduledClinicalRows
     : [];
   const pendingPatientsCount = isSelectedDateToday
     ? pendingPatientsItems.length
     : 0;
   const nextPendingPatientName = pendingPatientsItems[0]?.patientName;
   const incompleteSessionItems = isSelectedDateToday
-    ? todayQuickList.filter((item) => item.status === 'incomplete')
+    ? abandonedClinicalRows
     : [];
   const incompleteSessionsCount = isSelectedDateToday
     ? incompleteSessionItems.length
@@ -460,7 +397,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
                 patientId: newPatient.id,
                 patientName: newPatient.fullName || newPatient.firstName || 'Patient',
                 sessionType: 'ongoing' as const,
-                status: 'pending' as const,
               }),
             );
           }
@@ -478,7 +414,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
               patientId,
               patientName,
               sessionType: sessionType === 'initial' ? 'initial' : 'followup',
-              status: 'pending' as const,
             }),
           );
         }
@@ -514,9 +449,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
     const alreadyExists = prev.some(
       (i) =>
         i.patientId === newItem.patientId &&
-        i.sessionType === newItem.sessionType &&
-        i.status !== 'documented' &&
-        i.status !== 'done'
+        i.sessionType === newItem.sessionType
     );
     if (alreadyExists) return prev;
     return [...prev, newItem];
@@ -584,7 +517,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
             patientId,
             patientName: patientName || 'Patient',
             sessionType: 'ongoing' as const,
-            status: 'pending' as const,
           }),
         );
       }
@@ -616,10 +548,12 @@ export const CommandCenterPageSprint3: React.FC = () => {
             selectedPatient={selectedPatient}
             onSelectPatient={setSelectedPatient}
             todayQuickList={todayQuickList}
+            clinicalDayRows={clinicalDayRows}
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
             onClearList={() => setTodayQuickList([])}
             onDismissIncomplete={handleDismissIncomplete}
+            onOpenClinicalRow={handleOpenClinicalDayRow}
             onAddToToday={() => {
               setStartSessionModalMode('add_to_today');
               setStartSessionModalStep(1);
@@ -654,11 +588,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
             }}
             onRemoveFromToday={(index) => {
               setTodayQuickList((prev) => prev.filter((_, i) => i !== index));
-            }}
-            onMarkPendingAgain={(index) => {
-              setTodayQuickList((prev) =>
-                prev.map((item, i) => (i === index ? { ...item, status: 'pending' as const } : item))
-              );
             }}
           />
 
@@ -739,14 +668,13 @@ export const CommandCenterPageSprint3: React.FC = () => {
         onAddToToday={
           startSessionModalMode === 'add_to_today'
             ? (patient, type) => {
-              setTodayQuickList((prev) =>
-                addToListSafe(prev, {
-                  patientId: patient.id,
-                  patientName: patient.fullName || patient.firstName || 'Patient',
-                  sessionType: type,
-                  status: 'pending' as const,
-                }),
-              );
+	              setTodayQuickList((prev) =>
+	                addToListSafe(prev, {
+	                  patientId: patient.id,
+	                  patientName: patient.fullName || patient.firstName || 'Patient',
+	                  sessionType: type,
+	                }),
+	              );
               setShowStartSessionModal(false);
               setStartSessionModalStep(1);
               setStartSessionModalPatient(null);

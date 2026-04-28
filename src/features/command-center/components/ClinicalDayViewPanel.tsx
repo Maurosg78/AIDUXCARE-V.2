@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, Play, RotateCcw } from 'lucide-react';
-import type { ClinicalDayRow, ClinicalDayStatus } from '../utils/clinicalDayView';
+import { PatientWorkflowStatus } from '../../../domain/patientStatus';
+import type { ClinicalDayRow } from '../utils/clinicalDayView';
 
 type ClinicalDayViewPanelProps = {
   selectedDate: Date;
@@ -20,33 +21,55 @@ function toDateKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function getStatusClass(status: ClinicalDayStatus): string {
+function getStatusClass(status: PatientWorkflowStatus): string {
   switch (status) {
-    case 'programado':
+    case PatientWorkflowStatus.SCHEDULED:
       return 'bg-slate-100 text-slate-700 border-slate-200';
-    case 'iniciado':
+    case PatientWorkflowStatus.IN_PROGRESS:
       return 'bg-blue-100 text-blue-700 border-blue-200';
-    case 'incompleto':
+    case PatientWorkflowStatus.ABANDONED:
       return 'bg-orange-100 text-orange-700 border-orange-200';
-    case 'draft-only':
+    case PatientWorkflowStatus.DOCUMENTED_DRAFT:
       return 'bg-purple-100 text-purple-700 border-purple-200';
-    case 'documentado':
+    case PatientWorkflowStatus.DOCUMENTED_FINAL:
       return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    case 'cancelado':
+    case PatientWorkflowStatus.CANCELLED:
       return 'bg-red-100 text-red-700 border-red-200';
     default:
       return 'bg-slate-100 text-slate-700 border-slate-200';
   }
 }
 
-function getActionLabel(status: ClinicalDayStatus): 'Continuar' | 'Abrir SOAP' | 'Revisar' | null {
+function getStatusLabel(status: PatientWorkflowStatus): string {
   switch (status) {
-    case 'iniciado':
-    case 'incompleto':
+    case PatientWorkflowStatus.SCHEDULED:
+      return 'Pending';
+    case PatientWorkflowStatus.IN_PROGRESS:
+      return 'In progress';
+    case PatientWorkflowStatus.DOCUMENTED_DRAFT:
+      return 'Draft';
+    case PatientWorkflowStatus.DOCUMENTED_FINAL:
+      return 'Completed';
+    case PatientWorkflowStatus.ABANDONED:
+      return 'Incomplete';
+    case PatientWorkflowStatus.CANCELLED:
+      return 'Cancelled';
+    default:
+      return 'Pending';
+  }
+}
+
+function getActionLabel(status: PatientWorkflowStatus): 'Iniciar' | 'Continuar' | 'Reanudar' | 'Abrir SOAP' | 'Revisar' | null {
+  switch (status) {
+    case PatientWorkflowStatus.SCHEDULED:
+      return 'Iniciar';
+    case PatientWorkflowStatus.IN_PROGRESS:
       return 'Continuar';
-    case 'documentado':
+    case PatientWorkflowStatus.ABANDONED:
+      return 'Reanudar';
+    case PatientWorkflowStatus.DOCUMENTED_FINAL:
       return 'Abrir SOAP';
-    case 'draft-only':
+    case PatientWorkflowStatus.DOCUMENTED_DRAFT:
       return 'Revisar';
     default:
       return null;
@@ -96,6 +119,20 @@ export const ClinicalDayViewPanel: React.FC<ClinicalDayViewPanelProps> = ({
         ) : (
           rows.map((row) => {
             const actionLabel = getActionLabel(row.status);
+            const hasInvalidAction =
+              (actionLabel === 'Iniciar' && row.status !== PatientWorkflowStatus.SCHEDULED) ||
+              (actionLabel === 'Continuar' && row.status !== PatientWorkflowStatus.IN_PROGRESS) ||
+              (actionLabel === 'Reanudar' && row.status !== PatientWorkflowStatus.ABANDONED) ||
+              (actionLabel === 'Abrir SOAP' && row.status !== PatientWorkflowStatus.DOCUMENTED_FINAL) ||
+              (actionLabel === 'Revisar' && row.status !== PatientWorkflowStatus.DOCUMENTED_DRAFT);
+
+            if (hasInvalidAction) {
+              console.error('INVALID ACTION FOR STATE', {
+                patientId: row.patientId,
+                status: row.status,
+                action: actionLabel,
+              });
+            }
 
             return (
               <div
@@ -106,7 +143,7 @@ export const ClinicalDayViewPanel: React.FC<ClinicalDayViewPanelProps> = ({
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-sm font-semibold text-slate-900">{row.patientName}</h3>
                     <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${getStatusClass(row.status)}`}>
-                      {row.status}
+                      {getStatusLabel(row.status)}
                     </span>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
@@ -119,14 +156,14 @@ export const ClinicalDayViewPanel: React.FC<ClinicalDayViewPanelProps> = ({
 
                 {actionLabel ? (
                   <div className="flex items-center justify-end gap-2">
-                    {actionLabel === 'Continuar' ? (
+                    {actionLabel === 'Iniciar' || actionLabel === 'Continuar' || actionLabel === 'Reanudar' ? (
                       <button
                         type="button"
                         onClick={() => onContinue(row)}
                         className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
                       >
                         <Play className="h-4 w-4" />
-                        Continuar
+                        {actionLabel}
                       </button>
                     ) : null}
                     {actionLabel === 'Abrir SOAP' ? (

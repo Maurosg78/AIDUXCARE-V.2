@@ -1,33 +1,22 @@
 import { encountersRepo } from '../../../repositories/encountersRepo';
 import { PersistenceService, type SavedNote } from '../../../services/PersistenceService';
+import {
+  getPatientStatus,
+  PatientWorkflowStatus,
+  type PatientWorkflowInput,
+  validatePatientStatusInvariants,
+} from '../../../domain/patientStatus';
 import type { PatientListItem } from '../hooks/usePatientsList';
 import type { Appointment } from '../hooks/useAppointmentSchedule';
 import type { InProgressSession } from '../hooks/useInProgressSessions';
 import type { TodayQuickItem } from '../components/TodayPatientsPanel';
 
-export type ClinicalDayStatus =
-  | 'programado'
-  | 'iniciado'
-  | 'incompleto'
-  | 'draft-only'
-  | 'documentado'
-  | 'cancelado';
-
-export type ClinicalDayStatusInput = {
-  hasAppointment: boolean;
-  appointmentStatus?: 'scheduled' | 'cancelled';
-  hasSession: boolean;
-  sessionStatus?: string;
-  hasEncounter: boolean;
-  hasConsultation: boolean;
-  soapStatus?: 'draft' | 'finalized' | null;
-};
-
 export type ClinicalDayRow = {
   patientId: string;
   patientName: string;
   time?: string;
-  status: ClinicalDayStatus;
+  status: PatientWorkflowStatus;
+  rawData: PatientWorkflowInput;
   hasEncounter: boolean;
   hasSession: boolean;
   hasConsultation: boolean;
@@ -43,10 +32,9 @@ type BuildClinicalDayViewOptions = {
 };
 
 /**
- * Doctrine for B7:
- * - Encounter is the only source that can make a row clinically "documentado".
- * - Consultation without encounter is supporting document state only.
- * - Consultation without encounter can become "draft-only", never "documentado".
+ * Doctrine for B7 / patient workflow v1:
+ * - Encounter is the only source that can promote a row to DOCUMENTED_FINAL.
+ * - Consultation without encounter remains DOCUMENTED_DRAFT only.
  * - Administrative cancellation must not hide clinical activity already recorded that day.
  */
 
@@ -142,48 +130,6 @@ function pickBestConsultation(
   });
 
   return sortedNotes[0] ?? null;
-}
-
-export function resolveClinicalDayStatus(input: ClinicalDayStatusInput): ClinicalDayStatus {
-  const hasClinicalActivity =
-    input.hasEncounter ||
-    input.hasConsultation ||
-    input.hasSession;
-
-  // Clinical truth wins first. "documentado" requires encounter + finalized backing note.
-  if (input.hasEncounter && input.soapStatus === 'finalized') {
-    return 'documentado';
-  }
-
-  // Encounter without finalized note remains clinically incomplete at documentation level.
-  if (input.hasEncounter && input.soapStatus !== 'finalized') {
-    return 'draft-only';
-  }
-
-  // Consultation without encounter is visible as document backing only; it must NOT be promoted to "documentado".
-  // Any non-finalized backing note remains "draft-only" even if future note states are added.
-  if (input.hasConsultation && !input.hasEncounter && input.soapStatus !== 'finalized') {
-    return 'draft-only';
-  }
-
-  // Cancellation only wins when there was no clinical activity that day.
-  if (input.appointmentStatus === 'cancelled' && !hasClinicalActivity) {
-    return 'cancelado';
-  }
-
-  if (input.hasSession && input.sessionStatus === 'in_progress') {
-    return 'iniciado';
-  }
-
-  if (input.hasSession && !input.hasEncounter) {
-    return 'incompleto';
-  }
-
-  if (input.hasAppointment && !input.hasSession) {
-    return 'programado';
-  }
-
-  return 'programado';
 }
 
 /**
@@ -286,7 +232,11 @@ export async function buildClinicalDayView(
       const appointmentStatus = normalizeAppointmentStatus(appointment?.status);
       const sessionStatus = normalizeSessionStatus(session?.status);
       const soapStatus = consultation ? (consultation.status ?? 'finalized') : null;
-      const status = resolveClinicalDayStatus({
+      const encounterStatus = encounter?.status;
+      const encounterClosed =
+        encounterStatus === 'completed' ||
+        encounterStatus === 'signed';
+      const rawFlags: PatientWorkflowInput = {
         hasAppointment,
         appointmentStatus,
         hasSession,
@@ -294,7 +244,10 @@ export async function buildClinicalDayView(
         hasEncounter,
         hasConsultation,
         soapStatus,
-      });
+        encounterClosed,
+      };
+      const status = getPatientStatus(rawFlags);
+      validatePatientStatusInvariants(rawFlags, status);
       const hasAnySource =
         hasAppointment ||
         hasSession ||
@@ -310,6 +263,7 @@ export async function buildClinicalDayView(
         patientName: patient.fullName || [patient.firstName, patient.lastName].filter(Boolean).join(' ') || 'Patient',
         time: getRowTime(appointment),
         status,
+        rawData: rawFlags,
         hasEncounter,
         hasSession,
         hasConsultation,
@@ -317,6 +271,16 @@ export async function buildClinicalDayView(
         consultationId: consultation?.id,
         sessionType: (quickItem?.sessionType ?? session?.sessionType ?? undefined) as ClinicalDayRow['sessionType'],
       };
+      const recomputedStatus = getPatientStatus(row.rawData);
+      const isStateDesynced = row.status !== recomputedStatus;
+      if (isStateDesynced) {
+        console.error('STATE DESYNC DETECTED', {
+          patientId: patient.id,
+          rowStatus: row.status,
+          recomputed: recomputedStatus,
+          rawData: row.rawData,
+        });
+      }
 
       return row;
     })

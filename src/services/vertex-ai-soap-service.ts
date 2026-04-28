@@ -19,6 +19,7 @@ import { logRegulatoryLanguageWarnings } from '../utils/regulatoryLanguageGuard'
 import { isSpainPilot } from '@/core/pilotDetection';
 import { getCurrentJurisdiction } from '@/core/consent/consentJurisdiction';
 import { ensureSpanishClinicalText } from '../utils/normalizers/es/ensureSpanishClinicalText';
+import type { VertexClinicalOutput } from '../core/longitudinal/longitudinalExtraction';
 // ✅ WO-03: Prompt Brain v3 integration
 import { resolvePromptBrainVersion } from "../core/prompts/v3/builders/resolvePromptBrainVersion";
 import { buildPromptV3 } from "../core/prompts/v3/builders/buildPromptV3";
@@ -88,6 +89,13 @@ export interface SOAPGenerationResponse {
     };
   };
 }
+
+/**
+ * Safe extension point for future dual-output contract.
+ * Current live flow still consumes SOAPGenerationResponse and SOAP-only parsing.
+ * DO NOT wire this into production parsing until the longitudinal payload is explicitly activated.
+ */
+export type FutureVertexClinicalOutput = VertexClinicalOutput;
 
 export interface SOAPGenerationError {
   message: string;
