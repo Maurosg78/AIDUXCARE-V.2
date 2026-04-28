@@ -92,6 +92,46 @@ function resolveInstitutionDisplay(data: CertificateEsData): string {
   return institucionDisplay;
 }
 
+function lowerCaseFirstCharacter(text: string): string {
+  const trimmedText = text.trim();
+  const hasContent = trimmedText.length > 0;
+  if (!hasContent) {
+    return trimmedText;
+  }
+  const firstCharacter = trimmedText.charAt(0);
+  const remainingText = trimmedText.slice(1);
+  const normalizedText = `${firstCharacter.toLowerCase()}${remainingText}`;
+  return normalizedText;
+}
+
+function normalizeCertificateDraftText(rawText: string, patientName: string): string {
+  const trimmedText = rawText.replace(/^["«»""]|["«»""]$/g, '').trim();
+  const hasDraftContent = trimmedText.length > 0;
+  if (!hasDraftContent) {
+    return '';
+  }
+  const withoutExistingPresentationBlock = trimmedText.replace(
+    /^\s*El presente certificado se emite a nombre de .*?(?:,\s*quien\s+|\.\s*)/i,
+    '',
+  ).trim();
+  const withoutPatientLeadIn = withoutExistingPresentationBlock.replace(
+    /^\s*(El\/La paciente|El paciente|La paciente)\s+/i,
+    '',
+  ).trim();
+  const withoutConnectorLeadIn = withoutPatientLeadIn.replace(
+    /^\s*(quien|que)\s+/i,
+    '',
+  ).trim();
+  const hasNormalizedBody = withoutConnectorLeadIn.length > 0;
+  if (!hasNormalizedBody) {
+    return '';
+  }
+  const normalizedBodyStart = lowerCaseFirstCharacter(withoutConnectorLeadIn);
+  const patientPresentationPrefix = `El presente certificado se emite a nombre de ${patientName}, quien `;
+  const resolvedBodyText = `${patientPresentationPrefix}${normalizedBodyStart}`.trim();
+  return resolvedBodyText;
+}
+
 function buildCertificateHeaderLines(data: CertificateEsData): string[] {
   const clinicLine = data.emisor === 'clinica' ? (data.nombreClinica || 'Clínica') : 'Consulta particular';
   const institutionDisplay = resolveInstitutionDisplay(data);
@@ -114,16 +154,9 @@ function buildCertificateHeaderLines(data: CertificateEsData): string[] {
 }
 
 function buildCertificateBodyText(data: CertificateEsData): string {
-  const rawBodyText = (data.borrador || '').replace(/^["«»""]|["«»""]$/g, '').trim();
-  const normalizedBodyStart = rawBodyText.replace(
-    /^\s*(El presente certificado se emite a nombre de .*?\.\s*)?(El\/La paciente|El paciente|La paciente)\s+/i,
-    '',
-  ).trim();
-  const patientPresentationPrefix = `El presente certificado se emite a nombre de ${data.paciente.nombre}. `;
-  const bodyText = `${patientPresentationPrefix}${normalizedBodyStart}`;
-  const trimmedBodyText = bodyText.trim();
-
-  return trimmedBodyText;
+  const rawBodyText = data.borrador || '';
+  const normalizedBodyText = normalizeCertificateDraftText(rawBodyText, data.paciente.nombre);
+  return normalizedBodyText;
 }
 
 function buildCertificateParagraphs(data: CertificateEsData): string[] {
@@ -280,8 +313,9 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
     try {
       const draft = await generateCertificateBodyEs(formData, soapAssessment);
       const trimmedDraft = draft.trim();
+      const normalizedDraft = normalizeCertificateDraftText(trimmedDraft, formData.paciente.nombre);
 
-      updateField('borrador', trimmedDraft);
+      updateField('borrador', normalizedDraft);
     } catch (generationError) {
       const message = generationError instanceof Error ? generationError.message : 'No se pudo generar el borrador.';
 
@@ -477,7 +511,11 @@ export default function CertificateEsModal(props: CertificateEsModalProps) {
                 <label className="mb-2 block text-sm font-medium text-slate-700">Borrador editable</label>
                 <textarea
                   value={formData.borrador}
-                  onChange={(event) => updateField('borrador', event.target.value)}
+                  onChange={(event) => {
+                    const nextRawDraft = event.target.value;
+                    const normalizedDraft = normalizeCertificateDraftText(nextRawDraft, formData.paciente.nombre);
+                    updateField('borrador', normalizedDraft);
+                  }}
                   rows={10}
                   style={{ minHeight: '200px' }}
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none ring-0 focus:border-blue-500 resize-y"
