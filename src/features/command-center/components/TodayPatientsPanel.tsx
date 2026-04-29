@@ -122,19 +122,19 @@ function getStatusBadgeClass(status: PatientWorkflowStatus): string {
 function getStatusLabel(status: PatientWorkflowStatus): string {
   switch (status) {
     case PatientWorkflowStatus.SCHEDULED:
-      return 'Pending';
+      return 'Pendiente';
     case PatientWorkflowStatus.IN_PROGRESS:
-      return 'In progress';
+      return 'En curso';
     case PatientWorkflowStatus.DOCUMENTED_DRAFT:
-      return 'Draft';
+      return 'Borrador';
     case PatientWorkflowStatus.DOCUMENTED_FINAL:
-      return 'Completed';
+      return 'Completado';
     case PatientWorkflowStatus.ABANDONED:
-      return 'Incomplete';
+      return 'Incompleto';
     case PatientWorkflowStatus.CANCELLED:
-      return 'Cancelled';
+      return 'Cancelado';
     default:
-      return 'Pending';
+      return 'Pendiente';
   }
 }
 
@@ -394,7 +394,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
           {completedRows.length > 0 ? (
             <div className="space-y-2 pt-3 border-t border-gray-100">
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 font-apple">
-                Completed
+                Completado
               </div>
               {completedRows.map((row) => {
                 const quickItemIndex = quickItemIndexByPatientId.get(row.patientId);

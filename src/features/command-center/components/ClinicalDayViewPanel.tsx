@@ -43,19 +43,19 @@ function getStatusClass(status: PatientWorkflowStatus): string {
 function getStatusLabel(status: PatientWorkflowStatus): string {
   switch (status) {
     case PatientWorkflowStatus.SCHEDULED:
-      return 'Pending';
+      return 'Pendiente';
     case PatientWorkflowStatus.IN_PROGRESS:
-      return 'In progress';
+      return 'En curso';
     case PatientWorkflowStatus.DOCUMENTED_DRAFT:
-      return 'Draft';
+      return 'Borrador';
     case PatientWorkflowStatus.DOCUMENTED_FINAL:
-      return 'Completed';
+      return 'Completado';
     case PatientWorkflowStatus.ABANDONED:
-      return 'Incomplete';
+      return 'Incompleto';
     case PatientWorkflowStatus.CANCELLED:
-      return 'Cancelled';
+      return 'Cancelado';
     default:
-      return 'Pending';
+      return 'Pendiente';
   }
 }
 
