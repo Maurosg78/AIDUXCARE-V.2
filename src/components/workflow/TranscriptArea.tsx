@@ -11,11 +11,11 @@ import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { Play, Square, Mic, Loader2, Brain, Paperclip, UploadCloud, X, AlertCircle } from 'lucide-react';
 import type { WhisperSupportedLanguage } from '../../services/OpenAIWhisperService';
 import { AudioWaveform } from '../AudioWaveform';
-import { DictationButton } from '../ui/DictationButton';
 import type { ClinicalAttachment } from '../../services/clinicalAttachmentService';
 import { useDebouncedCallback } from '../../hooks/useDebounce';
 import { ClinicalAttachmentCard } from '../ClinicalAttachmentCard';
 import { isSpainPilot } from '@/core/pilotDetection';
+import { AdditionalClinicalContextInput } from './AdditionalClinicalContextInput';
 
 // ─── Pilot-aware UI strings (module-level to avoid React.memo re-renders) ──────
 const esPilot = isSpainPilot();
@@ -148,20 +148,6 @@ const MODE_LABELS: Record<'live' | 'dictation', string> = esPilot
   ? { live: 'Sesión en vivo', dictation: 'Dictado' }
   : { live: 'Live session', dictation: 'Dictation' };
 
-const getDictationSpeechLang = (languagePreference: WhisperSupportedLanguage): string | undefined => {
-  switch (languagePreference) {
-    case 'es':
-      return 'es-ES';
-    case 'fr':
-      return 'fr-CA';
-    case 'en':
-      return 'en-CA';
-    case 'auto':
-    default:
-      return undefined;
-  }
-};
-
 const formatFileSize = (bytes: number) => {
   if (!Number.isFinite(bytes)) return '';
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -214,6 +200,8 @@ export interface TranscriptAreaProps {
   handleAttachmentReviewedToggle?: (attachmentId: string) => void;
   /** When true, hide Vertex analyze CTA and related processing UI (capture-only surfaces). */
   hideAnalyzeButton?: boolean;
+  /** When true, keep additional clinical context outside this capture block. */
+  hideAdditionalNotesSection?: boolean;
 }
 
 export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
@@ -245,9 +233,9 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   handleAttachmentRemove,
   handleAttachmentReviewedToggle,
   hideAnalyzeButton = false,
+  hideAdditionalNotesSection = false,
 }) => {
   const [localTranscript, setLocalTranscript] = useState(transcript);
-  const [showAdditionalNotes, setShowAdditionalNotes] = useState(Boolean(additionalNotes.trim()));
   const isPastingRef = useRef(false);
   const timerRef = useRef<number | null>(null);
   const hasReadyAttachments = attachments.some((attachment) => Boolean(attachment.extractedText));
@@ -268,12 +256,6 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   useEffect(() => {
     if (!isPastingRef.current) setLocalTranscript(transcript);
   }, [transcript]);
-
-  useEffect(() => {
-    if (additionalNotes.trim()) {
-      setShowAdditionalNotes(true);
-    }
-  }, [additionalNotes]);
 
   const debouncedSetTranscript = useDebouncedCallback((value: string) => {
     isPastingRef.current = false;
@@ -450,46 +432,15 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         }}
       />
 
-      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-slate-800">{UI.additionalNotesLabel}</p>
-            <p className="mt-1 text-xs text-slate-500">{UI.additionalNotesHelper}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowAdditionalNotes((currentValue) => !currentValue)}
-            className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
-          >
-            {UI.additionalNotesToggle}
-          </button>
-        </div>
-
-        {showAdditionalNotes ? (
-          <div className="mt-3 flex gap-2">
-            <textarea
-              className="flex-1 min-h-[110px] rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:border-transparent transition"
-              placeholder={UI.additionalNotesPlaceholder}
-              value={additionalNotes}
-              onChange={(event) => setAdditionalNotes(event.target.value)}
-              onKeyDown={(event) => {
-                if (!hideAnalyzeButton && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-                  event.preventDefault();
-                  handleAnalyzeWithVertex();
-                }
-              }}
-            />
-            <DictationButton
-              value={additionalNotes}
-              onChange={setAdditionalNotes}
-              disabled={isProcessing || isGeneratingSOAP}
-              lang={getDictationSpeechLang(languagePreference)}
-              title={UI.additionalNotesDictationTitle}
-              className="self-start"
-            />
-          </div>
-        ) : null}
-      </div>
+      {!hideAdditionalNotesSection ? (
+        <AdditionalClinicalContextInput
+          additionalNotes={additionalNotes}
+          setAdditionalNotes={setAdditionalNotes}
+          languagePreference={languagePreference}
+          isProcessing={isProcessing}
+          isGeneratingSOAP={isGeneratingSOAP}
+        />
+      ) : null}
 
       {transcriptMeta && (
         <div className="mt-2 text-xs text-slate-500 flex flex-wrap items-center gap-3">

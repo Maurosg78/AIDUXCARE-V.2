@@ -6449,6 +6449,7 @@ const ProfessionalWorkflowPage = () => {
                     handleAttachmentRemove={handleAttachmentRemove}
                     handleAttachmentReviewedToggle={handleAttachmentReviewedToggle}
                     hideAnalyzeButton={true}
+                    hideAdditionalNotesSection={true}
                   />
                 </div>
               )}

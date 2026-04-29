@@ -17,6 +17,7 @@ import { ClinicalAnalysisResults } from '../../ClinicalAnalysisResults';
 import { ErrorMessage } from '../../ui/ErrorMessage';
 import { SuccessMessage } from '../../ui/SuccessMessage';
 import TranscriptArea from '../TranscriptArea';
+import AdditionalClinicalContextInput from '../AdditionalClinicalContextInput';
 import type { ClinicalAttachment } from '../../../services/clinicalAttachmentService';
 import type { WhisperSupportedLanguage } from '../../../services/OpenAIWhisperService';
 import { PatientConsentService } from '../../../services/patientConsentService';
@@ -441,10 +442,17 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       {/* WO-FU-GENERATE-BTN: follow-up may capture transcript outside AnalysisTab; keep SOAP trigger visible when content exists */}
       {hideTranscriptArea && followUpHasContent && (
         <div className="mt-4 pt-4 border-t border-slate-200">
+          <AdditionalClinicalContextInput
+            additionalNotes={physioNotes}
+            setAdditionalNotes={setPhysioNotes}
+            languagePreference={languagePreference}
+            isProcessing={isProcessing}
+            isGeneratingSOAP={isGeneratingSOAP}
+          />
           <button
             onClick={handleAnalyzeWithVertex}
             disabled={isProcessing || isGeneratingSOAP}
-            className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
+            className="mt-4 inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
           >
             {(isProcessing || isGeneratingSOAP) ? (
               <>
