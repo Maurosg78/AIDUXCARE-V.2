@@ -1678,9 +1678,13 @@ const ProfessionalWorkflowPage = () => {
       try {
         const sessions = await sessionService.getInProgressSessions(user.uid);
         if (cancelled) return;
+        const targetSessionDateKey = toLocalDateKey(sessionStartTime);
 
         const match = sessions.find(
-          (s) => s.patientId === patientIdFromUrl && s.sessionType === 'followup',
+          (s) =>
+            s.patientId === patientIdFromUrl &&
+            s.sessionType === 'followup' &&
+            s.dateKey === targetSessionDateKey,
         );
 
         if (match?.transcript?.trim()) {
