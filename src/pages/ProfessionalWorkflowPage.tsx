@@ -71,6 +71,10 @@ import SessionComparison from "../components/SessionComparison";
 import { SessionComparisonService, type Session } from "../services/sessionComparisonService";
 import { PatientTrajectoryMemoryService } from "../services/patientTrajectoryMemoryService";
 import { FollowUpClinicalContextService, type FollowUpClinicalContext } from "../services/followUpClinicalContextService";
+import {
+  resolveRedFlagsAgainstHistory,
+  upsertRedFlagHistoryEntry,
+} from "../services/redFlagHistoryService";
 import { getAuth, signOut } from "firebase/auth";
 import { Timestamp, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -78,6 +82,7 @@ import tokenTrackingService from "../services/tokenTrackingService";
 import logger from "@/shared/utils/logger";
 import { useLastEncounter } from "../features/patient-dashboard/hooks/useLastEncounter";
 import { useActiveEpisode } from "../features/patient-dashboard/hooks/useActiveEpisode";
+import type { RedFlagHistoryResolution } from "@/types/redFlagHistory";
 import { usePatientVisitCount } from "../features/patient-dashboard/hooks/usePatientVisitCount";
 import { SessionTypeService } from "../services/sessionTypeService";
 import { getPublicBaseUrl } from "../utils/urlHelpers";
@@ -324,6 +329,7 @@ const ProfessionalWorkflowPage = () => {
     decision: 'continue' | 'referral_stop' | 'referral_continue_partial';
     continuationNote?: string;
   }>>({});
+  const [followUpRedFlagHistoryResolutions, setFollowUpRedFlagHistoryResolutions] = useState<RedFlagHistoryResolution[]>([]);
   const [followUpDecisionResolved, setFollowUpDecisionResolved] = useState(false);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
@@ -352,6 +358,73 @@ const ProfessionalWorkflowPage = () => {
     });
     setFollowUpDecisionResolved(allResolved);
   }, [visitType, followUpAlerts, redFlagDecisions]);
+
+  useEffect(() => {
+    const isFollowUpWorkflow = visitType === 'follow-up';
+    const patientIdForHistory = patientIdFromUrl || demoPatient.id;
+    const rawFollowUpRedFlags = followUpAlerts?.red_flags;
+
+    if (!isFollowUpWorkflow || !patientIdForHistory || !rawFollowUpRedFlags?.length) {
+      setFollowUpRedFlagHistoryResolutions([]);
+      return;
+    }
+
+    let cancelled = false;
+    const incomingRedFlags = rawFollowUpRedFlags.map((flag, idx) => {
+      const objectFlag = typeof flag === 'object' && flag !== null ? flag as { label?: string } : null;
+      const flagLabel = typeof flag === 'string' ? flag : objectFlag?.label ?? `red-${idx}`;
+      return flagLabel;
+    });
+
+    resolveRedFlagsAgainstHistory(patientIdForHistory, incomingRedFlags)
+      .then((resolutions) => {
+        if (cancelled) {
+          return;
+        }
+
+        setFollowUpRedFlagHistoryResolutions(resolutions);
+
+        const reviewedResolutions = resolutions.filter((resolution) => resolution.status === 'known_reviewed');
+        if (reviewedResolutions.length === 0) {
+          return;
+        }
+
+        setSelectedRedFlagIds((currentIds) => {
+          const nextIds = new Set(currentIds);
+          reviewedResolutions.forEach((resolution) => {
+            nextIds.add(resolution.historyId);
+          });
+          return Array.from(nextIds);
+        });
+
+        setRedFlagDecisions((currentDecisions) => {
+          const nextDecisions = { ...currentDecisions };
+          reviewedResolutions.forEach((resolution) => {
+            if (nextDecisions[resolution.historyId]?.decision) {
+              return;
+            }
+            if (!resolution.matchedEntry) {
+              return;
+            }
+            nextDecisions[resolution.historyId] = {
+              decision: resolution.matchedEntry.decision,
+              continuationNote: undefined,
+            };
+          });
+          return nextDecisions;
+        });
+      })
+      .catch((error) => {
+        console.warn('[FOLLOWUP-RED-FLAG-HISTORY] Unable to resolve follow-up red flags against history.', error);
+        if (!cancelled) {
+          setFollowUpRedFlagHistoryResolutions([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visitType, followUpAlerts, patientIdFromUrl, demoPatient.id]);
 
   // WO-05-FIX: Estado para todayFocus (focos clínicos editables del plan previo; usado en initial y legacy follow-up)
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -3971,6 +4044,67 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [patientIdFromUrl, currentPatient, buildReferralReportData]);
 
+  const persistConfirmedFollowUpRedFlags = useCallback(async () => {
+    const patientIdForHistory = patientIdFromUrl || demoPatient.id;
+    const userId = user?.uid;
+
+    if (visitType !== 'follow-up' || !patientIdForHistory || !userId) {
+      return;
+    }
+
+    const currentSessionId = sessionId || `${userId}-${sessionStartTime.getTime()}`;
+    const selectedFlagIdSet = new Set(selectedRedFlagIds);
+    const currentResolutionsById = new Map(
+      followUpRedFlagHistoryResolutions.map((resolution) => [resolution.historyId, resolution] as const),
+    );
+
+    const persistOperations = Object.entries(redFlagDecisions)
+      .filter(([flagId, decisionState]) => Boolean(decisionState?.decision) && selectedFlagIdSet.has(flagId))
+      .map(async ([flagId, decisionState]) => {
+        const matchedResolution = currentResolutionsById.get(flagId);
+        const resolvedFlagText = matchedResolution?.matchedEntry?.flagText
+          ?? matchedResolution?.incomingFlagText
+          ?? flagId;
+
+        await upsertRedFlagHistoryEntry({
+          patientId: patientIdForHistory,
+          flagText: resolvedFlagText,
+          reviewedBy: userId,
+          decision: decisionState.decision,
+          sessionId: currentSessionId,
+          status: 'reviewed',
+          visitType: 'follow-up',
+        });
+      });
+
+    await Promise.all(persistOperations);
+  }, [
+    patientIdFromUrl,
+    demoPatient.id,
+    user?.uid,
+    visitType,
+    sessionId,
+    sessionStartTime,
+    selectedRedFlagIds,
+    redFlagDecisions,
+    followUpRedFlagHistoryResolutions,
+  ]);
+
+  const handleConfirmFollowUpRedFlags = useCallback(async () => {
+    try {
+      await persistConfirmedFollowUpRedFlags();
+    } catch (error) {
+      console.warn('[FOLLOWUP-RED-FLAG-HISTORY] Persist failed.', error);
+    }
+    const hasReferralStop = Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop');
+    if (hasReferralStop) {
+      handleOpenReferralReport();
+      return;
+    }
+    setActiveTab('soap');
+    setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }, [persistConfirmedFollowUpRedFlags, redFlagDecisions, handleOpenReferralReport]);
+
   // Detect visit type on mount or when data changes
   useEffect(() => {
     // TODO: Check Firestore for previous SOAP notes
@@ -6491,15 +6625,7 @@ const ProfessionalWorkflowPage = () => {
                     onRedFlagSelectionChange={setSelectedRedFlagIds}
                     redFlagDecisions={redFlagDecisions}
                     onRedFlagDecisionChange={setRedFlagDecisions}
-                    onConfirmFollowUpRedFlags={() => {
-                      const hasReferralStop = Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop');
-                      if (hasReferralStop) {
-                        handleOpenReferralReport();
-                      } else {
-                        setActiveTab('soap');
-                        setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-                      }
-                    }}
+                    onConfirmFollowUpRedFlags={handleConfirmFollowUpRedFlags}
                     onGenerateReferralReport={handleOpenReferralReport}
                   />
                 </Suspense>
@@ -6813,15 +6939,7 @@ const ProfessionalWorkflowPage = () => {
                   onRedFlagSelectionChange={setSelectedRedFlagIds}
                   redFlagDecisions={redFlagDecisions}
                   onRedFlagDecisionChange={setRedFlagDecisions}
-                  onConfirmFollowUpRedFlags={() => {
-                    const hasReferralStop = Object.values(redFlagDecisions).some((d) => d.decision === 'referral_stop');
-                    if (hasReferralStop) {
-                      handleOpenReferralReport();
-                    } else {
-                      setActiveTab('soap');
-                      setTimeout(() => document.querySelector('[data-section="soap"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-                    }
-                  }}
+                  onConfirmFollowUpRedFlags={handleConfirmFollowUpRedFlags}
                   onGenerateReferralReport={handleOpenReferralReport}
                 />
               </Suspense>
