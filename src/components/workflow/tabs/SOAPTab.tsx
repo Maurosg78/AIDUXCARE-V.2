@@ -338,15 +338,6 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             onFieldEdited={handleSoapFieldEdited}
           />
 
-          {physioNotes?.trim() ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-900">
-                Additional clinician input considered
-              </h3>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-amber-950">{physioNotes.trim()}</p>
-            </div>
-          ) : null}
-
           {/* Spain pilot: Enviar resumen al paciente */}
           {isSpainPilot() && patientEmail && localSoapNote?.plan && (
             <div className="mt-4 flex justify-end">
