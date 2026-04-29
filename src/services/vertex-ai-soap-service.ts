@@ -63,6 +63,7 @@ async function callAuthenticatedVertexProxy(payload: unknown): Promise<Response>
 
 export interface SOAPGenerationResponse {
   soap: SOAPNote | null;
+  secondaryMemorySource?: unknown;
   metadata: {
     model: string;
     tokens: {
@@ -529,8 +530,19 @@ export async function generateSOAPNote(
       console.warn('[SOAP Service] Repetition detected - consider editing:', validation.repetitionCheck.repeatedPhrases);
     }
 
+    const secondaryMemorySource = {
+      considerations: (data as any)?.considerations,
+      planInClinic: soapNote.planInClinic,
+      planHomeProgram: soapNote.planHomeProgram,
+      additionalNotes: soapNote.additionalNotes,
+      conversation_highlights: (data as any)?.conversation_highlights,
+      biopsychosocial_factors: (data as any)?.biopsychosocial_factors,
+      medicolegal_alerts: (data as any)?.medicolegal_alerts,
+    };
+
     return {
       soap: soapNote,
+      secondaryMemorySource,
       metadata: {
         model: data.model || 'gemini-2.0-flash-exp',
         tokens: {
@@ -1076,6 +1088,7 @@ export interface FollowUpAnalysisResult {
   considerations: string[];
   alerts?: FollowUpAlerts | null;
   planItems?: FollowUpPlanItem[] | null;
+  secondaryMemorySource?: unknown;
   error?: FollowUpSOAPV2Error;
 }
 
@@ -1209,54 +1222,57 @@ export async function generateFollowUpAnalysis(
   const narrative = input.longitudinalSummary?.trim() ? `\nLongitudinal context: ${input.longitudinalSummary.trim()}` : '';
   const contextBlock =
     structured.length > 0 ? structured.join('\n') + narrative : narrative || 'No trajectory or pain series data.';
-  if (structured.length === 0 && !narrative.trim()) {
-    return {
-      documentation: documentationSoap,
-      considerations: [],
-      alerts: soapResult.alerts ?? null,
-      planItems: (soapResult as any).planItems ?? null,
-    };
-  }
-
-  const considerationsSystem =
-    followUpPromptJurisdiction === 'ES-ES' ? CONSIDERATIONS_SYSTEM_ES : CONSIDERATIONS_SYSTEM_EN;
-  const considerationsContextLabel = followUpPromptJurisdiction === 'ES-ES' ? 'Contexto' : 'Context';
-  const considerationsPrompt = `${considerationsSystem}\n\n${considerationsContextLabel}:\n${contextBlock}`;
-  const traceId = `followup-considerations-${Date.now()}`;
-
   let considerations: string[] = [];
-  try {
-    const res = await callAuthenticatedVertexProxy({
-      prompt: considerationsPrompt,
-      action: 'analyze',
-      traceId,
-      model: 'gemini-2.0-flash-exp',
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const raw =
-        (data as any)?.candidates?.[0]?.content?.parts?.[0]?.text ??
-        (data as any)?.text ??
-        '';
-      if (raw && typeof raw === 'string') {
-        const parsedConsiderations = parseConsiderationsFromResponse(raw);
-        const repairedConsiderations = repairConsiderations(
-          parsedConsiderations,
-          input.painSeriesSummary,
-          followUpPromptJurisdiction
-        );
-        considerations = repairedConsiderations;
+  const hasStructuredContext = structured.length > 0 || Boolean(narrative.trim());
+
+  if (hasStructuredContext) {
+    const considerationsSystem =
+      followUpPromptJurisdiction === 'ES-ES' ? CONSIDERATIONS_SYSTEM_ES : CONSIDERATIONS_SYSTEM_EN;
+    const considerationsContextLabel = followUpPromptJurisdiction === 'ES-ES' ? 'Contexto' : 'Context';
+    const considerationsPrompt = `${considerationsSystem}\n\n${considerationsContextLabel}:\n${contextBlock}`;
+    const traceId = `followup-considerations-${Date.now()}`;
+
+    try {
+      const res = await callAuthenticatedVertexProxy({
+        prompt: considerationsPrompt,
+        action: 'analyze',
+        traceId,
+        model: 'gemini-2.0-flash-exp',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const raw =
+          (data as any)?.candidates?.[0]?.content?.parts?.[0]?.text ??
+          (data as any)?.text ??
+          '';
+        if (raw && typeof raw === 'string') {
+          const parsedConsiderations = parseConsiderationsFromResponse(raw);
+          const repairedConsiderations = repairConsiderations(
+            parsedConsiderations,
+            input.painSeriesSummary,
+            followUpPromptJurisdiction
+          );
+          considerations = repairedConsiderations;
+        }
       }
+    } catch (e) {
+      console.warn('[FollowUpAnalysis] Considerations call failed, returning documentation only.', e);
     }
-  } catch (e) {
-    console.warn('[FollowUpAnalysis] Considerations call failed, returning documentation only.', e);
   }
+
+  const secondaryMemorySource = {
+    considerations,
+    planInClinic: documentationSoap.planInClinic,
+    planHomeProgram: documentationSoap.planHomeProgram,
+    additionalNotes: documentationSoap.additionalNotes,
+  };
 
   return {
     documentation: documentationSoap,
     considerations,
     alerts: soapResult.alerts ?? null,
     planItems: (soapResult as any).planItems ?? null,
+    secondaryMemorySource,
   };
 }
 

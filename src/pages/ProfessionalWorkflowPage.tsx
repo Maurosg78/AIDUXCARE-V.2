@@ -75,6 +75,10 @@ import {
   resolveRedFlagsAgainstHistory,
   upsertRedFlagHistoryEntry,
 } from "../services/redFlagHistoryService";
+import {
+  extractSecondaryClinicalMemory,
+  persistSecondaryClinicalMemory,
+} from "../services/secondaryClinicalMemoryService";
 import { getAuth, signOut } from "firebase/auth";
 import { Timestamp, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -333,6 +337,7 @@ const ProfessionalWorkflowPage = () => {
   const [followUpDecisionResolved, setFollowUpDecisionResolved] = useState(false);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
+  const secondaryMemorySourceRef = useRef<unknown | null>(null);
 
   const hasUndecidedFollowUpRedFlags = (forceFollowUp?: boolean) => {
     const isFollowUp = forceFollowUp || visitType === 'follow-up';
@@ -4442,6 +4447,8 @@ const ProfessionalWorkflowPage = () => {
         throw new Error('Failed to generate SOAP note: empty response from AI system');
       }
 
+      secondaryMemorySourceRef.current = response.secondaryMemorySource ?? null;
+
       // ✅ WORKFLOW OPTIMIZATION: Track SOAP generation with token metrics
       const sessionIdForMetrics = sessionId || `${user?.uid || TEMP_USER_ID}-${sessionStartTime.getTime()}`;
       await trackSOAPGeneration(
@@ -4747,6 +4754,7 @@ const ProfessionalWorkflowPage = () => {
         setFollowUpConsiderations(null);
         return;
       }
+      secondaryMemorySourceRef.current = result.secondaryMemorySource ?? null;
       setFollowUpConsiderations(considerations?.length ? considerations : null);
       try {
         const memoryService = new PatientTrajectoryMemoryService();
@@ -5396,6 +5404,18 @@ const ProfessionalWorkflowPage = () => {
             console.log('[Workflow] ✅ Follow-up encounter persisted as completed:', {
               hasEncounterId: Boolean(encounterId),
             });
+            const secondaryMemorySource = secondaryMemorySourceRef.current;
+            const normalizedSecondaryMemoryVisitType =
+              visitType === 'follow-up' ? 'followup' : visitType;
+            const secondaryClinicalMemory = extractSecondaryClinicalMemory(
+              secondaryMemorySource,
+              activeSessionId,
+              normalizedSecondaryMemoryVisitType
+            );
+            if (secondaryClinicalMemory) {
+              persistSecondaryClinicalMemory(encounterId, secondaryClinicalMemory)
+                .catch((err) => console.error('[SecondaryMemory] Persist failed:', err));
+            }
             // Patient Clinical Memory: record trajectory event for pattern detection (non-blocking)
             try {
               await memoryService.recordEncounterTrajectory(patientId, encounterId, s);
@@ -5461,6 +5481,17 @@ const ProfessionalWorkflowPage = () => {
               console.log('[Workflow] ✅ Initial assessment encounter created and completed:', {
                 hasEncounterId: Boolean(encounterId),
               });
+              const secondaryMemorySource = secondaryMemorySourceRef.current;
+              const normalizedSecondaryMemoryVisitType = 'initial';
+              const secondaryClinicalMemory = extractSecondaryClinicalMemory(
+                secondaryMemorySource,
+                activeSessionId,
+                normalizedSecondaryMemoryVisitType
+              );
+              if (secondaryClinicalMemory) {
+                persistSecondaryClinicalMemory(encounterId, secondaryClinicalMemory)
+                  .catch((err) => console.error('[SecondaryMemory] Persist failed:', err));
+              }
             } else {
               const existingEncounterId = existing[0]?.id || null;
               await updateSessionFinalizationState(
