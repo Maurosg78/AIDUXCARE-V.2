@@ -607,6 +607,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   return (
     prevProps.transcript === nextProps.transcript &&
     prevProps.additionalNotes === nextProps.additionalNotes &&
+    prevProps.recordingTime === nextProps.recordingTime &&
     prevProps.isRecording === nextProps.isRecording &&
     prevProps.isTranscribing === nextProps.isTranscribing &&
     prevProps.isProcessing === nextProps.isProcessing &&
