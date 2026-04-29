@@ -18,12 +18,14 @@ const CONSENT_DOC_PATH = (patientId: string) => ['patients', patientId, 'consent
 export interface VerbalConsentDetails {
   method: 'verbal';
   obtainedBy: string;
-  patientResponse: 'authorized' | 'denied' | 'unable_to_respond';
+  patientResponse: 'authorized' | 'authorized_by_representative' | 'denied' | 'unable_to_respond';
   fullTextRead?: string;
   patientUnderstood?: boolean;
   voluntarilyGiven?: boolean;
   witnessName?: string;
   notes?: string;
+  representativeName?: string;
+  representativeRelationship?: string;
 }
 
 export interface ObtainConsentOptions {
@@ -172,6 +174,8 @@ export async function obtainConsent(
       voluntarilyGiven: details.voluntarilyGiven ?? false,
       witnessName: details.witnessName ?? null,
       notes: details.notes ?? null,
+      representativeName: details.representativeName ?? null,
+      representativeRelationship: details.representativeRelationship ?? null,
       updatedAt: now,
       timestamp: now,
     }, { merge: true });

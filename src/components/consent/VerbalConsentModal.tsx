@@ -58,13 +58,15 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   const isGdpr = effectiveJurisdiction === 'ES-ES';
   const [step, setStep] = useState<'read' | 'response' | 'confirm'>('read');
   const [readStarted, setReadStarted] = useState(false);
-  const [patientResponse, setPatientResponse] = useState<'authorized' | 'denied' | 'unable_to_respond' | null>(null);
+  const [patientResponse, setPatientResponse] = useState<'authorized' | 'authorized_by_representative' | 'denied' | 'unable_to_respond' | null>(null);
   const [patientUnderstood, setPatientUnderstood] = useState(false);
   const [voluntarilyGiven, setVoluntarilyGiven] = useState(false);
   // ✅ WO-CONSENT-VERBAL-01: Required checkbox with exact text
   const [physiotherapistConfirmed, setPhysiotherapistConfirmed] = useState(false);
   const [witnessName, setWitnessName] = useState('');
   const [notes, setNotes] = useState('');
+  const [representativeName, setRepresentativeName] = useState('');
+  const [representativeRelationship, setRepresentativeRelationship] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,10 +83,10 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     setStep('response');
   };
 
-  const handleResponseSelect = (response: 'authorized' | 'denied' | 'unable_to_respond') => {
+  const handleResponseSelect = (response: 'authorized' | 'authorized_by_representative' | 'denied' | 'unable_to_respond') => {
     setPatientResponse(response);
     
-    if (response === 'authorized') {
+    if (response === 'authorized' || response === 'authorized_by_representative') {
       setStep('confirm');
     } else {
       // Patient denied or unable to respond
@@ -92,7 +94,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     }
   };
 
-  const handleSubmit = async (response?: 'authorized' | 'denied' | 'unable_to_respond') => {
+  const handleSubmit = async (response?: 'authorized' | 'authorized_by_representative' | 'denied' | 'unable_to_respond') => {
     const finalResponse = response || patientResponse;
     
     if (!finalResponse) {
@@ -100,10 +102,14 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
       return;
     }
 
-    if (finalResponse === 'authorized') {
+    if (finalResponse === 'authorized' || finalResponse === 'authorized_by_representative') {
       // ✅ WO-CONSENT-VERBAL-01: Require all confirmations including physiotherapist checkbox
       if (!patientUnderstood || !voluntarilyGiven || !physiotherapistConfirmed) {
         setError(t('consent.verbal.errorConfirmAll'));
+        return;
+      }
+      if (finalResponse === 'authorized_by_representative' && (!representativeName.trim() || !representativeRelationship.trim())) {
+        setError(t('consent.verbal.errorRepresentativeRequired'));
         return;
       }
     }
@@ -112,7 +118,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     setError(null);
 
     try {
-      if (finalResponse === 'authorized') {
+      if (finalResponse === 'authorized' || finalResponse === 'authorized_by_representative') {
         // ✅ WO-CONSENT-VERBAL-01-LANG: Get text version for current jurisdiction
         const textVersion = jurisdiction
           ? getConsentTextVersionForJurisdiction(effectiveJurisdiction)
@@ -122,12 +128,14 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
         
         const consentDetails: Omit<VerbalConsentDetails, 'method'> = {
           obtainedBy: physiotherapistName || physiotherapistId,
-          patientResponse: 'authorized',
+          patientResponse: finalResponse,
           fullTextRead: consentText,
           patientUnderstood,
           voluntarilyGiven,
           witnessName: witnessName.trim() || undefined,
           notes: notes.trim() || undefined,
+          representativeName: finalResponse === 'authorized_by_representative' ? representativeName.trim() || undefined : undefined,
+          representativeRelationship: finalResponse === 'authorized_by_representative' ? representativeRelationship.trim() || undefined : undefined,
         };
 
         const result = await VerbalConsentService.obtainConsent(
@@ -173,6 +181,8 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     setPhysiotherapistConfirmed(false); // ✅ WO-CONSENT-VERBAL-01
     setWitnessName('');
     setNotes('');
+    setRepresentativeName('');
+    setRepresentativeRelationship('');
     setError(null);
     onClose();
   };
@@ -194,7 +204,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
           <button
             onClick={handleClose}
             className="text-white/90 hover:bg-white/20 rounded-full p-2 transition"
-            aria-label="Close"
+            aria-label={t('consent.verbal.close')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -310,6 +320,29 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                   </button>
 
                   <button
+                    onClick={() => handleResponseSelect('authorized_by_representative')}
+                    className={`w-full p-4 text-left border-2 rounded-lg transition ${
+                      patientResponse === 'authorized_by_representative'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <User className={`w-5 h-5 ${
+                        patientResponse === 'authorized_by_representative' ? 'text-blue-600' : 'text-gray-400'
+                      }`} />
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          👤 {t('consent.verbal.representativeAuthorized')}
+                        </div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {t('consent.verbal.representativeAuthorizedDesc')}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
                     onClick={() => handleResponseSelect('unable_to_respond')}
                     className={`w-full p-4 text-left border-2 rounded-lg transition ${
                       patientResponse === 'unable_to_respond'
@@ -351,14 +384,47 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
             </div>
           )}
 
-          {step === 'confirm' && patientResponse === 'authorized' && (
+          {step === 'confirm' && (patientResponse === 'authorized' || patientResponse === 'authorized_by_representative') && (
             <div className="space-y-6">
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 text-green-800">
                   <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">{t('consent.verbal.patientAuthorizedVerbally')}</span>
+                  <span className="font-medium">
+                    {patientResponse === 'authorized_by_representative'
+                      ? t('consent.verbal.representativeAuthorizedVerbally')
+                      : t('consent.verbal.patientAuthorizedVerbally')}
+                  </span>
                 </div>
               </div>
+
+              {patientResponse === 'authorized_by_representative' && (
+                <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('consent.verbal.representativeNameLabel')}
+                    </label>
+                    <input
+                      type="text"
+                      value={representativeName}
+                      onChange={(e) => setRepresentativeName(e.target.value)}
+                      placeholder={t('consent.verbal.representativeNamePlaceholder')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('consent.verbal.representativeRelationshipLabel')}
+                    </label>
+                    <input
+                      type="text"
+                      value={representativeRelationship}
+                      onChange={(e) => setRepresentativeRelationship(e.target.value)}
+                      placeholder={t('consent.verbal.representativeRelationshipPlaceholder')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-4">
                 {/* ✅ WO-CONSENT-VERBAL-01: Required checkbox with exact text */}
