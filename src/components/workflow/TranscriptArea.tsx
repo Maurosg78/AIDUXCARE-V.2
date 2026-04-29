@@ -11,6 +11,7 @@ import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { Play, Square, Mic, Loader2, Brain, Paperclip, UploadCloud, X, AlertCircle } from 'lucide-react';
 import type { WhisperSupportedLanguage } from '../../services/OpenAIWhisperService';
 import { AudioWaveform } from '../AudioWaveform';
+import { DictationButton } from '../ui/DictationButton';
 import type { ClinicalAttachment } from '../../services/clinicalAttachmentService';
 import { useDebouncedCallback } from '../../hooks/useDebounce';
 import { ClinicalAttachmentCard } from '../ClinicalAttachmentCard';
@@ -41,6 +42,7 @@ const UI = esPilot
       modeLabel: 'Modo',
       transcriptPlaceholder: 'Pega la transcripción o graba directamente desde el navegador…',
       additionalNotesToggle: 'Añadir contexto clínico adicional',
+      additionalNotesDictationTitle: 'Dictar contexto clínico adicional',
       additionalNotesLabel: '¿Algo más que quieras añadir antes de generar la nota?',
       additionalNotesHelper: 'Usa este campo para agregar hallazgos, parámetros, contexto o aclaraciones que no quedaron en el audio.',
       additionalNotesPlaceholder: 'Ej.: rotación cervical estimada 65° bilateral, TENS 15 min bien tolerado, el paciente trajo RM de hombro derecho…',
@@ -94,6 +96,7 @@ const UI = esPilot
       modeLabel: 'Mode',
       transcriptPlaceholder: 'Paste the transcript or record directly from the browser...',
       additionalNotesToggle: 'Add extra clinical context',
+      additionalNotesDictationTitle: 'Dictate additional clinical context',
       additionalNotesLabel: 'Anything else to add before generating the note?',
       additionalNotesHelper: 'Use this field for findings, treatment parameters, context, or clarifications that were not captured in the audio.',
       additionalNotesPlaceholder: 'Ex.: cervical rotation estimated 65 degrees bilaterally, TENS 15 min well tolerated, patient brought right shoulder MRI…',
@@ -144,6 +147,20 @@ const LANGUAGE_OPTIONS: Array<{ value: WhisperSupportedLanguage; label: string }
 const MODE_LABELS: Record<'live' | 'dictation', string> = esPilot
   ? { live: 'Sesión en vivo', dictation: 'Dictado' }
   : { live: 'Live session', dictation: 'Dictation' };
+
+const getDictationSpeechLang = (languagePreference: WhisperSupportedLanguage): string | undefined => {
+  switch (languagePreference) {
+    case 'es':
+      return 'es-ES';
+    case 'fr':
+      return 'fr-CA';
+    case 'en':
+      return 'en-CA';
+    case 'auto':
+    default:
+      return undefined;
+  }
+};
 
 const formatFileSize = (bytes: number) => {
   if (!Number.isFinite(bytes)) return '';
@@ -449,18 +466,28 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         </div>
 
         {showAdditionalNotes ? (
-          <textarea
-            className="mt-3 w-full min-h-[110px] rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:border-transparent transition"
-            placeholder={UI.additionalNotesPlaceholder}
-            value={additionalNotes}
-            onChange={(event) => setAdditionalNotes(event.target.value)}
-            onKeyDown={(event) => {
-              if (!hideAnalyzeButton && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-                event.preventDefault();
-                handleAnalyzeWithVertex();
-              }
-            }}
-          />
+          <div className="mt-3 flex gap-2">
+            <textarea
+              className="flex-1 min-h-[110px] rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 focus:border-transparent transition"
+              placeholder={UI.additionalNotesPlaceholder}
+              value={additionalNotes}
+              onChange={(event) => setAdditionalNotes(event.target.value)}
+              onKeyDown={(event) => {
+                if (!hideAnalyzeButton && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                  event.preventDefault();
+                  handleAnalyzeWithVertex();
+                }
+              }}
+            />
+            <DictationButton
+              value={additionalNotes}
+              onChange={setAdditionalNotes}
+              disabled={isProcessing || isGeneratingSOAP}
+              lang={getDictationSpeechLang(languagePreference)}
+              title={UI.additionalNotesDictationTitle}
+              className="self-start"
+            />
+          </div>
         ) : null}
       </div>
 
