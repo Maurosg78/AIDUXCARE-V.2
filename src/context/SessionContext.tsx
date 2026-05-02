@@ -10,6 +10,7 @@ const getSessionStorage = async () => SessionStorage;
 interface SessionContextType {
   sessionData: any;
   updateSessionData: (key: string, value: any) => void;
+  setSessionPatientId: (patientId: string | null) => void;
   resetSessionData: () => void;
   saveSession: () => void | Promise<void>;
   loadPreviousSession: (patientId: string) => any | Promise<any>;
@@ -72,6 +73,14 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       metadata: { ...prev.metadata, lastModified: new Date().toISOString() }
     }));
   };
+
+  const setSessionPatientId = useCallback((patientId: string | null) => {
+    setSessionData((prev) => ({
+      ...prev,
+      patientId,
+      metadata: { ...prev.metadata, lastModified: new Date().toISOString() }
+    }));
+  }, []);
 
   const resetSessionData = useCallback(() => {
     setSessionData(createInitialSessionData());
@@ -174,6 +183,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <SessionContext.Provider value={{
       sessionData,
       updateSessionData,
+      setSessionPatientId,
       resetSessionData,
       saveSession,
       loadPreviousSession,

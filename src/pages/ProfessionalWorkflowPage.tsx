@@ -524,7 +524,10 @@ const ProfessionalWorkflowPage = () => {
     return resolvedContext;
   }, []);
 
-  const { sharedState, updatePhysicalEvaluation, resetSharedWorkflowState } = useSharedWorkflowState();
+  // Get patient ID for hooks
+  const patientId = patientIdFromUrl || demoPatient.id;
+
+  const { sharedState, updatePhysicalEvaluation, resetSharedWorkflowState, sessionData } = useSharedWorkflowState(patientId);
   const { user } = useAuth(); // Must be called before useEffect that uses it
   const { profile: professionalProfile } = useProfessionalProfileContext();
   const consentSmsJurisdiction = useMemo(() => {
@@ -547,9 +550,6 @@ const ProfessionalWorkflowPage = () => {
   // Professional profile loaded (debug logs removed to reduce re-renders)
 
   // ✅ CRITICAL FIX: Get professional display info early for header
-
-  // Get patient ID for hooks
-  const patientId = patientIdFromUrl || demoPatient.id;
 
   // Hooks for data fetching - called at component level
   const lastEncounter = useLastEncounter(patientId);
@@ -2273,6 +2273,22 @@ const ProfessionalWorkflowPage = () => {
     }
     prevPatientIdRef.current = patientId;
 
+    const sharedStatePatientId =
+      sharedState?.patient?.id ??
+      sessionData?.patientId ??
+      null;
+
+    if (patientId && sharedStatePatientId && sharedStatePatientId !== patientId) {
+      console.warn('[PHASE2] sharedState patient mismatch, clearing before load', {
+        patientId,
+        sharedStatePatientId,
+      });
+      resetSharedWorkflowState();
+      setEvaluationTests([]);
+      lastSharedStateRef.current = '';
+      return;
+    }
+
     if (isAddingTestsRef.current) {
       console.log(`[PHASE2] useEffect - Skipping load (actively adding tests)`);
       return;
@@ -2361,7 +2377,7 @@ const ProfessionalWorkflowPage = () => {
         console.log(`[PHASE2] No selectedTests in sharedState, skipping load`);
       }
     }
-  }, [sharedState.physicalEvaluation?.selectedTests, detectedCaseRegion, patientId, resetSharedWorkflowState]); // ✅ FIX: Added patientId to detect patient changes
+  }, [sharedState.patient?.id, sharedState.physicalEvaluation?.selectedTests, detectedCaseRegion, patientId, resetSharedWorkflowState, sessionData?.patientId]); // ✅ FIX: Added patientId to detect patient changes
 
   // Check if this is the first session and handle patient consent via SMS
   // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Reset consent state when patient changes

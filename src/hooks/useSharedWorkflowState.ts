@@ -2,24 +2,46 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from '../context/SessionContext';
 
-export const useSharedWorkflowState = () => {
-  const { sessionData, updateSessionData, resetSessionData } = useSession();
+const createInitialSharedState = (patientId: string | null = null) => ({
+  patient: patientId ? { id: patientId } : null,
+  analysisResults: null,
+  selectedTests: [],
+  physicalExamResults: [],
+  soapNote: null,
+  physicalEvaluation: {
+    selectedTests: []
+  }
+});
+
+export const useSharedWorkflowState = (currentPatientId: string | null = null) => {
+  const { sessionData, updateSessionData, setSessionPatientId, resetSessionData } = useSession();
   
   // Estado compartido entre tabs
-  const [sharedState, setSharedState] = useState({
-    patient: null,
-    analysisResults: null,
-    selectedTests: [],
-    physicalExamResults: [],
-    soapNote: null,
-    physicalEvaluation: {
-      selectedTests: []
+  const [sharedState, setSharedState] = useState(createInitialSharedState(currentPatientId));
+
+  useEffect(() => {
+    if (!currentPatientId) return;
+
+    if (sessionData?.patientId && sessionData.patientId !== currentPatientId) {
+      resetSessionData();
+      setSharedState(createInitialSharedState(currentPatientId));
+      return;
     }
-  });
+
+    if (sessionData?.patientId !== currentPatientId) {
+      setSessionPatientId(currentPatientId);
+    }
+
+    setSharedState((prev) => ({
+      ...prev,
+      patient: { id: currentPatientId }
+    }));
+  }, [currentPatientId, resetSessionData, sessionData?.patientId, setSessionPatientId]);
 
   useEffect(() => {
     setSharedState((prev) => ({
       ...prev,
+      patient: sessionData?.patientId ? { id: sessionData.patientId } : prev.patient,
       physicalEvaluation: {
         selectedTests: Array.isArray(sessionData?.physicalEvaluation?.selectedTests)
           ? sessionData.physicalEvaluation.selectedTests
@@ -36,9 +58,13 @@ export const useSharedWorkflowState = () => {
   };
 
   const updatePhysicalEvaluation = (tests: any[]) => {
+    if (currentPatientId) {
+      setSessionPatientId(currentPatientId);
+    }
     updateSessionData('physicalEvaluation', { selectedTests: tests });
     setSharedState((prev) => ({
       ...prev,
+      patient: currentPatientId ? { id: currentPatientId } : prev.patient,
       physicalEvaluation: {
         selectedTests: tests
       }
@@ -59,17 +85,8 @@ export const useSharedWorkflowState = () => {
 
   const resetSharedWorkflowState = useCallback(() => {
     resetSessionData();
-    setSharedState({
-      patient: null,
-      analysisResults: null,
-      selectedTests: [],
-      physicalExamResults: [],
-      soapNote: null,
-      physicalEvaluation: {
-        selectedTests: []
-      }
-    });
-  }, [resetSessionData]);
+    setSharedState(createInitialSharedState(currentPatientId));
+  }, [currentPatientId, resetSessionData]);
 
   return {
     sharedState,
