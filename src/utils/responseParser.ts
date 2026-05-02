@@ -65,6 +65,7 @@ function extractPartialData(text: string): any {
       chief_complaint: "",
       key_findings: [],
       medical_history: [],
+      major_medical_history: [],
       medications: [],
       summary: ""
     },

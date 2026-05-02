@@ -38,6 +38,7 @@ type StructuredPayload = {
     chief_complaint?: unknown;
     key_findings?: unknown;
     medical_history?: unknown;
+    major_medical_history?: unknown;
     medications?: unknown;
     summary?: unknown;
   };
@@ -259,7 +260,10 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
       }
       return transformArray(ensureStringArray(meds), transformText);
     })() as any,
-    antecedentes_medicos: transformArray(ensureStringArray(highlights.medical_history), transformText),
+    antecedentes_medicos: mergeUnique(
+      transformArray(ensureStringArray(highlights.medical_history), transformText),
+      transformArray(ensureStringArray(highlights.major_medical_history), transformText)
+    ),
     diagnosticos_probables: [],
     red_flags: redFlags,
     yellow_flags: combinedYellow,

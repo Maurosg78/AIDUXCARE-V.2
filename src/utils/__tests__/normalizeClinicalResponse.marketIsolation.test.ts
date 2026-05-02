@@ -22,6 +22,9 @@ const responsePayload = {
     medical_history: [
       'Open reduction and internal fixation.',
     ],
+    major_medical_history: [
+      'History of myocardial infarction with coronary stents.',
+    ],
     medications: [
       'Metamizol, 575 mg, every 12 hours, as needed for pain.',
     ],
@@ -41,6 +44,7 @@ describe('normalizeClinicalResponse market isolation', () => {
     expect(result.red_flags[0]).toContain('Recomendar revisión/derivación médica según red flags.');
     expect(result.medicacion_actual[0]).toContain('cada 12 horas');
     expect(result.medicacion_actual[0]).toContain('según dolor');
+    expect(result.antecedentes_medicos).toContain('History of myocardial infarction with coronary stents.');
   });
 
   it('keeps CA output untouched by Spanish localization', () => {
@@ -50,5 +54,6 @@ describe('normalizeClinicalResponse market isolation', () => {
     expect(result.red_flags[0]).not.toContain('Preocupación clínica:');
     expect(result.medicacion_actual[0]).toContain('every 12 hours');
     expect(result.medicacion_actual[0]).not.toContain('cada 12 horas');
+    expect(result.antecedentes_medicos).toContain('History of myocardial infarction with coronary stents.');
   });
 });

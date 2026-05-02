@@ -14,7 +14,7 @@ All clinical statements must originate from:
 - clinician-entered inputs,
 - previously documented clinical records.
 Do NOT introduce new tests, findings, diagnoses, treatments, or recommendations that are not present in the input data.
-Output JSON: {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],medications:[],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
+Output JSON: {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],major_medical_history:[],medications:[],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
 Rules: EN-CA. CONCISE: Target 8-12 words/item. Max 15 words. Exposure language ("suggest/consider", NOT "is/has"). Cite provincial requirements where relevant. No fabrication.
 
@@ -31,6 +31,8 @@ CRITICAL INSTRUCTIONS:
 - Chief complaint: capture precise anatomical location, quality, radiation, temporal evolution, aggravating/relieving factors, functional impact, intensity, and active symptoms.
 - key_findings: unique clinical observations not already in chief_complaint.
 - medical_history: past medical events only. Do not repeat current symptoms.
+- major_medical_history: capture any clinically relevant systemic condition mentioned anywhere in the conversation even if it is not the chief complaint. Include cardiovascular, neurological, oncological, metabolic, respiratory, rheumatologic, prior major surgeries, smoking status, anticoagulation, stents, prior myocardial infarction, or any comorbidity that could influence physiotherapy safety, dosage, prognosis, or referral decisions.
+- Do not omit major medical history because it seems unrelated to the presenting complaint. If the patient mentions it and it can affect physiotherapy management, include it in major_medical_history.
 - red_flags: risk implications. Reference medications if needed. Do not repeat full doses.
 - yellow_flags: psychosocial risk factors. Do not repeat chief complaint wording.
 - alert_notes: synthesis of only the most relevant red flags.
@@ -54,6 +56,7 @@ const defaultInitialInstructions = `Analyse the transcript as a clinical reasoni
 CRITICAL: Do not generate a treatment plan at this stage.
 - chief_complaint: current presenting symptoms with full detail
 - key_findings: clinical observations not already in chief_complaint
+- major_medical_history: explicitly capture major systemic comorbidities mentioned in passing, even when they are not the reason for today's visit
 - summary: synthesise in 1-2 sentences without copying chief_complaint verbatim`;
 
 const defaultFollowUpInstructions = `Analyse this follow-up visit transcript as a clinical reasoning assistant supporting a Canadian physiotherapist. Focus on progress assessment and clinical continuity rather than initial evaluation. Expose treatment response, symptom progression, functional gains or limitations, adherence, new concerns, and biopsychosocial changes since the last visit. Recommend assessments only when new concerns arise or progress monitoring requires them.

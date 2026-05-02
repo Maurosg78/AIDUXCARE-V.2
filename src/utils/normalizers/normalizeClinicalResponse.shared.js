@@ -181,7 +181,7 @@ const mapStructuredPayload = (payload, transformText) => {
         contexto_ocupacional: occupational,
         contexto_psicosocial: psychosocialContext,
         medicacion_actual: transformArray(ensureStringArray(highlights.medications), transformText),
-        antecedentes_medicos: transformArray(ensureStringArray(highlights.medical_history), transformText),
+        antecedentes_medicos: mergeUnique(transformArray(ensureStringArray(highlights.medical_history), transformText), transformArray(ensureStringArray(highlights.major_medical_history), transformText)),
         diagnosticos_probables: [],
         red_flags: redFlags,
         yellow_flags: combinedYellow,
