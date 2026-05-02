@@ -10,6 +10,7 @@ const getSessionStorage = async () => SessionStorage;
 interface SessionContextType {
   sessionData: any;
   updateSessionData: (key: string, value: any) => void;
+  resetSessionData: () => void;
   saveSession: () => void | Promise<void>;
   loadPreviousSession: (patientId: string) => any | Promise<any>;
   
@@ -30,30 +31,32 @@ interface SessionContextType {
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
+const createInitialSessionData = () => ({
+  patientId: null,
+  tab1: {
+    transcript: '',
+    analysisResults: null,
+    selectedItems: []
+  },
+  tab2: {
+    suggestedTests: [],
+    completedTests: []
+  },
+  tab3: {
+    soapNote: null
+  },
+  physicalEvaluation: {
+    selectedTests: []
+  },
+  metadata: {
+    startTime: new Date().toISOString(),
+    lastSaved: null,
+    lastModified: null
+  }
+});
+
 export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [sessionData, setSessionData] = useState({
-    patientId: null,
-    tab1: {
-      transcript: '',
-      analysisResults: null,
-      selectedItems: [] // Renombrado para claridad
-    },
-    tab2: {
-      suggestedTests: [],
-      completedTests: []
-    },
-    tab3: {
-      soapNote: null
-    },
-    physicalEvaluation: {
-      selectedTests: []
-    },
-    metadata: {
-      startTime: new Date().toISOString(),
-      lastSaved: null,
-      lastModified: null
-    }
-  });
+  const [sessionData, setSessionData] = useState(createInitialSessionData);
 
   // Estado para selectedIds (compartido entre todos los tabs)
   const [selectedIds, setSelectedIdsState] = useState<string[]>([]);
@@ -69,6 +72,13 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       metadata: { ...prev.metadata, lastModified: new Date().toISOString() }
     }));
   };
+
+  const resetSessionData = useCallback(() => {
+    setSessionData(createInitialSessionData());
+    setSelectedIdsState([]);
+    setPreviousSessionData(null);
+    setIsQuickFollowUp(false);
+  }, []);
 
   // Función principal para actualizar selectedIds
   const setSelectedIds = useCallback((ids: string[]) => {
@@ -164,6 +174,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <SessionContext.Provider value={{
       sessionData,
       updateSessionData,
+      resetSessionData,
       saveSession,
       loadPreviousSession,
       

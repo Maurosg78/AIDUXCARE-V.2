@@ -524,7 +524,7 @@ const ProfessionalWorkflowPage = () => {
     return resolvedContext;
   }, []);
 
-  const { sharedState, updatePhysicalEvaluation } = useSharedWorkflowState();
+  const { sharedState, updatePhysicalEvaluation, resetSharedWorkflowState } = useSharedWorkflowState();
   const { user } = useAuth(); // Must be called before useEffect that uses it
   const { profile: professionalProfile } = useProfessionalProfileContext();
   const consentSmsJurisdiction = useMemo(() => {
@@ -633,9 +633,7 @@ const ProfessionalWorkflowPage = () => {
     },
   });
 
-  const [evaluationTests, setEvaluationTests] = useState<EvaluationTestEntry[]>(() =>
-    (sharedState.physicalEvaluation?.selectedTests ?? []).map(sanitizeEvaluationEntry)
-  );
+  const [evaluationTests, setEvaluationTests] = useState<EvaluationTestEntry[]>([]);
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
   const {
     processText,
@@ -1802,6 +1800,7 @@ const ProfessionalWorkflowPage = () => {
           setSuccessMessage(null); // Clear any previous success messages
           setAttachmentError(null); // Clear attachment errors
           resetNiagaraProcessor(); // Clear niagaraResults and soapNote from previous sessions
+          resetSharedWorkflowState();
 
           // ✅ Mark as cleaned for this session
           hasCleanedForInitial.current = cleanupKey;
@@ -2226,6 +2225,7 @@ const ProfessionalWorkflowPage = () => {
     // ✅ FIX: Detect patient change and clear tests
     if (prevPatientIdRef.current && prevPatientIdRef.current !== patientId) {
       console.log('[PHASE2] Patient changed, clearing evaluation tests');
+      resetSharedWorkflowState();
       setEvaluationTests([]);
       lastSharedStateRef.current = '';
       prevPatientIdRef.current = patientId;
@@ -2321,7 +2321,7 @@ const ProfessionalWorkflowPage = () => {
         console.log(`[PHASE2] No selectedTests in sharedState, skipping load`);
       }
     }
-  }, [sharedState.physicalEvaluation?.selectedTests, detectedCaseRegion, patientId]); // ✅ FIX: Added patientId to detect patient changes
+  }, [sharedState.physicalEvaluation?.selectedTests, detectedCaseRegion, patientId, resetSharedWorkflowState]); // ✅ FIX: Added patientId to detect patient changes
 
   // Check if this is the first session and handle patient consent via SMS
   // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Reset consent state when patient changes

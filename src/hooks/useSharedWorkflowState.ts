@@ -1,9 +1,9 @@
 /* @ts-nocheck */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from '../context/SessionContext';
 
 export const useSharedWorkflowState = () => {
-  const { sessionData, updateSessionData } = useSession();
+  const { sessionData, updateSessionData, resetSessionData } = useSession();
   
   // Estado compartido entre tabs
   const [sharedState, setSharedState] = useState({
@@ -18,14 +18,14 @@ export const useSharedWorkflowState = () => {
   });
 
   useEffect(() => {
-    if (sessionData?.physicalEvaluation?.selectedTests) {
-      setSharedState((prev) => ({
-        ...prev,
-        physicalEvaluation: {
-          selectedTests: sessionData.physicalEvaluation.selectedTests
-        }
-      }));
-    }
+    setSharedState((prev) => ({
+      ...prev,
+      physicalEvaluation: {
+        selectedTests: Array.isArray(sessionData?.physicalEvaluation?.selectedTests)
+          ? sessionData.physicalEvaluation.selectedTests
+          : []
+      }
+    }));
   }, [sessionData?.physicalEvaluation?.selectedTests]);
 
   // Tab 1 -> Tab 2: Pasar tests seleccionados
@@ -57,12 +57,27 @@ export const useSharedWorkflowState = () => {
     setSharedState(prev => ({ ...prev, soapNote: soap }));
   };
 
+  const resetSharedWorkflowState = useCallback(() => {
+    resetSessionData();
+    setSharedState({
+      patient: null,
+      analysisResults: null,
+      selectedTests: [],
+      physicalExamResults: [],
+      soapNote: null,
+      physicalEvaluation: {
+        selectedTests: []
+      }
+    });
+  }, [resetSessionData]);
+
   return {
     sharedState,
     passTestsToEvaluation,
     passResultsToSOAP,
     saveSOAPNote,
     updatePhysicalEvaluation,
+    resetSharedWorkflowState,
     sessionData
   };
 };
