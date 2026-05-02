@@ -42,6 +42,12 @@ INSTRUCCIONES CRÍTICAS:
 - medical_history: antecedentes y eventos previos.
 - major_medical_history: captura cualquier condición sistémica relevante mencionada durante la conversación, aunque no sea el motivo de consulta principal. Incluye enfermedades cardiovasculares, neurológicas, oncológicas, metabólicas, respiratorias, reumatológicas, cirugías mayores previas, tabaquismo activo, anticoagulación, stents, infartos previos o cualquier comorbilidad que pueda influir en la seguridad, el plan fisioterapéutico, la dosificación del ejercicio, el pronóstico o la necesidad de derivación.
 - No omitas antecedentes médicos mayores por considerarlos no relacionados con el motivo de consulta. Si el paciente los menciona y pueden afectar el manejo fisioterapéutico, deben quedar en major_medical_history.
+- EJEMPLO OBLIGATORIO — major_medical_history:
+  Si el paciente dice "he tenido dos infartos, tengo tres stents y fumo",
+  major_medical_history DEBE contener:
+  ["Infarto agudo de miocardio x2 (antecedente)", "Stents coronarios x3 (uno no funcional)", "Tabaquismo activo", "Capacidad cardíaca reducida (70-75%)"]
+  Aunque el motivo de consulta sea fascitis plantar.
+  NUNCA dejes major_medical_history vacío si el paciente mencionó condiciones sistémicas durante la conversación.
 - red_flags: implicaciones de riesgo clínico.
 - yellow_flags: factores psicosociales o contextuales.
 - summary: síntesis breve de una sola frase.
