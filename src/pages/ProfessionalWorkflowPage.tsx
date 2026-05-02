@@ -721,6 +721,27 @@ const ProfessionalWorkflowPage = () => {
       requestedSessionId: string,
       source: 'missing-session' | 'session-load-error'
     ): Promise<void> => {
+      if (patientIdFromUrl && note.patientId && note.patientId !== patientIdFromUrl) {
+        logger.warn('[WO-IA-RESUME-01] note resume patient mismatch — skipping hydration', {
+          requestedSessionId,
+          noteId: note.id,
+          notePatientId: note.patientId,
+          patientIdFromUrl,
+          source,
+        });
+        sessionIdRef.current = null;
+        sessionIdForTranscriptRef.current = null;
+        setSessionId(null);
+        setTranscript('');
+        setPhysioNotes('');
+        setEvaluationTests([]);
+        setLocalSoapNote(null);
+        resetSharedWorkflowState();
+        setResumeLoadFailed(null);
+        setAnalysisError(null);
+        return;
+      }
+
       const noteSoapData = note.soapData;
       const hydratedSoapNote = {
         subjective: noteSoapData.subjective ?? '',
@@ -796,6 +817,7 @@ const ProfessionalWorkflowPage = () => {
       currentSessionType,
       demoPatient.name,
       patientIdFromUrl,
+      resetSharedWorkflowState,
       user?.uid,
     ]
   );
@@ -1926,6 +1948,24 @@ const ProfessionalWorkflowPage = () => {
       try {
         const sessionData = await sessionService.getSessionById(sessionIdFromUrl);
         if (cancelled) return;
+        if (sessionData && patientIdFromUrl && sessionData.patientId && sessionData.patientId !== patientIdFromUrl) {
+          logger.warn('[WO-IA-RESUME-01] session resume patient mismatch — skipping hydration', {
+            sessionId: sessionIdFromUrl,
+            sessionPatientId: sessionData.patientId,
+            patientIdFromUrl,
+          });
+          sessionIdRef.current = null;
+          sessionIdForTranscriptRef.current = null;
+          setSessionId(null);
+          setTranscript('');
+          setPhysioNotes('');
+          setEvaluationTests([]);
+          setLocalSoapNote(null);
+          resetSharedWorkflowState();
+          setResumeLoadFailed(null);
+          setAnalysisError(null);
+          return;
+        }
         if (sessionData && sessionData.soapNote) {
           logger.info('[WO-IA-RESUME-01] loadSession(sessionId)', { sessionId: sessionIdFromUrl });
           setSessionId(sessionIdFromUrl);
@@ -1992,7 +2032,7 @@ const ProfessionalWorkflowPage = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [hydrateResumeFromNote, patientIdFromUrl, resumeFromUrl, sessionIdFromUrl, visitType]);
+  }, [hydrateResumeFromNote, patientIdFromUrl, resetSharedWorkflowState, resumeFromUrl, sessionIdFromUrl, visitType]);
 
   // ✅ WORKFLOW PERSISTENCE: Auto-save workflow state to localStorage
   // Use refs to track previous values and only save when there are actual changes

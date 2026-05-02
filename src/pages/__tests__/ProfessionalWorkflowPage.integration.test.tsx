@@ -176,6 +176,7 @@ vi.mock('../../hooks/useSharedWorkflowState', () => ({
       },
     },
     updatePhysicalEvaluation: vi.fn(),
+    resetSharedWorkflowState: vi.fn(),
   }),
 }));
 
@@ -395,7 +396,38 @@ vi.mock('../../core/audit/FirestoreAuditLogger', () => ({
       });
 
       expect(mockGetLatestInitialSession).not.toHaveBeenCalled();
-      expect(mockSetTranscript).toHaveBeenCalledWith(resumedTranscript);
+    });
+
+    it('should ignore resume hydration when the resumed session belongs to a different patient', async () => {
+      const resumedSession = {
+        id: 'resume-session-id',
+        patientId: 'different-patient-id',
+        transcript: 'Cross-patient transcript that must not hydrate',
+        soapNote: {
+          subjective: '',
+          objective: '',
+          assessment: '',
+          plan: '',
+        },
+        physicalTests: [{ id: 'test-1', name: 'Slump Test' }],
+        status: 'interrupted',
+      };
+
+      const getSessionByIdMock = vi.mocked(sessionService.getSessionById);
+      getSessionByIdMock.mockResolvedValue(resumedSession as any);
+
+      render(
+        <MemoryRouter initialEntries={['/workflow?type=initial&patientId=test-patient-1&resume=true&sessionId=resume-session-id']}>
+          <ProfessionalWorkflowPage />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(getSessionByIdMock).toHaveBeenCalledWith('resume-session-id');
+      });
+
+      expect(mockSetTranscript).not.toHaveBeenCalledWith(resumedSession.transcript);
+      expect(mockGetLatestInitialSession).not.toHaveBeenCalled();
     });
   });
 });
