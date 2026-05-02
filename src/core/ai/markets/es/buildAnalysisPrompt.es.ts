@@ -62,6 +62,11 @@ INSTRUCCIONES CRÍTICAS:
   ["Infarto agudo de miocardio x2 (antecedente)", "Stents coronarios x3 (uno no funcional)", "Tabaquismo activo", "Capacidad cardíaca reducida (70-75%)"]
   Aunque el motivo de consulta sea fascitis plantar.
   NUNCA dejes major_medical_history vacío si el paciente mencionó condiciones sistémicas durante la conversación.
+- REGLA CRÍTICA: Cita lo que el paciente dijo, no lo que el modelo infiere.
+- CORRECTO: "Infarto agudo de miocardio x2 (2003 y 2020, referido por el paciente)"
+- INCORRECTO: "Antecedente cardiovascular (posiblemente hipertensión) por medicación"
+- No infieras condiciones a partir de la medicación. Si el paciente no lo mencionó, no lo incluyas.
+- Si el paciente lo mencionó, cítalo aunque el modelo no reconozca la condición.
 - red_flags: implicaciones de riesgo clínico.
 - yellow_flags: factores psicosociales o contextuales.
 - summary: síntesis breve de una sola frase.
@@ -89,6 +94,12 @@ REGLAS DE DISTRIBUCIÓN:
   - dose, frequency, duration: extraer cuando estén disponibles, vacío si no.
   - active_ingredient: principio activo en español cuando normalized_name sea un nombre comercial. Vacío si normalized_name ya es principio activo.
   - Nunca autocorregir en silencio. Si normalized_name difiere de original_text, siempre marcar requires_review: true.
+  - REGLA CRÍTICA para medicamentos no reconocidos:
+    - Si el nombre del medicamento no es reconocible con certeza, NO intentes normalizarlo.
+    - Establece requires_review: true y confidence: "low".
+    - En normalized_name pon el nombre tal como lo dijo el paciente, sin especular.
+    - INCORRECTO: normalized_name: "Rivotril/clonazepam", confidence: "medium"
+    - CORRECTO: normalized_name: "Ribotrín (no identificado)", requires_review: true, confidence: "low"
 - yellow_flags: incluir yellow flag automático si se mencionan AINEs (ibuprofeno, naproxeno, diclofenaco, aspirina, ketorolaco) sin dosis especificada por más de 5 días, con texto: "Medicación AINE sin dosis especificada — verificar gramaje con el paciente y monitorizar tolerancia gastrointestinal."
 - summary: síntesis breve sin repetir todo lo anterior.`;
 

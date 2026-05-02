@@ -14,7 +14,7 @@ All clinical statements must originate from:
 - clinician-entered inputs,
 - previously documented clinical records.
 Do NOT introduce new tests, findings, diagnoses, treatments, or recommendations that are not present in the input data.
-Output JSON: {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],major_medical_history:[],medications:[],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
+Output JSON: {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],major_medical_history:[],medications:[{original_text:"",normalized_name:"",active_ingredient:"",confidence:"high|medium|low",requires_review:false,dose:"",frequency:"",duration:""}],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
 Rules: EN-CA. CONCISE: Target 8-12 words/item. Max 15 words. Exposure language ("suggest/consider", NOT "is/has"). Cite provincial requirements where relevant. No fabrication.
 
@@ -27,12 +27,29 @@ CRITICAL INSTRUCTIONS:
 - Red flags: unexplained weight loss, night pain, neurological deficits, incontinence, systemic infection, major trauma, progressive weakness, cancer history, anticoagulants, steroids, age >65 trauma, symptom escalation on rest, medication interactions (NSAIDs+SSRIs/SNRIs MUST be red_flags, not yellow_flags).
 - Wording compliance: phrase red flags as "Clinical concern: [finding/risk]. Recommend medical review/referral based on red flags."
 - Do not phrase red flags as definitive diagnoses.
-- Medications: format as "name, dosage (units), frequency, duration". Correct obvious dosage-unit errors. Flag clinically relevant interactions.
+- Medications: use the structured schema {original_text, normalized_name, active_ingredient, confidence, requires_review, dose, frequency, duration}. Correct obvious dosage-unit errors only when recognition is certain. Flag clinically relevant interactions.
+- CRITICAL RULE for unrecognized medications:
+- If the medication name is not recognizable with certainty, DO NOT try to normalize it.
+- Set requires_review: true and confidence: "low".
+- In normalized_name, keep the medication name exactly as the patient said it, without speculation.
+- INCORRECT: normalized_name: "Rivotril/clonazepam", confidence: "medium"
+- CORRECT: normalized_name: "Ribotrín (unidentified)", requires_review: true, confidence: "low"
 - Chief complaint: capture precise anatomical location, quality, radiation, temporal evolution, aggravating/relieving factors, functional impact, intensity, and active symptoms.
 - key_findings: unique clinical observations not already in chief_complaint.
 - medical_history: past medical events only. Do not repeat current symptoms.
 - major_medical_history: capture any clinically relevant systemic condition mentioned anywhere in the conversation even if it is not the chief complaint. Include cardiovascular, neurological, oncological, metabolic, respiratory, rheumatologic, prior major surgeries, smoking status, anticoagulation, stents, prior myocardial infarction, or any comorbidity that could influence physiotherapy safety, dosage, prognosis, or referral decisions.
 - Do not omit major medical history because it seems unrelated to the presenting complaint. If the patient mentions it and it can affect physiotherapy management, include it in major_medical_history.
+- EXAMPLE — major_medical_history:
+  If the patient says "I had two heart attacks, I have three stents, and I smoke",
+  major_medical_history MUST contain:
+  ["Acute myocardial infarction x2 (reported by the patient)", "Coronary stents x3, one non-functional (reported by the patient)", "Active smoking", "Reduced cardiac capacity (70-75%)"]
+  Even if the chief complaint is plantar fasciitis.
+  NEVER leave major_medical_history empty if the patient mentioned systemic conditions during the conversation.
+- CRITICAL RULE: Quote what the patient said, not what the model infers.
+- CORRECT: "Acute myocardial infarction x2 (2003 and 2020, reported by the patient)"
+- INCORRECT: "Cardiovascular history (possibly hypertension) inferred from medication"
+- Do not infer conditions from medication. If the patient did not mention it, do not include it.
+- If the patient mentioned it, cite it even if the model does not recognize the condition perfectly.
 - red_flags: risk implications. Reference medications if needed. Do not repeat full doses.
 - yellow_flags: psychosocial risk factors. Do not repeat chief complaint wording.
 - alert_notes: synthesis of only the most relevant red flags.
