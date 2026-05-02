@@ -46,7 +46,20 @@ export const ensureSpanishClinicalAnalysis = (analysis: ClinicalAnalysis): Clini
   const relevantFindings = normalizeStringArray(analysis.hallazgos_relevantes);
   const occupationalContext = normalizeStringArray(analysis.contexto_ocupacional);
   const psychosocialContext = normalizeStringArray(analysis.contexto_psicosocial);
-  const medications = normalizeStringArray(analysis.medicacion_actual);
+  const rawMeds = analysis.medicacion_actual || [];
+  const medications = rawMeds.map((item: any) => {
+    const isStructured =
+      item &&
+      typeof item === 'object' &&
+      'medication_data' in item;
+
+    if (isStructured) {
+      return item;
+    }
+
+    const normalizedItem = ensureSpanishClinicalText(String(item || ''));
+    return normalizedItem;
+  });
   const medicalHistory = normalizeStringArray(analysis.antecedentes_medicos);
   const probableDiagnoses = normalizeStringArray(analysis.diagnosticos_probables);
   const redFlags = normalizeStringArray(analysis.red_flags);
