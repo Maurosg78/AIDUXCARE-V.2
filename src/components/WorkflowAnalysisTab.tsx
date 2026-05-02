@@ -123,11 +123,23 @@ export const WorkflowAnalysisTab: React.FC<WorkflowAnalysisTabProps> = ({
       })) || [];
 
     const medicationEntities =
-      (niagaraResults.medicacion_actual || []).map((text: string, index: number) => ({
-        id: `medication-${index}`,
-        text,
-        type: "medication" as const
-      })) || [];
+      (niagaraResults.medicacion_actual || []).map((medication: any, index: number) => {
+        const hasStructuredMedication =
+          medication &&
+          typeof medication === "object" &&
+          "medication_data" in medication;
+        const medicationData = hasStructuredMedication ? medication.medication_data : null;
+        const normalizedName = medicationData?.normalized_name || "";
+        const originalText = medicationData?.original_text || "";
+        const displayName = normalizedName || originalText || String(medication || "");
+
+        return {
+          id: `medication-${index}`,
+          text: displayName,
+          type: "medication" as const,
+          medication_data: medicationData,
+        };
+      }) || [];
 
     const historyEntities =
       (niagaraResults.antecedentes_medicos || []).map((text: string, index: number) => ({
