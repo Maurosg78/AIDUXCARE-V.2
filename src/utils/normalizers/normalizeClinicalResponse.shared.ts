@@ -28,6 +28,7 @@ export interface ClinicalAnalysis {
 }
 
 type StructuredPayload = {
+  pre_extracted_major_medical_history?: unknown;
   medicolegal_alerts?: {
     red_flags?: unknown;
     yellow_flags?: unknown;
@@ -220,6 +221,10 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
   const alerts = payload.medicolegal_alerts ?? {};
   const highlights = payload.conversation_highlights ?? {};
   const biopsych = payload.biopsychosocial_factors ?? {};
+  const preExtractedMajorMedicalHistory = transformArray(
+    ensureStringArray(payload.pre_extracted_major_medical_history),
+    transformText
+  );
   const redFlags = transformArray(cleanFlags(ensureStringArray(alerts.red_flags)), transformText);
   const yellowFlags = transformArray(cleanFlags(ensureStringArray(alerts.yellow_flags)), transformText);
   const alertNotes = transformArray(ensureStringArray(alerts.alert_notes), transformText);
@@ -261,8 +266,9 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
       return transformArray(ensureStringArray(meds), transformText);
     })() as any,
     antecedentes_medicos: mergeUnique(
+      preExtractedMajorMedicalHistory,
+      transformArray(ensureStringArray(highlights.major_medical_history), transformText),
       transformArray(ensureStringArray(highlights.medical_history), transformText),
-      transformArray(ensureStringArray(highlights.major_medical_history), transformText)
     ),
     diagnosticos_probables: [],
     red_flags: redFlags,
@@ -278,6 +284,31 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
     biopsychosocial_protective: protective,
     biopsychosocial_functional_limitations: functionalLimitations,
     biopsychosocial_patient_strengths: patientStrengths,
+  };
+};
+
+const mergePreExtractedMajorMedicalHistory = (
+  analysis: ClinicalAnalysis,
+  raw: any,
+  transformText: TextTransform
+): ClinicalAnalysis => {
+  const preExtracted = transformArray(
+    ensureStringArray(raw?.pre_extracted_major_medical_history),
+    transformText
+  );
+
+  if (preExtracted.length === 0) {
+    return analysis;
+  }
+
+  const antecedentesMedicos = mergeUnique(
+    preExtracted,
+    analysis.antecedentes_medicos
+  );
+
+  return {
+    ...analysis,
+    antecedentes_medicos: antecedentesMedicos,
   };
 };
 
@@ -306,17 +337,34 @@ export const identityTextTransform = (value: string): string => value;
 export const normalizeVertexResponseWithTransform = (raw: any, transformText: TextTransform): ClinicalAnalysis => {
   if (raw?.candidates?.[0]?.content?.parts) {
     const part = raw.candidates[0].content.parts.find((item: any) => item?.text || item?.functionCall?.args?.text || item?.inlineData);
-    if (part?.text) return normalizeVertexResponseWithTransform(part.text, transformText);
-    if (part?.functionCall?.args?.text) return normalizeVertexResponseWithTransform(part.functionCall.args.text, transformText);
+    if (part?.text) {
+      const analysis = normalizeVertexResponseWithTransform(part.text, transformText);
+      return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+    }
+    if (part?.functionCall?.args?.text) {
+      const analysis = normalizeVertexResponseWithTransform(part.functionCall.args.text, transformText);
+      return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+    }
   }
 
-  if (raw?.output_text) return normalizeVertexResponseWithTransform(raw.output_text, transformText);
-  if (raw?.candidates?.[0]?.content?.parts?.[0]?.text) return normalizeVertexResponseWithTransform(raw.candidates[0].content.parts[0].text, transformText);
+  if (raw?.output_text) {
+    const analysis = normalizeVertexResponseWithTransform(raw.output_text, transformText);
+    return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+  }
+  if (raw?.candidates?.[0]?.content?.parts?.[0]?.text) {
+    const analysis = normalizeVertexResponseWithTransform(raw.candidates[0].content.parts[0].text, transformText);
+    return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+  }
 
   const parseResult = parseVertexResponse(raw);
   if (!parseResult.success) throw new Error(parseResult.error || "Failed to parse Vertex AI response");
 
   const parsed = parseResult.data ?? {};
-  if (validateClinicalSchema(parsed)) return mapStructuredPayload(parsed as StructuredPayload, transformText);
-  return mapLegacyPayload(parsed, transformText);
+  if (validateClinicalSchema(parsed)) {
+    const analysis = mapStructuredPayload(parsed as StructuredPayload, transformText);
+    return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+  }
+
+  const analysis = mapLegacyPayload(parsed, transformText);
+  return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
 };

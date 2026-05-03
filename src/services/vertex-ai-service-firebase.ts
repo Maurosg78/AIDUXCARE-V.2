@@ -5,6 +5,7 @@ import { buildAnalysisPrompt } from "../core/ai/markets/buildAnalysisPrompt";
 import type { ClinicalAttachment } from '../core/ai/markets/buildAnalysisPrompt';
 import { resolveClinicalMarket, type ClinicalMarket } from "@/core/market/resolveClinicalMarket";
 import { buildAuthenticatedJsonHeaders } from "./firebaseAuthHeaders";
+import { extractMajorMedicalHistory } from "@/core/ai/extractMedicalHistory";
 
 type NiagaraProxyPayload = {
   text: string;
@@ -89,6 +90,20 @@ const extractTextField = (data: any): string | null => {
   return null;
 };
 
+const buildPreExtractedMedicalHistoryContext = (items: string[]): string => {
+  if (items.length === 0) {
+    return '';
+  }
+
+  const lines = items.map((item) => `- ${item}`);
+  const block = [
+    '[Antecedentes médicos mayores identificados en pre-extracción]:',
+    ...lines,
+  ];
+  const context = block.join('\n');
+  return context;
+};
+
 const buildVoiceSummaryPrompt = (transcript: string, language: 'en' | 'es' | 'fr') => {
   const languageLabel = language === 'es' ? 'Spanish' : language === 'fr' ? 'Canadian French' : 'Canadian English';
   return `You are AiDuxCare's physiotherapy assistant helping a Canadian clinician.
@@ -166,6 +181,7 @@ export async function analyzeWithVertexProxy(payload: {
   // ✅ PHIPA COMPLIANCE: De-identify transcript before sending to AI
   let finalPrompt = payload.prompt;
   let identifiersMap = {};
+  let preExtractedMajorMedicalHistory: string[] = [];
   
   if (payload.transcript && !payload.prompt) {
     // De-identify transcript before processing
@@ -190,9 +206,24 @@ export async function analyzeWithVertexProxy(payload: {
       : "Current session only - no historical data"; // Minimal context per consent
     const normalizedVisitType = payload.visitType || 'initial';
     const resolvedMarket = payload.market || resolveClinicalMarket().market;
+    preExtractedMajorMedicalHistory = await extractMajorMedicalHistory(
+      deidentifiedText,
+      async (prompt) => {
+        const extractionResult = await callVertexWithPrompt(prompt, `major-history-${Date.now()}`);
+        const extractionText = extractTextField(extractionResult);
+        return extractionText ?? '{}';
+      }
+    ).catch(() => {
+      console.warn('[MajorMedicalHistory] Pre-extraction failed, continuing with main analysis.');
+      return [];
+    });
+    const majorMedicalHistoryContext = buildPreExtractedMedicalHistoryContext(preExtractedMajorMedicalHistory);
+    const contextualPatientContext = majorMedicalHistoryContext
+      ? `${contextoPaciente}\n\n${majorMedicalHistoryContext}`
+      : contextoPaciente;
     
     const structuredPrompt = buildAnalysisPrompt({
-      contextoPaciente,
+      contextoPaciente: contextualPatientContext,
       transcript: deidentifiedText, // Use de-identified transcript
       professionalProfile: payload.professionalProfile, // Pass professional profile
       visitType: normalizedVisitType, // Pass visit type for prompt customization
@@ -220,6 +251,9 @@ export async function analyzeWithVertexProxy(payload: {
   }
   
   const responseData = await response.json();
+  if (preExtractedMajorMedicalHistory.length > 0) {
+    responseData.pre_extracted_major_medical_history = preExtractedMajorMedicalHistory;
+  }
   
   // ✅ PHIPA COMPLIANCE: Re-identify response if needed
   if (Object.keys(identifiersMap).length > 0 && responseData.text) {

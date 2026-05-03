@@ -96,4 +96,36 @@ describe('normalizeClinicalResponse market isolation', () => {
     expect(typeof result.medicacion_actual[0]).toBe('string');
     expect(result.medicacion_actual[0]).toContain('cada 12 horas');
   });
+
+  it('merges pre-extracted major medical history before model-returned history', () => {
+    const payloadWithPreExtraction = {
+      ...responsePayload,
+      pre_extracted_major_medical_history: [
+        'Infarto agudo de miocardio x2 (2003 y 2020, referido por el paciente)',
+        'Stents coronarios x3, uno no funcional',
+      ],
+    };
+
+    const result = normalizeClinicalResponse(payloadWithPreExtraction, { market: 'ES' });
+
+    expect(result.antecedentes_medicos[0]).toBe('Infarto agudo de miocardio x2 (2003 y 2020, referido por el paciente)');
+    expect(result.antecedentes_medicos).toContain('Stents coronarios x3, uno no funcional');
+    expect(result.antecedentes_medicos).toContain('History of myocardial infarction with coronary stents.');
+  });
+
+  it('preserves pre-extracted major medical history from proxy text responses', () => {
+    const proxyResponse = {
+      text: JSON.stringify(responsePayload),
+      pre_extracted_major_medical_history: [
+        'Capacidad cardíaca 70-75%',
+        'Tabaquismo activo',
+      ],
+    };
+
+    const result = normalizeClinicalResponse(proxyResponse, { market: 'ES' });
+
+    expect(result.antecedentes_medicos[0]).toBe('Capacidad cardíaca 70-75%');
+    expect(result.antecedentes_medicos).toContain('Tabaquismo activo');
+    expect(result.antecedentes_medicos).toContain('History of myocardial infarction with coronary stents.');
+  });
 });
