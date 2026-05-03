@@ -39,6 +39,7 @@ const TECHNICAL_SUFFIXES_TO_STRIP = [
   ' (unidentified)',
   ' (not confirmed)',
   ' [nombre por confirmar]',
+  ' [medicamento por confirmar]',
 ];
 
 const stripTechnicalSuffix = (name: string): string => {

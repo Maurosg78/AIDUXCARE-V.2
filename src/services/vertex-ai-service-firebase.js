@@ -132,6 +132,7 @@ export async function analyzeWithVertexProxy(payload) {
         // De-identify transcript before processing
         const { deidentifiedText, identifiersMap: map } = deidentify(payload.transcript);
         identifiersMap = map;
+        const sanitizedTranscript = sanitizeTranscript(deidentifiedText);
         // Log deidentification for audit
         await logDeidentification('deidentify', payload.transcript.length, Object.keys(map).length, {
             traceId: payload.traceId,
@@ -162,7 +163,7 @@ export async function analyzeWithVertexProxy(payload) {
             : contextoPaciente;
         const structuredPrompt = buildAnalysisPrompt({
             contextoPaciente: contextualPatientContext,
-            transcript: deidentifiedText, // Use de-identified transcript
+            transcript: sanitizedTranscript, // Use de-identified, size-limited transcript for main analysis
             professionalProfile: payload.professionalProfile, // Pass professional profile
             visitType: normalizedVisitType, // Pass visit type for prompt customization
             attachments: payload.attachments // Pass clinical attachments (PDFs, images, etc.)
@@ -205,7 +206,6 @@ export class VertexAIServiceViaFirebase {
         const text = typeof payload.text === 'string' ? payload.text : String(payload.text || '');
         if (!text || !text.trim())
             return null;
-        const sanitizedTranscript = sanitizeTranscript(text);
         // ✅ PHIPA COMPLIANCE: De-identification is handled in analyzeWithVertexProxy
         const traceIdParts = [
             'ui-niagara',
@@ -215,7 +215,7 @@ export class VertexAIServiceViaFirebase {
         ];
         const response = await analyzeWithVertexProxy({
             action: 'analyze',
-            transcript: sanitizedTranscript,
+            transcript: text,
             traceId: traceIdParts.join('|'),
             professionalProfile: payload.professionalProfile, // Pass professional profile
             visitType: payload.visitType || 'initial', // Pass visit type for follow-up specific prompts
