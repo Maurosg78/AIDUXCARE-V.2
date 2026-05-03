@@ -93,7 +93,9 @@ REGLAS DE DISTRIBUCIÓN:
   - requires_review: true si confidence es "low" o "medium", false si es "high".
   - dose, frequency, duration: extraer cuando estén disponibles, vacío si no.
   - active_ingredient: principio activo en español cuando normalized_name sea un nombre comercial. Vacío si normalized_name ya es principio activo.
-  - Nunca autocorregir en silencio. Si normalized_name difiere de original_text, siempre marcar requires_review: true.
+  - Nunca autocorregir en silencio. Si normalized_name difiere semánticamente de original_text, marcar requires_review: true.
+  - La diferencia de capitalización entre original_text y normalized_name NO activa requires_review.
+  - Solo activa requires_review si el nombre difiere semánticamente o es genuinamente incierto.
   - REGLA CRÍTICA para medicamentos no reconocidos:
     - Si el nombre del medicamento no es reconocible con certeza, NO intentes normalizarlo.
     - Establece requires_review: true y confidence: "low".

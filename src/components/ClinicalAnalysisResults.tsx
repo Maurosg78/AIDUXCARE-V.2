@@ -33,6 +33,25 @@ interface ClinicalEntity {
   medication_data?: StructuredMedicationData;
 }
 
+const TECHNICAL_SUFFIXES_TO_STRIP = [
+  ' (no identificado)',
+  ' (no confirmado)',
+  ' (unidentified)',
+  ' (not confirmed)',
+  ' [nombre por confirmar]',
+];
+
+const stripTechnicalSuffix = (name: string): string => {
+  let cleanName = name;
+  for (const suffix of TECHNICAL_SUFFIXES_TO_STRIP) {
+    if (cleanName.endsWith(suffix)) {
+      cleanName = cleanName.slice(0, -suffix.length);
+      break;
+    }
+  }
+  return cleanName.trim();
+};
+
 export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = ({
   results,
   selectedIds,
@@ -216,9 +235,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   const getMedicationDisplayName = (entity: ClinicalEntity): string => {
     const medicationData = entity.medication_data;
     const normalizedName = medicationData?.normalized_name || '';
+    const cleanNormalizedName = stripTechnicalSuffix(normalizedName);
     const originalText = medicationData?.original_text || '';
     const fallbackText = entity.text || '';
-    const displayName = normalizedName || originalText || fallbackText;
+    const displayName = cleanNormalizedName || originalText || fallbackText;
     return displayName;
   };
 

@@ -244,6 +244,8 @@ La deuda técnica no documentada es el mayor riesgo de mantenibilidad en softwar
 | **TD-006** | `VoiceInputButton` no disponible en tests manuales de biblioteca | Media | Agente IA | Unificar renderizado de campos entre tests IA y tests manuales |
 | **TD-007** | `lastName` no hidratado desde `users/{uid}` en perfil profesional | Baja | Datos | Migración de datos o derivación desde `fullName` (fix parcial activo) |
 | **TD-008** | Pre-población de tests desde transcripción no implementada | Alta (feature) | Roadmap | Implementar `extracted_measurements` en prompt de análisis + binding en `EvaluationTab` |
+| **TD-009** | `ClinicalAnalysisResults.tsx` mantiene `any` sin comentario justificativo | Media | Histórico | Tipar `ClinicalAnalysisResults` y entidades derivadas o añadir justificación explícita por campo |
+| **TD-010** | `ClinicalAnalysisResults.tsx` tiene `useEffect` sin cleanup explícito | Baja | Histórico | Confirmar que no registra listeners/timers o documentar cleanup/no-op explícito |
 
 ### 7.2 Deuda de producto (no código)
 
