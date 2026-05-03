@@ -70,6 +70,14 @@ class SessionService {
     return null;
   }
 
+  private getSessionPatientId(data: Record<string, unknown>): string | null {
+    const patientId = data.patientId;
+    if (typeof patientId === 'string' && patientId.trim() !== '') {
+      return patientId;
+    }
+    return null;
+  }
+
   private localDateKey(d: Date): string {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -212,26 +220,26 @@ class SessionService {
       const cleanedSessionData = this.cleanUndefined(sessionData);
       const requestedSessionDateKey = cleanedSessionData.sessionDateKey;
       const mergeRequested = options?.merge === true;
-      if (mergeRequested) {
-        const mergePayload = {
-          ...cleanedSessionData,
-          updatedAt: serverTimestamp(),
-        };
-        await setDoc(docRef, mergePayload, { merge: true });
-        return targetDocId;
-      }
       const existingDocSnapshot = await getDoc(docRef);
       const targetDocExists = existingDocSnapshot.exists();
       if (targetDocExists) {
         const existingDocData = existingDocSnapshot.data();
         const existingOwnerId = this.getSessionOwnerId(existingDocData);
+        const existingPatientId = this.getSessionPatientId(existingDocData);
         const requestedOwnerId = cleanedSessionData.userId;
+        const requestedPatientId = cleanedSessionData.patientId;
         const ownerMismatch =
           typeof requestedOwnerId === 'string' &&
           requestedOwnerId.trim() !== '' &&
           existingOwnerId !== null &&
           existingOwnerId !== requestedOwnerId;
-        if (ownerMismatch) {
+        const patientMismatch =
+          typeof requestedPatientId === 'string' &&
+          requestedPatientId.trim() !== '' &&
+          existingPatientId !== null &&
+          existingPatientId !== requestedPatientId;
+
+        if (ownerMismatch || patientMismatch) {
           const sessionsRef = collection(db, this.COLLECTION_NAME);
           const collisionSafeSession = {
             ...cleanedSessionData,
@@ -243,6 +251,14 @@ class SessionService {
           const collisionSafeDocId = collisionSafeDocRef.id;
           return collisionSafeDocId;
         }
+      }
+      if (mergeRequested) {
+        const mergePayload = {
+          ...cleanedSessionData,
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(docRef, mergePayload, { merge: true });
+        return targetDocId;
       }
       const newSession = {
         ...cleanedSessionData,

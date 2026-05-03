@@ -268,6 +268,7 @@ const ProfessionalWorkflowPage = () => {
   const useEffectClearedRef = useRef(false);
   // ✅ WO-FIX-DATA-PERSISTENCE: Track if we've cleaned for this specific initial session
   const hasCleanedForInitial = useRef<string | null>(null);
+  const initialWorkflowPatientRef = useRef<string | null>(null);
   // Guard against duplicate SOAP saves (double-tap / double-click)
   const isFinalizingRef = useRef(false);
   /** WO-IA-RESUME-01: Dedupe resume fetch per (sessionId, visitType) — visitType can settle after first mount (e.g. initial → follow-up). */
@@ -1766,6 +1767,18 @@ const ProfessionalWorkflowPage = () => {
           }
           // ✅ WO-FIX-DATA-PERSISTENCE: Only clean ONCE per initial session
           const cleanupKey = `${patientId}-${sessionTypeFromUrl || 'initial'}`;
+          const currentInitialPatientId = patientId || patientIdFromUrl || null;
+          const previousInitialPatientId = initialWorkflowPatientRef.current;
+          const hasPreviousInitialPatient = previousInitialPatientId != null;
+          const hasCurrentInitialPatient = currentInitialPatientId != null;
+          const patientChangedDuringInitial =
+            hasPreviousInitialPatient &&
+            hasCurrentInitialPatient &&
+            previousInitialPatientId !== currentInitialPatientId;
+
+          if (hasCurrentInitialPatient) {
+            initialWorkflowPatientRef.current = currentInitialPatientId;
+          }
 
           // ✅ Verificar si ya limpiamos para esta combinación
           if (hasCleanedForInitial.current === cleanupKey) {
@@ -1775,6 +1788,14 @@ const ProfessionalWorkflowPage = () => {
 
           // ✅ WO-FIX-DATA-PERSISTENCE: Protection - don't clear if user has important data
           const shouldClearData = () => {
+            if (patientChangedDuringInitial) {
+              console.warn('[WORKFLOW] Initial evaluation patient changed, forcing cleanup to prevent cross-patient state reuse', {
+                previousPatient: previousInitialPatientId,
+                currentPatient: currentInitialPatientId,
+              });
+              return true;
+            }
+
             // Check if there's important data that shouldn't be cleared
             const hasTranscript = transcript && transcript.length > 100;
             const hasAnalysis = niagaraResults !== null; // Use niagaraResults which is available from useNiagaraProcessor
