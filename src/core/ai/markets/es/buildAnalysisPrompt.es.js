@@ -74,6 +74,14 @@ REGLAS DE DISTRIBUCIÓN:
   - original_text: exactamente como apareció en la transcripción.
   - normalized_name: busca primero si el nombre mencionado es un nombre comercial válido en España (vademécum ES). Si lo reconoces como nombre comercial, escribe: "NombreComercial (principioActivo)". Si es directamente un principio activo, úsalo tal cual. Si el nombre no corresponde a ningún medicamento conocido en España, escribe el original_text seguido de " [nombre por confirmar]". Nunca inventes un medicamento.
   - confidence: "high" si reconoces el medicamento con certeza, "medium" si es probable, "low" si el nombre es ambiguo o fonéticamente incierto.
+  - REGLA CRÍTICA DE CONFIANZA EN MEDICAMENTOS:
+    - confidence: "high" SOLO si el original_text corresponde exactamente a un nombre comercial o principio activo reconocido en España (vademécum ES), sin ambigüedad fonética ni ortográfica.
+    - Si el nombre en la transcripción es fonéticamente similar pero no idéntico a un medicamento conocido (ej: "ribotrín" → Rivotril, "aspirín" → Aspirina), confidence DEBE ser "low" y requires_review: true. La similitud fonética NO es certeza.
+    - Si hay cualquier duda sobre si el nombre transcrito corresponde al medicamento normalizado, confidence es "medium" como máximo.
+    - EJEMPLO CRÍTICO:
+      original_text: "ribotrín" → NO es Rivotril con certeza.
+      CORRECTO: normalized_name: "ribotrín", confidence: "low", requires_review: true
+      INCORRECTO: normalized_name: "Rivotril (Clonazepam)", confidence: "high", requires_review: false
   - requires_review: true si confidence es "low" o "medium", false si es "high".
   - dose, frequency, duration: extraer cuando estén disponibles, vacío si no.
   - active_ingredient: principio activo en español cuando normalized_name sea un nombre comercial. Vacío si normalized_name ya es principio activo.
@@ -85,7 +93,7 @@ REGLAS DE DISTRIBUCIÓN:
     - Establece requires_review: true y confidence: "low".
     - En normalized_name pon el nombre tal como lo dijo el paciente, sin especular.
     - INCORRECTO: normalized_name: "Rivotril/clonazepam", confidence: "medium"
-    - CORRECTO: normalized_name: "Ribotrín (no identificado)", requires_review: true, confidence: "low"
+    - CORRECTO: normalized_name: "ribotrín", requires_review: true, confidence: "low"
 - summary: síntesis breve sin repetir todo lo anterior.`;
 const defaultFollowUpInstructions = `Analiza esta visita de seguimiento como asistente de razonamiento clínico para un fisioterapeuta en España. Céntrate en evolución clínica, continuidad asistencial y cambios respecto a la línea basal. Expón respuesta al tratamiento, progresión sintomática, cambios funcionales, adherencia, nuevas incidencias y modificaciones biopsicosociales. Recomienda valoraciones de fisioterapia sólo si son necesarias para control evolutivo o por nuevas preocupaciones clínicas.
 
