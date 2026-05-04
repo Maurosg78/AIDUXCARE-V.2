@@ -65,6 +65,56 @@ La deuda técnica no documentada es deuda oculta. Este documento registra toda l
 *Decisión:* Conventional Commits (`fix:`, `feat:`, `chore:`). TSC limpio antes de cada commit.  
 *Consecuencia:* El historial de git es legible por un auditor externo sin contexto adicional.
 
+### ADR-004 — Biblioteca de Evidencia Clínica
+
+**Fecha:** 2026-05-03
+**Estado:** Activo
+**Decisor:** CTO clínico (Mauricio Sobarzo)
+
+**Decisión:**
+La evidencia clínica vive en `src/core/clinical-evidence/` separada 
+de `KnowledgeBaseService`. Cada diagnóstico es un archivo TypeScript 
+versionado en git. Ningún cambio entra sin revisión clínica aprobada 
+por el CTO médico.
+
+**Estructura:**
+src/core/clinical-evidence/
+  types.ts
+  evidenceService.ts
+  EVIDENCE_REGISTRY.ts
+  diagnoses/
+    fascitis-plantar.ts
+
+**Fuentes aceptadas:**
+- PubMed Central (PMC) — texto completo gratuito
+- PEDro — texto completo cuando disponible  
+- Cochrane — resúmenes open access
+- Revistas open access con DOI verificable
+
+**Estándar de calidad mínimo:**
+- Diseño: RCT, revisión sistemática, o meta-análisis
+- Score PEDro ≥ 6/10 para estudios individuales
+- GRADE moderado o alto para revisiones sistemáticas
+- Publicación 2018 en adelante salvo evidencia seminal sin actualización
+- Abstract consistente con paper completo — si no se puede leer 
+  el paper completo, no se acepta como fuente primaria
+
+**Flujo de actualización:**
+1. Script de monitoreo consulta PEDro/PubMed por diagnóstico
+2. Compara contra versión actual en biblioteca
+3. Genera diff para revisión del CTO clínico
+4. CTO aprueba o rechaza cada cambio
+5. Si aprueba → commit con referencia bibliográfica completa
+6. Fisio nunca ve el proceso — recibe siempre la versión aprobada
+
+**Motor de razonamiento clínico (tres capas):**
+- Capa 1: Evidencia base por diagnóstico (esta biblioteca)
+- Capa 2: Perfil del fisio (filtro de competencias)
+- Capa 3: Variables del círculo del paciente (filtro de viabilidad)
+
+El output es una propuesta priorizada para este fisio con este 
+paciente. El sistema avisa, no decide. El fisio siempre en el loop.
+
 ---
 
 ## 3. Convenciones de Código
