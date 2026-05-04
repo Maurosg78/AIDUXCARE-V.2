@@ -85,10 +85,36 @@ const DEFAULT_RESULT: ClinicalAnalysis = {
   biopsychosocial_patient_strengths: [],
 };
 
+const stringifyClinicalListItem = (item: unknown): string => {
+  if (!item) return "";
+  if (typeof item === "string") return item.trim();
+  if (typeof item !== "object") return String(item).trim();
+
+  const record = item as Record<string, unknown>;
+  const primaryText = record.flag ?? record.text ?? record.label ?? record.name ?? record.description;
+  const rationale = record.rationale ?? record.reason;
+  const primaryString = typeof primaryText === "string" ? primaryText.trim() : "";
+  const rationaleString = typeof rationale === "string" ? rationale.trim() : "";
+
+  if (primaryString && rationaleString) {
+    return `${primaryString} — ${rationaleString}`;
+  }
+
+  if (primaryString) {
+    return primaryString;
+  }
+
+  return "";
+};
+
 const ensureStringArray = (value: unknown): string[] => {
   if (!value) return [];
-  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  if (Array.isArray(value)) return value.map(stringifyClinicalListItem).filter(Boolean);
   if (typeof value === "string") return value.trim() ? [value.trim()] : [];
+  if (typeof value === "object") {
+    const item = stringifyClinicalListItem(value);
+    return item ? [item] : [];
+  }
   return [];
 };
 

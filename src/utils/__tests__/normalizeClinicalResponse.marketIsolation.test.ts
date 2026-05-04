@@ -128,4 +128,33 @@ describe('normalizeClinicalResponse market isolation', () => {
     expect(result.antecedentes_medicos).toContain('Tabaquismo activo');
     expect(result.antecedentes_medicos).toContain('History of myocardial infarction with coronary stents.');
   });
+
+  it('normalizes structured red and yellow flags without rendering object placeholders', () => {
+    const structuredFlagsPayload = {
+      ...responsePayload,
+      medicolegal_alerts: {
+        ...responsePayload.medicolegal_alerts,
+        red_flags: [
+          {
+            flag: 'Medicamento no identificado (ribotrín).',
+            rationale: 'Requiere confirmación antes de dosificar ejercicio.',
+          },
+        ],
+        yellow_flags: [
+          {
+            flag: 'Capacidad cardíaca reducida.',
+            rationale: 'Adaptar carga y monitorizar respuesta.',
+          },
+        ],
+      },
+    };
+
+    const result = normalizeClinicalResponse(structuredFlagsPayload, { market: 'ES' });
+
+    expect(result.red_flags[0]).toContain('ribotrín');
+    expect(result.red_flags[0]).toContain('Requiere confirmación');
+    expect(result.red_flags[0]).not.toContain('[object Object]');
+    expect(result.yellow_flags[0]).toContain('Capacidad cardíaca reducida');
+    expect(result.yellow_flags[0]).not.toContain('[object Object]');
+  });
 });

@@ -23,13 +23,36 @@ const DEFAULT_RESULT = {
     biopsychosocial_functional_limitations: [],
     biopsychosocial_patient_strengths: [],
 };
+const stringifyClinicalListItem = (item) => {
+    if (!item)
+        return "";
+    if (typeof item === "string")
+        return item.trim();
+    if (typeof item !== "object")
+        return String(item).trim();
+    const primaryText = item.flag ?? item.text ?? item.label ?? item.name ?? item.description;
+    const rationale = item.rationale ?? item.reason;
+    const primaryString = typeof primaryText === "string" ? primaryText.trim() : "";
+    const rationaleString = typeof rationale === "string" ? rationale.trim() : "";
+    if (primaryString && rationaleString) {
+        return `${primaryString} — ${rationaleString}`;
+    }
+    if (primaryString) {
+        return primaryString;
+    }
+    return "";
+};
 const ensureStringArray = (value) => {
     if (!value)
         return [];
     if (Array.isArray(value))
-        return value.map((item) => String(item).trim()).filter(Boolean);
+        return value.map(stringifyClinicalListItem).filter(Boolean);
     if (typeof value === "string")
         return value.trim() ? [value.trim()] : [];
+    if (typeof value === "object") {
+        const item = stringifyClinicalListItem(value);
+        return item ? [item] : [];
+    }
     return [];
 };
 const mapExposure = (value) => {
