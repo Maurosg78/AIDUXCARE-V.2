@@ -5,6 +5,10 @@ import { EVIDENCE_REGISTRY, getEvidenceRegistryEntry } from './EVIDENCE_REGISTRY
 import type { DiagnosisEvidence } from './types';
 import type { DiagnosisKey } from './EVIDENCE_REGISTRY';
 
+const EVIDENCE_MODULES: Record<DiagnosisKey, () => Promise<{ default: DiagnosisEvidence }>> = {
+  'fascitis-plantar': () => import('./diagnoses/fascitis-plantar'),
+};
+
 export const lookupEvidence = async (
   diagnosisId: string
 ): Promise<DiagnosisEvidence | null> => {
@@ -21,7 +25,8 @@ export const lookupEvidence = async (
     return null;
   }
 
-  const module = await import(entry.file);
-  const evidence = module.default as DiagnosisEvidence;
+  const loadEvidenceModule = EVIDENCE_MODULES[diagnosisKey];
+  const module = await loadEvidenceModule();
+  const evidence = module.default;
   return evidence;
 };
