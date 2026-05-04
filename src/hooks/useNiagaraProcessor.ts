@@ -5,6 +5,9 @@ import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
 import type { ClinicalAttachment } from '../core/ai/PromptFactory-Canada';
 import { resolveClinicalMarket } from '@/core/market/resolveClinicalMarket';
 import { ensureSpanishClinicalAnalysis } from '../utils/normalizers/es/ensureSpanishClinicalAnalysis';
+import { lookupEvidence } from '@/core/clinical-evidence/evidenceService';
+import { matchDiagnosis } from '@/core/clinical-evidence/diagnosisMatcher';
+import { prioritizeEvidence } from '@/core/clinical-reasoning/prioritizeEvidence';
 
 type NiagaraProxyPayload = {
   text: string;
@@ -14,6 +17,7 @@ type NiagaraProxyPayload = {
   professionalProfile?: ProfessionalProfile | null;
   visitType?: 'initial' | 'follow-up';
   attachments?: ClinicalAttachment[];
+  orientativeDiagnosis?: string;
 };
 
 export const useNiagaraProcessor = () => {
@@ -27,6 +31,8 @@ export const useNiagaraProcessor = () => {
     let lang: string | null | undefined;
     let mode: "live" | "dictation" | undefined;
     let timestamp: number | undefined;
+    let professionalProfile: ProfessionalProfile | null | undefined;
+    let orientativeDiagnosis: string | undefined;
 
     if (typeof payload === 'string') {
       // Legacy format: just a string
@@ -37,6 +43,8 @@ export const useNiagaraProcessor = () => {
       lang = payload.lang;
       mode = payload.mode;
       timestamp = payload.timestamp;
+      professionalProfile = payload.professionalProfile;
+      orientativeDiagnosis = payload.orientativeDiagnosis;
     }
 
     // Ensure text is a string and not empty
@@ -61,7 +69,7 @@ export const useNiagaraProcessor = () => {
         lang,
         mode,
         timestamp,
-        professionalProfile: typeof payload === 'object' ? payload.professionalProfile : undefined,
+        professionalProfile,
         visitType: typeof payload === 'object' ? payload.visitType : undefined,
         attachments: attachments,
         market: resolvedMarket.market,
@@ -69,6 +77,19 @@ export const useNiagaraProcessor = () => {
       console.log("Response from Vertex:", response);
       console.log("Response text:", response?.text);
       const normalized = normalizeVertexResponse(response, { market: resolvedMarket.market });
+      const diagnosisText = orientativeDiagnosis ?? '';
+      const diagnosisId = matchDiagnosis(diagnosisText);
+      const evidence = diagnosisId ? await lookupEvidence(diagnosisId) : null;
+      const evidenceRecommendations = evidence
+        ? prioritizeEvidence({
+          diagnosisEvidence: evidence,
+          clinicalAnalysis: normalized,
+          professionalProfile,
+        })
+        : null;
+
+      normalized.evidence_recommendations = evidenceRecommendations;
+
       const shouldForceSpanish = resolvedMarket.market === 'ES';
       const cleaned = shouldForceSpanish ? ensureSpanishClinicalAnalysis(normalized) : normalized;
       console.log("Cleaned response:", cleaned);

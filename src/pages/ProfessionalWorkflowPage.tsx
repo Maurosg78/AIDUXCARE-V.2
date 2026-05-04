@@ -151,6 +151,15 @@ type ActiveTab = "analysis" | "evaluation" | "soap";
 // Workflow state persistence key
 const WORKFLOW_STORAGE_KEY = (patientId: string) => `aidux_workflow_${patientId}`;
 
+type WorkflowPatientWithClinicalSnapshot = Patient & {
+  chiefComplaint?: string;
+  clinical?: {
+    diagnoses?: Array<{
+      display?: string;
+    }>;
+  };
+};
+
 type EvaluationResult = "normal" | "positive" | "negative" | "inconclusive";
 
 type EvaluationTestEntry = {
@@ -3622,6 +3631,15 @@ const ProfessionalWorkflowPage = () => {
           error: att.error,
         }))
         : undefined;
+      const patientWithClinicalSnapshot = currentPatient as WorkflowPatientWithClinicalSnapshot | null;
+      const clinicalDiagnoses = patientWithClinicalSnapshot?.clinical?.diagnoses ?? [];
+      const primaryClinicalDiagnosis = clinicalDiagnoses[0]?.display ?? '';
+      const orientativeDiagnosis =
+        currentPatient?.referralDiagnosis ||
+        currentPatient?.suspectedDiagnosis ||
+        primaryClinicalDiagnosis ||
+        patientWithClinicalSnapshot?.chiefComplaint ||
+        '';
 
       const payload = {
         text: combinedClinicalInput, // Can be empty if only analyzing attachments
@@ -3629,7 +3647,8 @@ const ProfessionalWorkflowPage = () => {
         mode,
         timestamp: Date.now(),
         visitType: 'initial' as const,
-        attachments: promptAttachments && promptAttachments.length > 0 ? promptAttachments : undefined
+        attachments: promptAttachments && promptAttachments.length > 0 ? promptAttachments : undefined,
+        orientativeDiagnosis
       };
       await processText({
         ...payload,
