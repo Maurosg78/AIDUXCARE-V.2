@@ -115,6 +115,60 @@ src/core/clinical-evidence/
 El output es una propuesta priorizada para este fisio con este 
 paciente. El sistema avisa, no decide. El fisio siempre en el loop.
 
+**Umbral mínimo para status: approved:**
+
+Opción A — con meta-análisis:
+  - 1 meta-análisis con GRADE moderado o alto
+  - Texto completo revisado por CTO clínico
+  - Abstract consistente con paper completo
+
+Opción B — sin meta-análisis disponible:
+  - Mínimo 3 RCTs individuales PEDro ≥ 6/10
+  - Texto completo revisado por CTO clínico
+  - Al menos 1 revisión sistemática que los sintetice
+
+En ambos casos:
+  - Mínimo 1 intervención con evidenceLevel: 'high'
+  - Aprobación explícita del CTO clínico con fecha y número de colegiado
+
+Si el diagnóstico no cumple el umbral → status: 'pending_papers'
+El sistema informa al fisio que las sugerencias provienen de análisis
+general, no de evidencia curada AiduxCare.
+
+**Clasificación red flag vs yellow flag:**
+Red flag: condición activa, sin tratamiento conocido, o síntoma que
+sugiere patología grave no diagnosticada. Requiere acción del fisio.
+
+Yellow flag: condición conocida con tratamiento médico activo
+documentado en la conversación. Modifica el plan, no lo paraliza.
+
+Regla: si el paciente menciona estar bajo tratamiento médico activo
+para una condición, esa condición va a yellow_flags, no a red_flags,
+independientemente de la gravedad de la condición base.
+
+**Zotero como bandeja bibliográfica controlada:**
+
+Flujo de evidencia candidata:
+1. Nueva búsqueda bibliográfica (PubMed/PMC, DOI, Cochrane, PEDro)
+2. Vertex resume y clasifica candidato — no decide validez clínica
+3. Paper guardado en Zotero con estado: pending_review
+4. CTO clínico revisa paper completo (abstract consistente con full text)
+5. CTO aprueba → approved / rechaza → rejected en Zotero
+6. Solo approved se materializa como commit en src/core/clinical-evidence/
+7. Solo src/core/clinical-evidence/ aprobado afecta el motor de razonamiento
+
+Roles:
+- Zotero: inbox de candidatos, organización por diagnóstico, trazabilidad
+- Vertex: descubrimiento y resumen de evidencia candidata
+- src/core/clinical-evidence/: única fuente ejecutable del runtime
+- CTO clínico: único rol con autoridad para promover evidencia al motor
+
+Regla crítica e inamovible:
+Evidencia no aprobada por CTO clínico = no afecta razonamiento clínico.
+Vertex no puede promover evidencia al motor sin revisión humana.
+El runtime de Aidux solo razona con evidencia versionada en git y
+aprobada explícitamente con fecha y número de colegiado.
+
 ---
 
 ## 3. Convenciones de Código
