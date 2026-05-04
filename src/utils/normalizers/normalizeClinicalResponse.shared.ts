@@ -1,4 +1,5 @@
 import { parseVertexResponse, validateClinicalSchema } from "../responseParser";
+import type { EvidenceRecommendation } from "../../core/clinical-reasoning/prioritizeEvidence";
 
 export type LegalExposure = "low" | "moderate" | "high";
 
@@ -25,6 +26,7 @@ export interface ClinicalAnalysis {
   biopsychosocial_protective?: string[];
   biopsychosocial_functional_limitations?: string[];
   biopsychosocial_patient_strengths?: string[];
+  evidence_recommendations?: EvidenceRecommendation[] | null;
 }
 
 type StructuredPayload = {

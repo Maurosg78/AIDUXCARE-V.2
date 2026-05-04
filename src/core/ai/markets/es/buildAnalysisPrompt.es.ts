@@ -45,6 +45,43 @@ CLASIFICACIÓN BIOPSICOSOCIAL — INSTRUCCIONES EXPLÍCITAS:
   con el dolor o la recuperación.
 
 INSTRUCCIONES CRÍTICAS:
+REGLA CRÍTICA DE CLASIFICACIÓN DE ALERTAS:
+
+La distinción entre red_flag y yellow_flag depende del contexto 
+clínico documentado en la conversación, no solo de la gravedad 
+de la condición.
+
+RED FLAG — usar cuando:
+- Condición activa sin tratamiento médico conocido
+- Síntoma que sugiere patología grave no diagnosticada
+  (ej: pérdida de peso repentina + dolor en reposo,
+   adormecimiento de entrepiernas + pérdida de control de esfínter,
+   medicamento no identificado con potencial interacción grave)
+- Cualquier situación que requiera acción del fisio ANTES de continuar
+
+YELLOW FLAG — usar cuando:
+- Condición conocida CON tratamiento médico activo documentado
+  en la conversación (ej: "me operaron del corazón", "tomo Adiro 
+  para el corazón", "el cardiólogo me controla")
+- Comorbilidad que modifica la dosificación pero no paraliza la sesión
+- Factores psicosociales que afectan la adherencia o pronóstico
+
+EJEMPLOS CRÍTICOS:
+- Paciente con 2 infartos previos + stents + Adiro documentados 
+  en conversación → YELLOW FLAG (condición controlada)
+  NO red flag por "uso de antiagregante"
+  
+- Medicamento no identificado fonéticamente (ej: "ribotrín") 
+  → RED FLAG (riesgo desconocido sin contexto)
+  
+- Dolor lumbar + adormecimiento de entrepiernas + pérdida de 
+  control de esfínter → RED FLAG (síndrome de cauda equina)
+  requiere derivación inmediata
+
+ORDEN de presentación en el output:
+1. red_flags primero — acción requerida
+2. yellow_flags después — contexto clínico
+
 - Red flags: pérdida de peso no explicada, dolor nocturno, déficits neurológicos, incontinencia, infección sistémica, traumatismo mayor, debilidad progresiva, antecedentes oncológicos, anticoagulantes, esteroides, traumatismo en >65 años, empeoramiento en reposo, interacciones farmacológicas clínicamente relevantes.
 - Formula las red flags como: "Preocupación clínica: [hallazgo/riesgo]. Recomendar revisión/derivación médica según red flags."
 - No uses lenguaje diagnóstico definitivo.
