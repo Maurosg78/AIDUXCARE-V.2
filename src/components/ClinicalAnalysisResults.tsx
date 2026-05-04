@@ -5,6 +5,7 @@ import { AddCustomItemButton } from './AddCustomItemButton';
 import { useEditableResults } from '../hooks/useEditableResults';
 import { sortPhysicalTestsByImportance, getTopPhysicalTests } from '../utils/sortPhysicalTestsByImportance';
 import { isSpainPilot } from '@/core/pilotDetection';
+import type { EvidenceRecommendation } from '@/core/clinical-reasoning/prioritizeEvidence';
 
 interface ClinicalAnalysisResultsProps {
   results: any;
@@ -108,6 +109,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     const { topTests } = getTopPhysicalTests(sorted, 5);
     return Array.isArray(topTests) ? topTests.slice(0, 5) : [];
   }, [editedResults?.physicalTests]);
+
+  const evidenceRecommendations: EvidenceRecommendation[] = Array.isArray(editedResults?.evidence_recommendations)
+    ? editedResults.evidence_recommendations
+    : [];
 
   const handleToggle = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -491,6 +496,56 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           />
         </div>
       </div>
+
+      {evidenceRecommendations.length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="font-semibold text-slate-800 mb-3">
+            Opciones de tratamiento con evidencia curada
+          </h3>
+          <div className="space-y-3">
+            {evidenceRecommendations.map((item) => (
+              <div key={item.interventionId} className="border-b border-slate-100 pb-3 last:border-0">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-slate-700 text-sm">
+                    {item.interventionName}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    item.priority === 'high' ? 'bg-green-100 text-green-700' :
+                    item.priority === 'medium' ? 'bg-blue-100 text-blue-700' :
+                    item.priority === 'low' ? 'bg-slate-100 text-slate-600' :
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {item.priority === 'high' ? 'Alta prioridad' :
+                     item.priority === 'medium' ? 'Prioridad media' :
+                     item.priority === 'low' ? 'Prioridad baja' :
+                     'Diferir'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mb-1">
+                  Evidencia: {
+                    item.evidenceLevel === 'high' ? 'alta' :
+                    item.evidenceLevel === 'moderate' ? 'moderada' :
+                    'baja'
+                  } · {item.reason}
+                </p>
+                {item.warnings.length > 0 && (
+                  <p className="text-xs text-yellow-700 bg-yellow-50 rounded px-2 py-1">
+                    ⚠ {item.warnings.join(' · ')}
+                  </p>
+                )}
+                {item.missingCapabilities.length > 0 && (
+                  <p className="text-xs text-slate-400">
+                    Requiere: {item.missingCapabilities.join(', ')}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-slate-400 mt-3">
+            Basado en evidencia revisada por CTO clínico — ADR-004
+          </p>
+        </div>
+      )}
 
       {/* Biopsychosocial Factors */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
