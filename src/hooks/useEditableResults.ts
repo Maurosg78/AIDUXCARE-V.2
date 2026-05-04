@@ -19,9 +19,23 @@ export const useEditableResults = (initialResults: any) => {
         const entityIndex = updated.entities.findIndex((e: any) => e.id === id);
         if (entityIndex !== -1) {
           updated.entities = [...updated.entities];
+          const entity = updated.entities[entityIndex];
+          const medicationData =
+            entity?.type === 'medication' &&
+            entity?.medication_data &&
+            typeof entity.medication_data === 'object'
+              ? {
+                  ...entity.medication_data,
+                  normalized_name: newText,
+                  confidence: 'high',
+                  requires_review: false,
+                }
+              : entity?.medication_data;
+
           updated.entities[entityIndex] = {
-            ...updated.entities[entityIndex],
+            ...entity,
             text: newText,
+            medication_data: medicationData,
             edited: true
           };
         }

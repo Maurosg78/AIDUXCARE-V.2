@@ -235,11 +235,11 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
   const getMedicationDisplayName = (entity: ClinicalEntity): string => {
     const medicationData = entity.medication_data;
+    const editedText = entity.text || '';
     const normalizedName = medicationData?.normalized_name || '';
-    const cleanNormalizedName = stripTechnicalSuffix(normalizedName);
     const originalText = medicationData?.original_text || '';
-    const fallbackText = entity.text || '';
-    const displayName = cleanNormalizedName || originalText || fallbackText;
+    const rawDisplayName = editedText || normalizedName || originalText;
+    const displayName = stripTechnicalSuffix(rawDisplayName);
     return displayName;
   };
 
