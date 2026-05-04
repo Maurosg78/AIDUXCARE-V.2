@@ -13,9 +13,9 @@ type EvidenceRegistryEntry = {
 export const EVIDENCE_REGISTRY = {
   'fascitis-plantar': {
     file: './diagnoses/fascitis-plantar',
-    status: 'pending_papers',
-    version: '0.1.0',
-    lastReviewed: null,
+    status: 'approved',
+    version: '1.0.0',
+    lastReviewed: '2026-05-04',
   },
 } as const satisfies Record<string, EvidenceRegistryEntry>;
 
