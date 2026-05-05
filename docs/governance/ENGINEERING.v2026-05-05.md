@@ -1,14 +1,10 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.1  
-**Fecha:** 2026-05-05  
+**Versión:** 1.0  
+**Fecha:** Abril 2026  
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)  
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
-
-**Propietario del SoT:** CTO  
-
-**Gobernanza del SoT:** `ENGINEERING.md` es la fuente editable oficial. Los PDFs son artefactos de referencia histórica, no fuente normativa. Todo cambio a este documento requiere commit semántico, revisión CTO y entrada en `docs/governance/CHANGELOG_ENGINEERING.md`.
 
 ---
 
