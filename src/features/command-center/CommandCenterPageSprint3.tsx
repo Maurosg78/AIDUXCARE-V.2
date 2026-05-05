@@ -63,6 +63,40 @@ function trackStatusTransition(
   });
 }
 
+function getTodayQuickItemKey(item: TodayQuickItem): string {
+  return `${item.patientId}::${item.sessionType}`;
+}
+
+function mergeTodayQuickItems(
+  localItems: TodayQuickItem[],
+  incomingItems: TodayQuickItem[]
+): TodayQuickItem[] {
+  const mergedByKey = new Map<string, TodayQuickItem>();
+
+  for (const localItem of localItems) {
+    const key = getTodayQuickItemKey(localItem);
+    mergedByKey.set(key, localItem);
+  }
+
+  for (const incomingItem of incomingItems) {
+    const key = getTodayQuickItemKey(incomingItem);
+    const localItem = mergedByKey.get(key);
+    if (!localItem) {
+      mergedByKey.set(key, incomingItem);
+      continue;
+    }
+
+    const mergedItem = {
+      ...incomingItem,
+      ...localItem,
+      resumeSessionId: localItem.resumeSessionId ?? incomingItem.resumeSessionId,
+    };
+    mergedByKey.set(key, mergedItem);
+  }
+
+  return Array.from(mergedByKey.values());
+}
+
 export const CommandCenterPageSprint3: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -90,6 +124,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [clinicalDayRows, setClinicalDayRows] = useState<ClinicalDayRow[]>([]);
   const [clinicalDayLoading, setClinicalDayLoading] = useState(false);
   const previousStatusByPatientIdRef = React.useRef(new Map<string, PatientWorkflowStatus>());
+  const todayListLoadRequestRef = React.useRef(0);
 
   // WO-UX-01: No token display in Command Center (backend/tracking may still exist)
 
@@ -131,11 +166,20 @@ export const CommandCenterPageSprint3: React.FC = () => {
   // Load quick list from Firestore for selected date; status is derived later from clinical truth.
   useEffect(() => {
     if (!user?.uid) return;
-    skipNextSaveRef.current = true;
 
     const dateKey = toLocalDateKey(selectedDate);
+    const requestId = todayListLoadRequestRef.current + 1;
+    todayListLoadRequestRef.current = requestId;
+    let cancelled = false;
 
-    getTodayList(user.uid, dateKey).then(async (list) => {
+    getTodayList(user.uid, dateKey).then((list) => {
+      if (cancelled) {
+        return;
+      }
+      if (requestId !== todayListLoadRequestRef.current) {
+        return;
+      }
+
       const mergedList = [...list];
       for (const session of inProgressSessions.data) {
         const sessionDateKey = session.dateKey;
@@ -170,8 +214,16 @@ export const CommandCenterPageSprint3: React.FC = () => {
         sessionStorage.removeItem(LAST_STARTED_KEY);
       }
 
-      setTodayQuickList(mergedList);
+      setTodayQuickList((prev) => {
+        const hasLocalItems = prev.length > 0;
+        skipNextSaveRef.current = !hasLocalItems;
+        return mergeTodayQuickItems(prev, mergedList);
+      });
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user?.uid, selectedDate, inProgressSessions.data]);
 
   // Persist quick list to Firestore whenever it changes (key = selectedDate)
