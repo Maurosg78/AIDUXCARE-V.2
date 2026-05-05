@@ -175,6 +175,54 @@ type EvaluationTestEntry = {
   _prefillDefaults?: Record<string, number | null>; // Internal: track pre-filled normal values
 };
 
+type TreatmentDecisionItem = {
+  id: string;
+  label: string;
+  completed: boolean;
+  notes?: string;
+};
+
+type TreatmentDecision = {
+  source: 'physio_final_decision';
+  updatedAt: string;
+  inClinicItems: TreatmentDecisionItem[];
+  homeProgramItems: TreatmentDecisionItem[];
+};
+
+function normalizeTreatmentDecisionItem(item: TodayFocusItem): TreatmentDecisionItem {
+  const normalizedItem: TreatmentDecisionItem = {
+    id: item.id,
+    label: item.label,
+    completed: Boolean(item.completed),
+    ...(item.notes ? { notes: item.notes } : {}),
+  };
+  return normalizedItem;
+}
+
+function buildTreatmentDecision(
+  visitType: VisitType,
+  inClinicItems: TodayFocusItem[],
+  homeProgramItems: TodayFocusItem[]
+): TreatmentDecision | null {
+  const isFollowUp = visitType === 'follow-up';
+  if (!isFollowUp) {
+    return null;
+  }
+
+  const hasTreatmentItems = inClinicItems.length > 0 || homeProgramItems.length > 0;
+  if (!hasTreatmentItems) {
+    return null;
+  }
+
+  const treatmentDecision: TreatmentDecision = {
+    source: 'physio_final_decision',
+    updatedAt: new Date().toISOString(),
+    inClinicItems: inClinicItems.map(normalizeTreatmentDecisionItem),
+    homeProgramItems: homeProgramItems.map(normalizeTreatmentDecisionItem),
+  };
+  return treatmentDecision;
+}
+
 const demoPatient = {
   id: "CA-TEST-001",
   name: "Sofia Bennett",
@@ -5392,6 +5440,11 @@ const ProfessionalWorkflowPage = () => {
       const persistedSoapStatus: 'finalized' | 'draft' =
         status === 'finalized' ? 'finalized' : 'draft';
       const sessionDateKey = toLocalDateKey(sessionStartTime);
+      const treatmentDecision = buildTreatmentDecision(
+        visitType,
+        inClinicItems,
+        homeProgramItems
+      );
       const savePayload = {
         userId: sessionOwnerId,
         patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
@@ -5407,6 +5460,7 @@ const ProfessionalWorkflowPage = () => {
         attachments: attachments || [],
         clientBuildId: currentClientBuildId,
         clientAppVersion: currentClientAppVersion,
+        ...(treatmentDecision ? { treatmentDecision } : {}),
       };
       const reservedWorkflowId = workflowReservedSessionIdRef.current;
       const effectiveSessionId = sessionId ?? sessionIdRef.current ?? reservedWorkflowId;
