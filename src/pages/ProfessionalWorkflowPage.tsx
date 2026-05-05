@@ -7,6 +7,7 @@ import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
 import { useTranscript } from "../hooks/useTranscript";
 import { useTimer } from "../hooks/useTimer";
 import sessionService from "../services/sessionService";
+import type { TreatmentDecision, TreatmentDecisionItem } from "../services/sessionService";
 import { useAuth } from "../hooks/useAuth";
 import { useProfessionalProfile as useProfessionalProfileContext } from "../context/ProfessionalProfileContext";
 import type { ClinicalAnalysis } from "../utils/cleanVertexResponse";
@@ -175,20 +176,6 @@ type EvaluationTestEntry = {
   _prefillDefaults?: Record<string, number | null>; // Internal: track pre-filled normal values
 };
 
-type TreatmentDecisionItem = {
-  id: string;
-  label: string;
-  completed: boolean;
-  notes?: string;
-};
-
-type TreatmentDecision = {
-  source: 'physio_final_decision';
-  updatedAt: string;
-  inClinicItems: TreatmentDecisionItem[];
-  homeProgramItems: TreatmentDecisionItem[];
-};
-
 function normalizeTreatmentDecisionItem(item: TodayFocusItem): TreatmentDecisionItem {
   const normalizedItem: TreatmentDecisionItem = {
     id: item.id,
@@ -221,6 +208,17 @@ function buildTreatmentDecision(
     homeProgramItems: homeProgramItems.map(normalizeTreatmentDecisionItem),
   };
   return treatmentDecision;
+}
+
+function hydrateTreatmentDecisionItems(items: TreatmentDecisionItem[]): TodayFocusItem[] {
+  const hydratedItems = items.map((item) => ({
+    id: item.id,
+    label: item.label,
+    completed: false,
+    ...(item.notes ? { notes: item.notes } : {}),
+    source: 'plan' as const,
+  }));
+  return hydratedItems;
 }
 
 const demoPatient = {
@@ -544,6 +542,7 @@ const ProfessionalWorkflowPage = () => {
   const [homeProgramItems, setHomeProgramItems] = useState<TodayFocusItem[]>([]);
   // Follow-up path: baseline for SOAP (no Niagara). Single source of truth — loaded when visitType === 'follow-up'.
   const [followUpClinicalState, setFollowUpClinicalState] = useState<{ baselineSOAP: { subjective: string; objective: string; assessment: string; plan: string } } | null>(null);
+  const [previousTreatmentDecision, setPreviousTreatmentDecision] = useState<TreatmentDecision | null>(null);
   /** True once getClinicalState has settled for follow-up; used to gate "no baseline → cannot start follow-up". */
   const [followUpBaselineChecked, setFollowUpBaselineChecked] = useState(false);
 
@@ -4470,6 +4469,40 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [visitType, patientIdFromUrl, visitCount.data]);
 
+  useEffect(() => {
+    if (visitType !== 'follow-up') {
+      setPreviousTreatmentDecision(null);
+      return;
+    }
+
+    const patientId = patientIdFromUrl || demoPatient.id;
+    const userId = user?.uid;
+    if (!patientId || !userId) {
+      setPreviousTreatmentDecision(null);
+      return;
+    }
+
+    let cancelled = false;
+    sessionService
+      .getLatestFinalizedTreatmentDecision(patientId, userId)
+      .then((decision) => {
+        if (cancelled) {
+          return;
+        }
+        setPreviousTreatmentDecision(decision);
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+        setPreviousTreatmentDecision(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visitType, patientIdFromUrl, user?.uid]);
+
   /** Stable Firestore doc id for HEP compliance (same day + patient + baseline → survives full reload). */
   const hepSessionKey = useMemo(() => {
     const uid = user?.uid;
@@ -4529,6 +4562,11 @@ const ProfessionalWorkflowPage = () => {
     if (visitType !== 'follow-up') {
       setInClinicItems([]);
       setHomeProgramItems([]);
+      return;
+    }
+    if (previousTreatmentDecision) {
+      setInClinicItems(hydrateTreatmentDecisionItems(previousTreatmentDecision.inClinicItems));
+      setHomeProgramItems(hydrateTreatmentDecisionItems(previousTreatmentDecision.homeProgramItems));
       return;
     }
     const previousPlanInput = previousTreatmentPlan
@@ -4604,6 +4642,7 @@ const ProfessionalWorkflowPage = () => {
     visitType,
     patientIdFromUrl,
     followUpClinicalState?.baselineSOAP?.plan,
+    previousTreatmentDecision,
     previousTreatmentPlan?.inClinicText,
     previousTreatmentPlan?.homeProgramText,
     previousTreatmentPlan?.planText,

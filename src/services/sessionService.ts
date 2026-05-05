@@ -12,6 +12,20 @@ export type CreateSessionWithIdOptions = {
 import type { ClinicalAttachment } from './clinicalAttachmentService';
 import type { EvaluationTestEntry } from '../core/soap/PhysicalExamResultBuilder';
 
+export type TreatmentDecisionItem = {
+  id: string;
+  label: string;
+  completed: boolean;
+  notes?: string;
+};
+
+export type TreatmentDecision = {
+  source: 'physio_final_decision';
+  updatedAt: string;
+  inClinicItems: TreatmentDecisionItem[];
+  homeProgramItems: TreatmentDecisionItem[];
+};
+
 interface SessionData {
   userId: string;
   patientName: string;
@@ -39,6 +53,7 @@ interface SessionData {
   attachments?: ClinicalAttachment[];
   /** Sprint A (follow-up): HEP compliance for this session doc only — source of truth on `sessions/{id}`. */
   hepCompliance?: Array<{ itemId: string; done: boolean; date: string }>;
+  treatmentDecision?: TreatmentDecision;
   writeState?: 'draft' | 'soap_generated' | 'soap_saved' | 'encounter_saved' | 'fully_committed' | 'commit_failed';
   lastCommitStep?: string;
   lastCommitError?: string | null;
@@ -118,6 +133,35 @@ class SessionService {
       return createdAtDateKey;
     }
     return null;
+  }
+
+  private isTreatmentDecisionItem(value: unknown): value is TreatmentDecisionItem {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+    const item = value as Record<string, unknown>;
+    const hasId = typeof item.id === 'string' && item.id.trim() !== '';
+    const hasLabel = typeof item.label === 'string' && item.label.trim() !== '';
+    return hasId && hasLabel;
+  }
+
+  private isTreatmentDecision(value: unknown): value is TreatmentDecision {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+    const decision = value as Record<string, unknown>;
+    const source = decision.source;
+    const inClinicItems = decision.inClinicItems;
+    const homeProgramItems = decision.homeProgramItems;
+    const hasExpectedSource = source === 'physio_final_decision';
+    const hasInClinicItems = Array.isArray(inClinicItems);
+    const hasHomeProgramItems = Array.isArray(homeProgramItems);
+    if (!hasExpectedSource || !hasInClinicItems || !hasHomeProgramItems) {
+      return false;
+    }
+    const inClinicItemsValid = inClinicItems.every((item) => this.isTreatmentDecisionItem(item));
+    const homeProgramItemsValid = homeProgramItems.every((item) => this.isTreatmentDecisionItem(item));
+    return inClinicItemsValid && homeProgramItemsValid;
   }
 
   /**
@@ -304,6 +348,41 @@ class SessionService {
     } catch (error) {
       console.error('Error updating session:', error);
       throw new Error('Failed to update session');
+    }
+  }
+
+  async getLatestFinalizedTreatmentDecision(
+    patientId: string,
+    userId: string
+  ): Promise<TreatmentDecision | null> {
+    try {
+      const sessionsRef = collection(db, this.COLLECTION_NAME);
+      const q = query(
+        sessionsRef,
+        where('patientId', '==', patientId),
+        where('userId', '==', userId),
+        where('status', '==', 'completed'),
+        orderBy('updatedAt', 'desc'),
+        limit(20)
+      );
+      const snapshot = await getDocs(q);
+      for (const sessionDoc of snapshot.docs) {
+        const data = sessionDoc.data();
+        const soapFinalized = data.soapStatus === 'finalized';
+        const sessionKind = this.normalizeSessionKind(data.sessionType);
+        const isFollowUp = sessionKind === 'followup';
+        if (!soapFinalized || !isFollowUp) {
+          continue;
+        }
+        const treatmentDecision = data.treatmentDecision;
+        if (this.isTreatmentDecision(treatmentDecision)) {
+          return treatmentDecision;
+        }
+      }
+      return null;
+    } catch (error) {
+      console.warn('[SessionService] getLatestFinalizedTreatmentDecision failed; continuing with fallback plan hydration.', error);
+      return null;
     }
   }
 
