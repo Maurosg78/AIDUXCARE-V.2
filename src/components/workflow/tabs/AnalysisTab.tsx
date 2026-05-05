@@ -167,6 +167,8 @@ export interface AnalysisTabProps {
   // WO-BUG-008: Red flags — which ones the physio selected (for acceptance stats)
   selectedRedFlagIds: string[];
   onRedFlagSelectionChange: (ids: string[]) => void;
+  dismissedRedFlagIds: string[];
+  onRedFlagDismiss: (id: string) => void;
   redFlagsDetected?: Array<{ id: string; description: string; severity?: string }>;
   redFlagDecisions?: Record<string, RedFlagDecision>;
   onRedFlagDecisionChange?: (decisions: Record<string, RedFlagDecision>) => void;
@@ -246,6 +248,8 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   resumeLoadFailed = null,
   selectedRedFlagIds,
   onRedFlagSelectionChange,
+  dismissedRedFlagIds,
+  onRedFlagDismiss,
   redFlagsDetected = [],
   redFlagDecisions = {},
   onRedFlagDecisionChange,
@@ -283,11 +287,13 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
     const nextVisibleFlags = filteredRedFlagsForRender.filter((flag, idx) => {
       const flagId = getRedFlagId(flag as string | { label?: string }, idx);
       const dismissalEntry = dismissedRedFlags[flagId];
-      const isDismissed = dismissalEntry != null;
+      const isDismissedLocally = dismissalEntry != null;
+      const isDismissedByParent = dismissedRedFlagIds.includes(flagId);
+      const isDismissed = isDismissedLocally || isDismissedByParent;
       return !isDismissed;
     });
     return nextVisibleFlags;
-  }, [filteredRedFlagsForRender, dismissedRedFlags]);
+  }, [filteredRedFlagsForRender, dismissedRedFlags, dismissedRedFlagIds]);
   const redFlagsRenderCount = visibleRedFlagsForRender.length;
   const shouldShowRedFlagsBlock = redFlagsRenderCount > 0;
 
@@ -602,6 +608,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                   const nextRedFlagDecisions = { ...redFlagDecisions };
                                   delete nextRedFlagDecisions[id];
                                   setDismissedRedFlags(nextDismissedRedFlags);
+                                  onRedFlagDismiss(id);
                                   onRedFlagSelectionChange(nextSelectedRedFlagIds);
                                   onRedFlagDecisionChange?.(nextRedFlagDecisions);
                                   setDismissTargetId(null);
@@ -840,6 +847,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                 const nextRedFlagDecisions = { ...redFlagDecisions };
                                 delete nextRedFlagDecisions[id];
                                 setDismissedRedFlags(nextDismissedRedFlags);
+                                onRedFlagDismiss(id);
                                 onRedFlagSelectionChange(nextSelectedRedFlagIds);
                                 onRedFlagDecisionChange?.(nextRedFlagDecisions);
                                 setDismissTargetId(null);

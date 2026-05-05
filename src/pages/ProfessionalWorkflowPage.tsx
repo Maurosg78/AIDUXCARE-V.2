@@ -34,6 +34,7 @@ import { PatientConsentService } from "../services/patientConsentService";
 import { resolveConsentChannel } from "@/domain/consent/resolveConsentChannel";
 import { getCurrentJurisdiction } from "@/core/consent/consentJurisdiction";
 import { isSpainPilot } from "@/core/pilotDetection";
+import { reconcileSafetyAfterEvaluation } from "@/core/clinical-safety/reconcileSafetyAfterEvaluation";
 import { ConsentVerificationService } from "../services/consentVerificationService";
 import { PatientService, type Patient } from "../services/patientService";
 import { useSearchParams, useNavigate, useLocation, Link, Navigate } from "react-router-dom";
@@ -339,6 +340,7 @@ const ProfessionalWorkflowPage = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>(isExplicitFollowUp ? "analysis" : "analysis");
   const [selectedEntityIds, setSelectedEntityIds] = useState<string[]>([]);
   const [selectedRedFlagIds, setSelectedRedFlagIds] = useState<string[]>([]);
+  const [dismissedRedFlagIds, setDismissedRedFlagIds] = useState<string[]>([]);
   const [redFlagDecisions, setRedFlagDecisions] = useState<Record<string, {
     decision: 'continue' | 'referral_stop' | 'referral_continue_partial';
     continuationNote?: string;
@@ -348,14 +350,55 @@ const ProfessionalWorkflowPage = () => {
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
   const secondaryMemorySourceRef = useRef<unknown | null>(null);
+  const lastAnalysisTimestampRef = useRef<number | null>(null);
+  const [analysisSelectionResetKey, setAnalysisSelectionResetKey] = useState<number | null>(null);
+
+  const getWorkflowRedFlagId = (flag: unknown, idx: number): string => {
+    if (typeof flag === 'string') {
+      return flag;
+    }
+
+    const flagRecord = flag as { label?: string } | null;
+    const fallbackId = `red-${idx}`;
+    const resolvedId = flagRecord?.label ?? fallbackId;
+    return resolvedId;
+  };
+
+  const handleRedFlagDismiss = useCallback((id: string) => {
+    setDismissedRedFlagIds((currentIds) => {
+      const isAlreadyDismissed = currentIds.includes(id);
+      if (isAlreadyDismissed) {
+        return currentIds;
+      }
+
+      const nextIds = [...currentIds, id];
+      return nextIds;
+    });
+
+    setSelectedRedFlagIds((currentIds) => {
+      const nextIds = currentIds.filter((flagId) => flagId !== id);
+      return nextIds;
+    });
+
+    setRedFlagDecisions((currentDecisions) => {
+      const nextDecisions = { ...currentDecisions };
+      delete nextDecisions[id];
+      return nextDecisions;
+    });
+  }, []);
 
   const hasUndecidedFollowUpRedFlags = (forceFollowUp?: boolean) => {
     const isFollowUp = forceFollowUp || visitType === 'follow-up';
     if (!isFollowUp) return false;
     if (!interactiveResults?.redFlags?.length) return false;
 
-    return (interactiveResults.redFlags as any[]).some((flag: any) => {
-      const id = typeof flag === 'string' ? flag : flag.label;
+    return (interactiveResults.redFlags as unknown[]).some((flag: unknown, idx: number) => {
+      const id = getWorkflowRedFlagId(flag, idx);
+      const isDismissed = dismissedRedFlagIds.includes(id);
+      if (isDismissed) {
+        return false;
+      }
+
       return !redFlagDecisions[id]?.decision;
     });
   };
@@ -367,12 +410,17 @@ const ProfessionalWorkflowPage = () => {
     }
     // All follow-up red flags have a decision → resolved (use same id as AnalysisTab: string | flag.label | red-${idx})
     const allResolved = followUpAlerts.red_flags.every((flag: unknown, idx: number) => {
-      const id = typeof flag === 'string' ? flag : (flag as { label?: string })?.label ?? `red-${idx}`;
+      const id = getWorkflowRedFlagId(flag, idx);
+      const isDismissed = dismissedRedFlagIds.includes(id);
+      if (isDismissed) {
+        return true;
+      }
+
       const decision = redFlagDecisions[id]?.decision;
       return decision === 'continue' || decision === 'referral_stop' || decision === 'referral_continue_partial';
     });
     setFollowUpDecisionResolved(allResolved);
-  }, [visitType, followUpAlerts, redFlagDecisions]);
+  }, [visitType, followUpAlerts, redFlagDecisions, dismissedRedFlagIds]);
 
   useEffect(() => {
     const isFollowUpWorkflow = visitType === 'follow-up';
@@ -3193,10 +3241,14 @@ const ProfessionalWorkflowPage = () => {
   }, [soapNote, visitType]);
 
   useEffect(() => {
-    // ✅ PHASE 2: Clear selections when new analysis starts
-      console.log('[PHASE2] Clearing selectedEntityIds due to new motivo_consulta');
+    if (analysisSelectionResetKey == null) {
+      return;
+    }
+
+    // ✅ PHASE 2: Clear selections only when the user starts a new analysis.
+    console.log('[PHASE2] Clearing selectedEntityIds due to new analysis request');
     setSelectedEntityIds([]);
-  }, [niagaraResults?.motivo_consulta]);
+  }, [analysisSelectionResetKey]);
 
   // ✅ PHASE 2: Clear evaluation tests only when patient actually changed (both ids defined and different)
   // WO-RESUME-INTERRUPTED: Don't clear when currentPatient is still loading (undefined) on remount — avoids wiping restored state
@@ -3611,6 +3663,10 @@ const ProfessionalWorkflowPage = () => {
       return;
     }
 
+    const analysisRequestTimestamp = Date.now();
+    lastAnalysisTimestampRef.current = analysisRequestTimestamp;
+    setAnalysisSelectionResetKey(analysisRequestTimestamp);
+
     // ✅ WO-04: Track analysis requested
     trackAnalysisRequested({
       transcriptLength: combinedClinicalInput.length,
@@ -3618,7 +3674,7 @@ const ProfessionalWorkflowPage = () => {
       attachmentCount: attachments?.length || 0
     });
 
-    const analysisStartTime = Date.now();
+    const analysisStartTime = analysisRequestTimestamp;
 
     try {
       // Map ClinicalAttachment to prompt format (extract only needed fields)
@@ -3828,6 +3884,93 @@ const ProfessionalWorkflowPage = () => {
       physicalTestCount: physicalTestIds.length,
     });
 
+    const getPhysicalTestsFromResults = (results: unknown): unknown[] => {
+      if (!results || typeof results !== 'object') {
+        return [];
+      }
+
+      const resultsRecord = results as Record<string, unknown>;
+      const rawPhysicalTests = resultsRecord.physicalTests;
+      if (!Array.isArray(rawPhysicalTests)) {
+        return [];
+      }
+
+      return rawPhysicalTests;
+    };
+
+    const physicalTestsFromEditedResults = getPhysicalTestsFromResults(editedAnalysisResults);
+    const physicalTestsFromInteractiveResults = getPhysicalTestsFromResults(interactiveResults);
+    const fallbackPhysicalTests =
+      physicalTestsFromEditedResults.length > 0
+        ? physicalTestsFromEditedResults
+        : physicalTestsFromInteractiveResults;
+
+    const getFallbackPhysicalTest = (originalIndex: number): unknown | null => {
+      const matchedTest = fallbackPhysicalTests.find((test, index) => {
+        if (index === originalIndex) {
+          return true;
+        }
+
+        if (!test || typeof test !== 'object') {
+          return false;
+        }
+
+        const testRecord = test as Record<string, unknown>;
+        const testOriginalIndex = testRecord.originalIndex;
+        return testOriginalIndex === originalIndex;
+      });
+
+      return matchedTest ?? null;
+    };
+
+    const createFallbackEvaluationEntry = (
+      test: unknown,
+      originalIndex: number
+    ): EvaluationTestEntry | null => {
+      if (typeof test === 'string') {
+        const cleanName = test.replace(/^Consider assessing\s+/i, '').trim();
+        if (!cleanName) {
+          console.warn('[PHASE2] Cannot transfer selected physical test with empty name', {
+            originalIndex,
+          });
+          return null;
+        }
+
+        const customEntry = createCustomEntry(cleanName, 'ai');
+        return customEntry;
+      }
+
+      if (!test || typeof test !== 'object') {
+        console.warn('[PHASE2] Cannot transfer selected physical test with unsupported shape', {
+          originalIndex,
+        });
+        return null;
+      }
+
+      const testRecord = test as Record<string, unknown>;
+      const rawName = testRecord.name ?? testRecord.test ?? testRecord.rawName;
+      const cleanName = String(rawName ?? '').replace(/^Consider assessing\s+/i, '').trim();
+      if (!cleanName) {
+        console.warn('[PHASE2] Cannot transfer selected physical test without name', {
+          originalIndex,
+        });
+        return null;
+      }
+
+      const libraryMatch = matchTestName(cleanName, detectedCaseRegion);
+      const matchedLibraryTest = isLibraryTestDefinition(libraryMatch)
+        ? libraryMatch
+        : null;
+
+      if (matchedLibraryTest) {
+        const libraryEntry = createEntryFromLibrary(matchedLibraryTest, 'ai');
+        return libraryEntry;
+      }
+
+      const customEntry = createCustomEntry(cleanName, 'ai');
+      return customEntry;
+    };
+
     // ✅ PHASE 2 FIX: Collect all entries first, then add them all at once
     physicalTestIds.forEach((entityId) => {
       const originalIndex = parseInt(entityId.split("-")[1], 10);
@@ -3836,15 +3979,29 @@ const ProfessionalWorkflowPage = () => {
         originalIndex,
       });
 
+      if (!Number.isFinite(originalIndex)) {
+        console.warn('[PHASE2] Selected physical test id has no valid originalIndex', {
+          entityId,
+        });
+        return;
+      }
+
       // ✅ PHASE 2 FIX: Get suggestion directly by key (originalIndex)
       const suggestion = suggestionMap.get(originalIndex);
       if (!suggestion) {
-        console.error(`[PHASE2] ❌ CRITICAL: No suggestion found for originalIndex ${originalIndex}`);
-        console.error(`[PHASE2] Missing suggestion context:`, {
+        console.warn(`[PHASE2] No AI suggestion found for originalIndex ${originalIndex}; trying analysis fallback`);
+        console.warn(`[PHASE2] Missing suggestion context:`, {
           suggestionMapSize: suggestionMap.size,
           aiSuggestionCount: aiSuggestions.length,
           suggestedPhysicalTestCount: niagaraResults?.evaluaciones_fisicas_sugeridas?.length || 0,
         });
+        const fallbackTest = getFallbackPhysicalTest(originalIndex);
+        const fallbackEntry = createFallbackEvaluationEntry(fallbackTest, originalIndex);
+        if (fallbackEntry) {
+          additions.push(fallbackEntry);
+          entriesToAdd.push(fallbackEntry);
+        }
+
         return;
       }
 
@@ -4464,13 +4621,88 @@ const ProfessionalWorkflowPage = () => {
 
       // Step 1: Organize unified data from Tab 1 and Tab 2
       const analysisSource = editedAnalysisResults ?? niagaraResults;
+      let reconciledAnalysisSource = analysisSource;
+
+      if (analysisSource && physicalExamResults.length > 0) {
+        try {
+          const stringifyClinicalValue = (value: unknown): string => {
+            if (!value) return '';
+            if (typeof value === 'string') return value.trim();
+            if (typeof value !== 'object') return String(value).trim();
+
+            const record = value as Record<string, unknown>;
+            const medicationData = record.medication_data as Record<string, unknown> | undefined;
+            const medicationName = medicationData?.normalized_name ?? medicationData?.original_text;
+            const text =
+              record.text ??
+              record.name ??
+              record.label ??
+              record.description ??
+              medicationName;
+            return String(text ?? '').trim();
+          };
+
+          const toClinicalStringArray = (value: unknown): string[] => {
+            if (!Array.isArray(value)) return [];
+            return value.map(stringifyClinicalValue).filter(Boolean);
+          };
+
+          const uniqueClinicalStrings = (values: readonly string[]): string[] => {
+            return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+          };
+
+          const analysisRecord = analysisSource as Record<string, unknown>;
+          const initialRedFlags = toClinicalStringArray(analysisRecord.red_flags);
+          const initialYellowFlags = toClinicalStringArray(analysisRecord.yellow_flags);
+          const physicalEvaluationFindings = physicalExamResults
+            .map((finding) => {
+              const findingRecord = finding as Record<string, unknown>;
+              return [
+                stringifyClinicalValue(findingRecord.testName),
+                stringifyClinicalValue(findingRecord.result),
+                stringifyClinicalValue(findingRecord.notes),
+              ].filter(Boolean).join(' · ');
+            })
+            .filter(Boolean);
+
+          const safetyDelta = reconcileSafetyAfterEvaluation({
+            initial_red_flags: initialRedFlags,
+            initial_yellow_flags: initialYellowFlags,
+            corrected_medications: toClinicalStringArray(analysisRecord.medicacion_actual),
+            confirmed_antecedents: toClinicalStringArray(analysisRecord.antecedentes_medicos),
+            physical_evaluation_findings: physicalEvaluationFindings,
+          });
+
+          const resolvedYellowFlags = new Set(safetyDelta.resolved_flags);
+          const reconciledRedFlags = uniqueClinicalStrings([
+            ...initialRedFlags,
+            ...safetyDelta.new_red_flags,
+          ]);
+          const reconciledYellowFlags = uniqueClinicalStrings([
+            ...initialYellowFlags.filter((flag) => !resolvedYellowFlags.has(flag)),
+            ...safetyDelta.new_yellow_flags,
+          ]);
+
+          reconciledAnalysisSource = {
+            ...analysisSource,
+            red_flags: reconciledRedFlags,
+            yellow_flags: reconciledYellowFlags,
+          };
+        } catch (error) {
+          console.warn(
+            '[Workflow] Safety reconciliation failed; continuing with original analysis',
+            error,
+          );
+        }
+      }
+
       const localizedLibrary = MSK_TEST_LIBRARY.filter((definition): definition is MskTestDefinition => {
         return 'normalTemplate' in definition;
       });
       const unifiedData: UnifiedClinicalData = {
         tab1: {
           transcript: transcript || '',
-          analysis: analysisSource,
+          analysis: reconciledAnalysisSource,
           attachments: attachments,
         },
         tab2: {
@@ -6767,6 +6999,8 @@ const ProfessionalWorkflowPage = () => {
                     resumeLoadFailed={resumeLoadFailed}
                     selectedRedFlagIds={selectedRedFlagIds}
                     onRedFlagSelectionChange={setSelectedRedFlagIds}
+                    dismissedRedFlagIds={dismissedRedFlagIds}
+                    onRedFlagDismiss={handleRedFlagDismiss}
                     redFlagDecisions={redFlagDecisions}
                     onRedFlagDecisionChange={setRedFlagDecisions}
                     onConfirmFollowUpRedFlags={handleConfirmFollowUpRedFlags}
@@ -7081,6 +7315,8 @@ const ProfessionalWorkflowPage = () => {
                   resumeLoadFailed={resumeLoadFailed}
                   selectedRedFlagIds={selectedRedFlagIds}
                   onRedFlagSelectionChange={setSelectedRedFlagIds}
+                  dismissedRedFlagIds={dismissedRedFlagIds}
+                  onRedFlagDismiss={handleRedFlagDismiss}
                   redFlagDecisions={redFlagDecisions}
                   onRedFlagDecisionChange={setRedFlagDecisions}
                   onConfirmFollowUpRedFlags={handleConfirmFollowUpRedFlags}
