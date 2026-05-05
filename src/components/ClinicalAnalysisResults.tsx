@@ -248,6 +248,25 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     return displayName;
   };
 
+  const getMedicationClarificationDisplayName = (entity: ClinicalEntity): string => {
+    const medicationData = entity.medication_data;
+    const normalizedName = medicationData?.normalized_name || '';
+    const originalText = medicationData?.original_text || '';
+    const editedText = entity.text || '';
+    const rawDisplayName = normalizedName || originalText || editedText;
+    const displayName = stripTechnicalSuffix(rawDisplayName);
+    return displayName;
+  };
+
+  const hasDifferentOriginalMedicationText = (entity: ClinicalEntity): boolean => {
+    const medicationData = entity.medication_data;
+    const originalText = medicationData?.original_text || '';
+    const displayName = getMedicationClarificationDisplayName(entity);
+    const hasOriginalText = originalText.length > 0;
+    const isDifferent = originalText !== displayName;
+    return hasOriginalText && isDifferent;
+  };
+
   const medicationEntities = entities.filter((entity) => {
     const isMedication = isMedicationEntity(entity);
     return isMedication;
@@ -275,6 +294,17 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     const needsReview = requiresMedicationReview(entity);
     const isIdentified = hasHighConfidence && !needsReview;
     return !isIdentified;
+  });
+
+  const medicationClarificationMeds = medicationEntities.filter((entity) => {
+    const medicationData = entity.medication_data;
+    if (!medicationData) {
+      return false;
+    }
+    const confidence = medicationData.confidence;
+    const needsReview = requiresMedicationReview(entity);
+    const isHighConfidence = confidence === 'high';
+    return needsReview || !isHighConfidence;
   });
 
   return (
@@ -370,6 +400,41 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
           <div>
             <h4 className="font-medium text-sm text-slate-700 mb-2">{ui.currentMedicationTitle}</h4>
+            {medicationClarificationMeds.length > 0 && (
+              <div className="mb-3 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
+                <h5 className="mb-1 text-xs font-semibold text-yellow-900">
+                  Medicación requiere aclaración
+                </h5>
+                <p className="mb-3 text-xs text-yellow-800">
+                  Confirmar con paciente nombre, dosis, frecuencia y uso actual antes de incorporarlo al razonamiento clínico.
+                </p>
+                <div className="space-y-2">
+                  {medicationClarificationMeds.map((entity) => {
+                    const displayName = getMedicationClarificationDisplayName(entity);
+                    const medicationData = entity.medication_data;
+                    const originalText = medicationData?.original_text || '';
+                    const showOriginalText = hasDifferentOriginalMedicationText(entity);
+                    return (
+                      <div key={`clarification-${entity.id}`} className="rounded border border-yellow-200 bg-white px-2 py-1.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-slate-700">
+                            {displayName}
+                          </span>
+                          <span className="inline-flex items-center rounded border border-yellow-300 bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">
+                            Por confirmar
+                          </span>
+                        </div>
+                        {showOriginalText && (
+                          <p className="mt-1 text-xs text-slate-500">
+                            Referido: {originalText}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="space-y-1">
               {identifiedMeds.length > 0 && (
                 <div className="mb-3">
