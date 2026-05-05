@@ -128,7 +128,6 @@ export const ClinicalDayViewPanel: React.FC<ClinicalDayViewPanelProps> = ({
 
             if (hasInvalidAction) {
               console.error('INVALID ACTION FOR STATE', {
-                patientId: row.patientId,
                 status: row.status,
                 action: actionLabel,
               });

@@ -46,16 +46,14 @@ function toLocalDateKey(d: Date): string {
 
 function trackStatusTransition(
   prev: PatientWorkflowStatus | undefined,
-  next: PatientWorkflowStatus,
-  patientId: string
+  next: PatientWorkflowStatus
 ): void {
   const hasChanged = prev != null && prev !== next;
   if (!hasChanged) {
     return;
   }
 
-  console.log({
-    patientId,
+  console.log('Patient workflow status transition', {
     prevStatus: prev,
     nextStatus: next,
     timestamp: new Date().toISOString(),
@@ -336,7 +334,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
     for (const row of clinicalDayRows) {
       const previousStatus = previousStatusByPatientIdRef.current.get(row.patientId);
       const nextStatus = row.status;
-      trackStatusTransition(previousStatus, nextStatus, row.patientId);
+      trackStatusTransition(previousStatus, nextStatus);
       nextStatusByPatientId.set(row.patientId, nextStatus);
     }
 

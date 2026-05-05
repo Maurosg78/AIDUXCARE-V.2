@@ -237,7 +237,9 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
   const hasDuplicateRenderedPatients = duplicateRenderedPatients.length > 0;
 
   if (hasDuplicateRenderedPatients) {
-    console.error('DUPLICATE PATIENT RENDER', duplicateRenderedPatients);
+    console.error('DUPLICATE PATIENT RENDER', {
+      duplicateCount: duplicateRenderedPatients.length,
+    });
   }
 
   return (
@@ -313,7 +315,6 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
 
                 if (hasInvalidAction) {
                   console.error('INVALID ACTION FOR STATE', {
-                    patientId: row.patientId,
                     status: row.status,
                     action: primaryActionLabel,
                   });
@@ -404,7 +405,6 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
 
                 if (hasInvalidAction) {
                   console.error('INVALID ACTION FOR STATE', {
-                    patientId: row.patientId,
                     status: row.status,
                     action: primaryActionLabel,
                   });

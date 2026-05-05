@@ -275,10 +275,8 @@ export async function buildClinicalDayView(
       const isStateDesynced = row.status !== recomputedStatus;
       if (isStateDesynced) {
         console.error('STATE DESYNC DETECTED', {
-          patientId: patient.id,
           rowStatus: row.status,
           recomputed: recomputedStatus,
-          rawData: row.rawData,
         });
       }
 
