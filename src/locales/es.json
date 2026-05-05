@@ -571,9 +571,10 @@
       "goToCommandCenter": "Ir al Centro de mando"
     },
     "todayPatients": {
-      "title": "Pacientes de hoy",
+      "title": "Cola clínica de hoy",
       "scheduleSuffix": " — agenda",
       "scheduledCount": "{{count}} programados — pulsa Iniciar cuando toque",
+      "clinicalQueueSubtitle": "Pacientes por atender, en curso, por documentar y vistos hoy.",
       "appointmentsToday": "{{count}} cita(s) hoy",
       "noScheduledToday": "Sin pacientes programados hoy",
       "noScheduledDay": "Sin pacientes programados para este día",

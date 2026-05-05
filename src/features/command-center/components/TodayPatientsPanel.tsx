@@ -249,7 +249,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
           </h2>
           <p className="text-base text-gray-600 font-apple font-light">
             {hasQuickItems
-              ? t('shell.todayPatients.scheduledCount', { count: totalRows })
+              ? t('shell.todayPatients.clinicalQueueSubtitle')
               : hasAppointments && isToday(displayDate)
                 ? t('shell.todayPatients.appointmentsToday', { count: appointments.length })
                 : isToday(displayDate)

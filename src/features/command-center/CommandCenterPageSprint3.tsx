@@ -21,7 +21,6 @@ import sessionService from '../../services/sessionService';
 // Components
 import { CommandCenterHeader } from './components/CommandCenterHeader';
 import { TodayPatientsPanel, type TodayAppointment, type TodayQuickItem } from './components/TodayPatientsPanel';
-import { ClinicalDayViewPanel } from './components/ClinicalDayViewPanel';
 import type { StartSessionModalMode } from './components/StartSessionTwoStepModal';
 import { WorkWithPatientsPanel } from './components/WorkWithPatientsPanel';
 import { PatientSearchBar } from './components/PatientSearchBar';
@@ -183,7 +182,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [todayQuickList, setTodayQuickList] = useState<TodayQuickItem[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [clinicalDayRows, setClinicalDayRows] = useState<ClinicalDayRow[]>([]);
-  const [clinicalDayLoading, setClinicalDayLoading] = useState(false);
+  const [, setClinicalDayLoading] = useState(false);
   const previousStatusByPatientIdRef = React.useRef(new Map<string, PatientWorkflowStatus>());
   const todayListLoadRequestRef = React.useRef(0);
 
@@ -375,35 +374,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
     selectedDate.getMonth() === new Date().getMonth() &&
     selectedDate.getFullYear() === new Date().getFullYear();
 
-  const scheduledClinicalRows = clinicalDayRows.filter((row) => {
-    const isScheduled = row.status === PatientWorkflowStatus.SCHEDULED;
-    return isScheduled;
-  });
-  const abandonedClinicalRows = clinicalDayRows.filter((row) => {
-    const isAbandoned = row.status === PatientWorkflowStatus.ABANDONED;
-    return isAbandoned;
-  });
-  const pendingPatientsItems = isSelectedDateToday
-    ? scheduledClinicalRows
-    : [];
-  const pendingPatientsCount = isSelectedDateToday
-    ? pendingPatientsItems.length
-    : 0;
-  const nextPendingPatientName = pendingPatientsItems[0]?.patientName;
-  const incompleteSessionItems = isSelectedDateToday
-    ? abandonedClinicalRows
-    : [];
-  const incompleteSessionsCount = isSelectedDateToday
-    ? incompleteSessionItems.length
-    : 0;
-
   const workQueue: WorkQueueSummary = {
     pendingNotes: pendingNotes.data || 0,
     missingConsents: 0, // TODO: Implement consent checking
     draftDocuments: 0, // TODO: Implement draft documents
-    pendingPatients: pendingPatientsCount,
-    nextPendingPatientName,
-    incompleteSessions: incompleteSessionsCount,
   };
 
   const openClinicalResponsibilities = inProgressSessions.data
@@ -610,28 +584,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
     navigate(`/patients/${row.patientId}/history`);
   }, [navigate]);
 
-  const handleContinueClinicalDayRow = useCallback((row: ClinicalDayRow) => {
-    const resolvedSessionType = row.sessionType ?? 'followup';
-    if (resolvedSessionType === 'ongoing') {
-      void PatientService.getPatientById(row.patientId).then((patient) => {
-        if (!patient) {
-          return;
-        }
-        setSelectedPatient(patient);
-        setShowOngoingIntake(true);
-      });
-      return;
-    }
-
-    const workflowType = resolvedSessionType === 'initial' ? 'initial' : 'followup';
-    if (row.resumeSessionId) {
-      navigate(`/workflow?type=${workflowType}&patientId=${row.patientId}&sessionId=${row.resumeSessionId}&resume=true`);
-      return;
-    }
-
-    navigate(`/workflow?type=${workflowType}&patientId=${row.patientId}`);
-  }, [navigate]);
-
   const handleContinueOpenResponsibility = useCallback((session: InProgressSession) => {
     const normalizedSessionType = normalizeOpenResponsibilitySessionType(session.sessionType);
     const workflowType = normalizedSessionType === 'initial' ? 'initial' : 'followup';
@@ -778,15 +730,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
             }}
           />
 
-          <ClinicalDayViewPanel
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            rows={clinicalDayRows}
-            loading={clinicalDayLoading}
-            onContinue={handleContinueClinicalDayRow}
-            onOpenSoap={handleOpenClinicalDayRow}
-            onReview={handleOpenClinicalDayRow}
-          />
+          {/* Hidden in pilot to avoid duplicate clinical queues. */}
 
           {/* Block 2: Work with Patients */}
           <WorkWithPatientsPanel

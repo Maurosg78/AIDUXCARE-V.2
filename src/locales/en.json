@@ -571,9 +571,10 @@
       "goToCommandCenter": "Go to Command Center"
     },
     "todayPatients": {
-      "title": "Today's Patients",
+      "title": "Today’s clinical queue",
       "scheduleSuffix": "'s schedule",
       "scheduledCount": "{{count}} scheduled — press Start when it's time",
+      "clinicalQueueSubtitle": "Patients to see, in progress, awaiting documentation, and completed today.",
       "appointmentsToday": "{{count}} appointment(s) today",
       "noScheduledToday": "No scheduled patients today",
       "noScheduledDay": "No scheduled patients for this day",
