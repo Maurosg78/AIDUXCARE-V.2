@@ -607,6 +607,14 @@
       "inDays": "In {{count}} days",
       "daysAgo": "{{count}} days ago"
     },
+    "openClinicalResponsibilities": {
+      "title": "Pending closure",
+      "subtitle": "Open clinical records or documentation not yet finalized.",
+      "badge": "Pending",
+      "pendingSince": "Pending since {{date}}",
+      "continue": "Continue",
+      "resume": "Resume"
+    },
     "sessionType": {
       "initial": "Initial Assessment",
       "followup": "Follow-up",

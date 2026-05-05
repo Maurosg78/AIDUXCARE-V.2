@@ -119,6 +119,17 @@ class SessionService {
     return null;
   }
 
+  private timestampToIsoString(value: unknown): string | undefined {
+    if (value == null) return undefined;
+    if (typeof value === 'string' && value.trim() !== '') return value;
+    if (typeof value === 'object' && value !== null && 'toDate' in value) {
+      const toDate = (value as Timestamp).toDate;
+      if (typeof toDate === 'function') return toDate.call(value).toISOString();
+    }
+    if (value instanceof Date) return value.toISOString();
+    return undefined;
+  }
+
   private resolveSessionDateKey(data: Record<string, unknown>): string | null {
     const explicitSessionDateKey = data.sessionDateKey;
     if (typeof explicitSessionDateKey === 'string' && explicitSessionDateKey.trim() !== '') {
@@ -386,7 +397,7 @@ class SessionService {
     }
   }
 
-  async getInProgressSessions(userId: string): Promise<{ id: string; patientId: string; patientName: string; sessionType: string; transcript: string; status?: string; dateKey?: string }[]> {
+  async getInProgressSessions(userId: string): Promise<{ id: string; patientId: string; patientName: string; sessionType: string; transcript: string; status?: string; dateKey?: string; updatedAt?: string }[]> {
     try {
       const sessionsRef = collection(db, this.COLLECTION_NAME);
       // Include both in-progress and interrupted so Command Center shows "Resume" for interrupted
@@ -418,9 +429,17 @@ class SessionService {
         });
       }
       const toMillis = (value: unknown): number => {
-        return value && typeof (value as { toMillis?: () => number }).toMillis === 'function'
-          ? (value as { toMillis(): number }).toMillis()
-          : 0;
+        if (value && typeof (value as { toMillis?: () => number }).toMillis === 'function') {
+          return (value as { toMillis(): number }).toMillis();
+        }
+        if (value instanceof Date) {
+          return value.getTime();
+        }
+        if (typeof value === 'string') {
+          const parsedTime = Date.parse(value);
+          return Number.isFinite(parsedTime) ? parsedTime : 0;
+        }
+        return 0;
       };
       const completedSessionsQuery = query(
         sessionsRef,
@@ -492,15 +511,20 @@ class SessionService {
         const bT = toMillis(b.updatedAt);
         return bT - aT;
       });
-      return sorted.slice(0, 10).map(({ id, patientId, patientName, sessionType, transcript, status, dateKey }) => ({
-        id,
-        patientId,
-        patientName,
-        sessionType,
-        transcript,
-        status,
-        dateKey,
-      }));
+      return sorted.slice(0, 10).map((session) => {
+        const updatedAtIso = this.timestampToIsoString(session.updatedAt);
+        const sessionItem = {
+          id: session.id,
+          patientId: session.patientId,
+          patientName: session.patientName,
+          sessionType: session.sessionType,
+          transcript: session.transcript,
+          status: session.status,
+          dateKey: session.dateKey,
+          updatedAt: updatedAtIso,
+        };
+        return sessionItem;
+      });
     } catch (error) {
       console.error('Error fetching in-progress sessions:', error);
       return [];

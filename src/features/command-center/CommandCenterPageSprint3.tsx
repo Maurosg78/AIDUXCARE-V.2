@@ -12,7 +12,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { SessionTypeService, type SessionType } from '../../services/sessionTypeService';
 import { useAppointmentSchedule, type Appointment } from './hooks/useAppointmentSchedule';
 import { usePendingNotesCount } from './hooks/usePendingNotesCount';
-import { useInProgressSessions } from './hooks/useInProgressSessions';
+import { useInProgressSessions, type InProgressSession } from './hooks/useInProgressSessions';
 import { usePatientsList } from './hooks/usePatientsList';
 import { Patient } from '../../services/patientService';
 import PatientService from '../../services/patientService';
@@ -95,6 +95,67 @@ function mergeTodayQuickItems(
   }
 
   return Array.from(mergedByKey.values());
+}
+
+function normalizeOpenResponsibilitySessionType(
+  sessionType: string | undefined
+): 'initial' | 'followup' | 'ongoing' {
+  if (sessionType === 'initial') {
+    return 'initial';
+  }
+
+  if (sessionType === 'ongoing') {
+    return 'ongoing';
+  }
+
+  return 'followup';
+}
+
+function resolveOpenResponsibilityDate(
+  session: InProgressSession
+): Date | null {
+  if (session.updatedAt) {
+    const updatedAtDate = new Date(session.updatedAt);
+    const updatedAtTime = updatedAtDate.getTime();
+    if (Number.isFinite(updatedAtTime)) {
+      return updatedAtDate;
+    }
+  }
+
+  if (session.dateKey) {
+    const dateKeyDate = new Date(`${session.dateKey}T12:00:00`);
+    const dateKeyTime = dateKeyDate.getTime();
+    if (Number.isFinite(dateKeyTime)) {
+      return dateKeyDate;
+    }
+  }
+
+  return null;
+}
+
+function formatOpenResponsibilityDate(
+  session: InProgressSession
+): string {
+  const responsibilityDate = resolveOpenResponsibilityDate(session);
+  if (!responsibilityDate) {
+    return '';
+  }
+
+  return responsibilityDate.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+  });
+}
+
+function getOpenResponsibilitySortTime(
+  session: InProgressSession
+): number {
+  const responsibilityDate = resolveOpenResponsibilityDate(session);
+  if (!responsibilityDate) {
+    return 0;
+  }
+
+  return responsibilityDate.getTime();
 }
 
 export const CommandCenterPageSprint3: React.FC = () => {
@@ -345,6 +406,22 @@ export const CommandCenterPageSprint3: React.FC = () => {
     incompleteSessions: incompleteSessionsCount,
   };
 
+  const openClinicalResponsibilities = inProgressSessions.data
+    .filter((session) => {
+      const hasPatientId =
+        typeof session.patientId === 'string' &&
+        session.patientId.trim() !== '';
+      const isOpenSession =
+        session.status === 'recording_in_progress' ||
+        session.status === 'interrupted';
+      return hasPatientId && isOpenSession;
+    })
+    .sort((leftSession, rightSession) => {
+      const leftTime = getOpenResponsibilitySortTime(leftSession);
+      const rightTime = getOpenResponsibilitySortTime(rightSession);
+      return rightTime - leftTime;
+    });
+
   // withPatientRequired implementation
   const withPatientRequired = async (
     action: (patient: Patient) => void | Promise<void>
@@ -555,6 +632,12 @@ export const CommandCenterPageSprint3: React.FC = () => {
     navigate(`/workflow?type=${workflowType}&patientId=${row.patientId}`);
   }, [navigate]);
 
+  const handleContinueOpenResponsibility = useCallback((session: InProgressSession) => {
+    const normalizedSessionType = normalizeOpenResponsibilitySessionType(session.sessionType);
+    const workflowType = normalizedSessionType === 'initial' ? 'initial' : 'followup';
+    navigate(`/workflow?type=${workflowType}&patientId=${session.patientId}&sessionId=${session.id}&resume=true`);
+  }, [navigate]);
+
   const handleOngoingModalSuccess = useCallback(
     (patientId: string, baselineSOAP?: { subjective: string; objective: string; assessment: string; plan: string }, patientName?: string) => {
       setShowOngoingIntake(false);
@@ -592,6 +675,58 @@ export const CommandCenterPageSprint3: React.FC = () => {
             <h2 className="text-sm font-medium text-slate-700 mb-3 font-apple">{t('shell.commandCenter.searchPatient')}</h2>
             <PatientSearchBar />
           </div>
+
+          {openClinicalResponsibilities.length > 0 && (
+            <div className="bg-white border border-amber-200 rounded-2xl p-6 shadow-sm">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 font-apple mb-1">
+                  {t('shell.openClinicalResponsibilities.title')}
+                </h2>
+                <p className="text-base text-gray-600 font-apple font-light">
+                  {t('shell.openClinicalResponsibilities.subtitle')}
+                </p>
+              </div>
+              <div className="mt-4 space-y-2">
+                {openClinicalResponsibilities.map((session) => {
+                  const normalizedSessionType = normalizeOpenResponsibilitySessionType(session.sessionType);
+                  const pendingDate = formatOpenResponsibilityDate(session);
+                  const hasPendingDate = pendingDate.trim() !== '';
+                  const actionLabel =
+                    session.status === 'interrupted'
+                      ? t('shell.openClinicalResponsibilities.resume')
+                      : t('shell.openClinicalResponsibilities.continue');
+                  return (
+                    <div
+                      key={session.id}
+                      className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="font-medium font-apple text-sm text-slate-900">
+                            {session.patientName || t('shell.startSessionModal.patientFallbackName')}
+                          </div>
+                          <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+                            {t('shell.openClinicalResponsibilities.badge')}
+                          </span>
+                        </div>
+                        <div className="text-xs font-apple font-light mt-0.5 text-slate-600">
+                          {t(`shell.sessionType.${normalizedSessionType}`)}
+                          {hasPendingDate ? ` · ${t('shell.openClinicalResponsibilities.pendingSince', { date: pendingDate })}` : null}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleContinueOpenResponsibility(session)}
+                        className="p-2 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-apple text-xs font-medium transition-all"
+                      >
+                        {actionLabel}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Block 1: Today's Patients (WO-UX-01: empty state CTA scrolls to Work with patients) */}
           <TodayPatientsPanel

@@ -11,6 +11,7 @@ export interface InProgressSession {
   /** 'recording_in_progress' | 'interrupted' — interrupted sessions can be resumed */
   status?: string;
   dateKey?: string;
+  updatedAt?: string;
 }
 
 export interface InProgressSessionsState {

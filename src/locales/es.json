@@ -607,6 +607,14 @@
       "inDays": "En {{count}} días",
       "daysAgo": "Hace {{count}} días"
     },
+    "openClinicalResponsibilities": {
+      "title": "Pendiente de cerrar",
+      "subtitle": "Fichas clínicas abiertas o documentación sin finalizar.",
+      "badge": "Pendiente",
+      "pendingSince": "Pendiente desde {{date}}",
+      "continue": "Continuar",
+      "resume": "Reanudar"
+    },
     "sessionType": {
       "initial": "Evaluación inicial",
       "followup": "Seguimiento",
