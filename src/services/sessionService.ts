@@ -26,6 +26,34 @@ export type TreatmentDecision = {
   homeProgramItems: TreatmentDecisionItem[];
 };
 
+type InProgressSessionSummary = {
+  id: string;
+  patientId: string;
+  patientName: string;
+  sessionType: string;
+  transcript: string;
+  status?: string;
+  dateKey?: string;
+  updatedAt?: string;
+};
+
+type InProgressSessionRecord = Omit<InProgressSessionSummary, 'updatedAt'> & {
+  soapStatus?: string;
+  updatedAt?: unknown;
+  createdAt?: unknown;
+  timestamp?: unknown;
+};
+
+type CompletedSessionRecord = {
+  id: string;
+  patientId?: string;
+  sessionType?: string;
+  soapStatus?: string;
+  updatedAt?: unknown;
+  createdAt?: unknown;
+  timestamp?: unknown;
+};
+
 interface SessionData {
   userId: string;
   patientName: string;
@@ -128,6 +156,20 @@ class SessionService {
     }
     if (value instanceof Date) return value.toISOString();
     return undefined;
+  }
+
+  private timestampToMillis(value: unknown): number {
+    if (value == null) return 0;
+    if (typeof value === 'object' && value !== null && 'toMillis' in value) {
+      const toMillis = (value as { toMillis?: () => number }).toMillis;
+      if (typeof toMillis === 'function') return toMillis.call(value);
+    }
+    if (value instanceof Date) return value.getTime();
+    if (typeof value === 'string') {
+      const parsedTime = Date.parse(value);
+      return Number.isFinite(parsedTime) ? parsedTime : 0;
+    }
+    return 0;
   }
 
   private resolveSessionDateKey(data: Record<string, unknown>): string | null {
@@ -245,7 +287,8 @@ class SessionService {
         ...cleanedSessionData,
         ...(typeof sessionDateKey === 'string' && sessionDateKey.trim() !== '' ? {} : { sessionDateKey: this.localDateKey(new Date()) }),
         timestamp: serverTimestamp(),
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
       
       const docRef = await addDoc(sessionsRef, newSession);
@@ -301,6 +344,7 @@ class SessionService {
             ...(typeof requestedSessionDateKey === 'string' && requestedSessionDateKey.trim() !== '' ? {} : { sessionDateKey: this.localDateKey(new Date()) }),
             timestamp: serverTimestamp(),
             createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
           };
           const collisionSafeDocRef = await addDoc(sessionsRef, collisionSafeSession);
           const collisionSafeDocId = collisionSafeDocRef.id;
@@ -319,7 +363,8 @@ class SessionService {
         ...cleanedSessionData,
         ...(typeof requestedSessionDateKey === 'string' && requestedSessionDateKey.trim() !== '' ? {} : { sessionDateKey: this.localDateKey(new Date()) }),
         timestamp: serverTimestamp(),
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       };
       await setDoc(docRef, newSession);
       return targetDocId;
@@ -397,19 +442,18 @@ class SessionService {
     }
   }
 
-  async getInProgressSessions(userId: string): Promise<{ id: string; patientId: string; patientName: string; sessionType: string; transcript: string; status?: string; dateKey?: string; updatedAt?: string }[]> {
+  async getInProgressSessions(userId: string): Promise<InProgressSessionSummary[]> {
     try {
       const sessionsRef = collection(db, this.COLLECTION_NAME);
       // Include both in-progress and interrupted so Command Center shows "Resume" for interrupted
       const statuses = ['recording_in_progress', 'interrupted'] as const;
-      const results: { id: string; patientId: string; patientName: string; sessionType: string; transcript: string; status?: string; soapStatus?: string; updatedAt?: unknown; dateKey?: string }[] = [];
+      const results: InProgressSessionRecord[] = [];
       for (const status of statuses) {
         const q = query(
           sessionsRef,
           where('userId', '==', userId),
           where('status', '==', status),
-          orderBy('updatedAt', 'desc'),
-          limit(10)
+          limit(50)
         );
         const snapshot = await getDocs(q);
         snapshot.docs.forEach(d => {
@@ -424,33 +468,21 @@ class SessionService {
             status,
             soapStatus: data.soapStatus || undefined,
             updatedAt: data.updatedAt,
+            createdAt: data.createdAt,
+            timestamp: data.timestamp,
             dateKey: sessionDateKey ?? undefined,
           });
         });
       }
-      const toMillis = (value: unknown): number => {
-        if (value && typeof (value as { toMillis?: () => number }).toMillis === 'function') {
-          return (value as { toMillis(): number }).toMillis();
-        }
-        if (value instanceof Date) {
-          return value.getTime();
-        }
-        if (typeof value === 'string') {
-          const parsedTime = Date.parse(value);
-          return Number.isFinite(parsedTime) ? parsedTime : 0;
-        }
-        return 0;
-      };
       const completedSessionsQuery = query(
         sessionsRef,
         where('userId', '==', userId),
         where('status', '==', 'completed'),
-        orderBy('updatedAt', 'desc'),
-        limit(20)
+        limit(50)
       );
       const completedSnapshot = await getDocs(completedSessionsQuery);
       const completedSessionDocs = completedSnapshot.docs;
-      const completedSessions: { id: string; patientId?: string; sessionType?: string; soapStatus?: string; updatedAt?: unknown }[] =
+      const completedSessions: CompletedSessionRecord[] =
         completedSessionDocs.map((d) => {
           const docId = d.id;
           const docData = d.data();
@@ -462,7 +494,11 @@ class SessionService {
         const normalizedSessionType = this.normalizeSessionKind(session.sessionType);
         if (normalizedSessionType == null) continue;
         const key = `${session.patientId}::${normalizedSessionType}`;
-        const updatedAtMs = toMillis(session.updatedAt);
+        const updatedAtMs = Math.max(
+          this.timestampToMillis(session.updatedAt),
+          this.timestampToMillis(session.createdAt),
+          this.timestampToMillis(session.timestamp)
+        );
         const current = latestFinalizedByPatientSessionType.get(key) ?? 0;
         if (updatedAtMs > current) {
           latestFinalizedByPatientSessionType.set(key, updatedAtMs);
@@ -496,7 +532,11 @@ class SessionService {
         const latestFinalizedAt = latestFinalizedByPatientSessionType.get(sessionKey) ?? 0;
         const latestConsultationAt = latestConsultationByPatientSessionType.get(sessionKey) ?? 0;
         const latestCompletedAt = Math.max(latestFinalizedAt, latestConsultationAt);
-        const sessionUpdatedAt = toMillis(session.updatedAt);
+        const sessionUpdatedAt = Math.max(
+          this.timestampToMillis(session.updatedAt),
+          this.timestampToMillis(session.createdAt),
+          this.timestampToMillis(session.timestamp)
+        );
         const hasLaterCompletedRecord = latestCompletedAt > 0;
         const sessionIsOlderThanCompletion = sessionUpdatedAt <= latestCompletedAt;
         if (hasLaterCompletedRecord && sessionIsOlderThanCompletion) {
@@ -507,12 +547,23 @@ class SessionService {
       // Sort merged by updatedAt desc and dedupe by id
       const byId = new Map(filteredResults.map(r => [r.id, r]));
       const sorted = [...byId.values()].sort((a, b) => {
-        const aT = toMillis(a.updatedAt);
-        const bT = toMillis(b.updatedAt);
+        const aT = Math.max(
+          this.timestampToMillis(a.updatedAt),
+          this.timestampToMillis(a.createdAt),
+          this.timestampToMillis(a.timestamp)
+        );
+        const bT = Math.max(
+          this.timestampToMillis(b.updatedAt),
+          this.timestampToMillis(b.createdAt),
+          this.timestampToMillis(b.timestamp)
+        );
         return bT - aT;
       });
       return sorted.slice(0, 10).map((session) => {
-        const updatedAtIso = this.timestampToIsoString(session.updatedAt);
+        const updatedAtIso =
+          this.timestampToIsoString(session.updatedAt) ??
+          this.timestampToIsoString(session.createdAt) ??
+          this.timestampToIsoString(session.timestamp);
         const sessionItem = {
           id: session.id,
           patientId: session.patientId,
