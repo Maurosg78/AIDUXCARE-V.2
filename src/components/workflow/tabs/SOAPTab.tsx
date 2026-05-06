@@ -311,7 +311,14 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             onFinalize={handleFinalizeSOAP}
             onUnfinalize={handleUnfinalizeSOAP}
             onPreview={(soap) => {
-              console.log('[Workflow] Clinical note preview requested', soap);
+              if (import.meta.env.DEV) {
+                console.log('[Workflow] Clinical note preview requested', {
+                  hasSubjective: Boolean(soap.subjective),
+                  hasObjective: Boolean(soap.objective),
+                  hasAssessment: Boolean(soap.assessment),
+                  hasPlan: Boolean(soap.plan),
+                });
+              }
             }}
             onShare={() => {
               setIsShareMenuOpen(true);

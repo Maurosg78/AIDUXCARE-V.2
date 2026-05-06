@@ -56,13 +56,15 @@ export class FirebaseWhisperService {
             }
             const idToken = await currentUser.getIdToken();
 
-            console.log('[FirebaseWhisper] Calling whisperProxy (HTTP):', {
-                model,
-                language: options.languageHint || 'auto',
-                mode: options.mode || 'dictation',
-                audioSize: `${(audioBlob.size / 1024 / 1024).toFixed(2)} MB`,
-                mimeType: audioBlob.type
-            });
+            if (import.meta.env.DEV) {
+                console.log('[FirebaseWhisper] Calling whisperProxy (HTTP):', {
+                    model,
+                    language: options.languageHint || 'auto',
+                    mode: options.mode || 'dictation',
+                    audioSize: `${(audioBlob.size / 1024 / 1024).toFixed(2)} MB`,
+                    mimeType: audioBlob.type
+                });
+            }
 
             // Llamar a la callable vía POST (mismo formato que el SDK: body.data)
             const response = await fetch(WHISPER_PROXY_URL, {
@@ -82,11 +84,13 @@ export class FirebaseWhisperService {
                 if (!data?.text) {
                     throw new Error('La transcripción no devolvió texto');
                 }
-                console.log('[FirebaseWhisper] ✅ Transcription successful:', {
-                    textLength: data.text.length,
-                    language: data.language,
-                    duration: data.duration
-                });
+                if (import.meta.env.DEV) {
+                    console.log('[FirebaseWhisper] Transcription successful', {
+                        textLength: data.text.length,
+                        language: data.language,
+                        duration: data.duration
+                    });
+                }
                 return {
                     text: data.text,
                     language: data.language,
@@ -161,11 +165,12 @@ export class FirebaseWhisperService {
                         return;
                     }
 
-                    console.log('[FirebaseWhisper] ✅ Blob convertido a Base64:', {
-                        originalSize: blob.size,
-                        base64Length: base64Data.length,
-                        preview: base64Data.substring(0, 30) + '...'
-                    });
+                    if (import.meta.env.DEV) {
+                        console.log('[FirebaseWhisper] Blob converted to Base64', {
+                            originalSize: blob.size,
+                            base64Length: base64Data.length
+                        });
+                    }
 
                     resolve(base64Data);
                 } catch (error) {

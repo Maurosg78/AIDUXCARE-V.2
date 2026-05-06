@@ -274,7 +274,8 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
           : chunkBlob;
         
         // ✅ PHASE 1: Enhanced logging for chunk processing
-        console.log(`[useTranscript] 📝 Chunk processing:`, {
+        if (import.meta.env.DEV) {
+          console.log(`[useTranscript] 📝 Chunk processing:`, {
           chunkNumber: audioChunksRef.current.length,
           size: `${normalizedBlob.size} bytes`,
           sizeKB: `${(normalizedBlob.size / 1024).toFixed(2)} KB`,
@@ -282,9 +283,12 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
           normalizedType: normalizedType,
           wasNormalized: normalizedType !== chunkBlob.type,
           timestamp: new Date().toISOString()
-        });
+          });
+        }
         
-        console.log(`[useTranscript] Transcribing chunk: ${normalizedBlob.size} bytes, original type: "${chunkBlob.type}", normalized type: "${normalizedType}"`);
+        if (import.meta.env.DEV) {
+          console.log(`[useTranscript] Transcribing chunk: ${normalizedBlob.size} bytes, original type: "${chunkBlob.type}", normalized type: "${normalizedType}"`);
+        }
 
         if (isTranscribingChunkRef.current) {
           // If already transcribing, queue this chunk
@@ -304,13 +308,17 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
             mode
           });
           
-          console.log(`[useTranscript] Transcription success: "${result.text?.substring(0, 50)}..."`);
+          if (import.meta.env.DEV) {
+            console.log('[useTranscript] Transcription success', {
+              textLength: result.text?.length ?? 0,
+            });
+          }
           
           // Discard Whisper "hallucination" for very short/silent audio (generic placeholder-like text)
           const trimmed = result.text?.trim() ?? '';
           const isHallucination = trimmed && trimmed.startsWith(HALLUCINATION_PREFIX);
           if (isHallucination) {
-            console.warn('[useTranscript] Discarding hallucinated transcript (short/silent audio):', trimmed.substring(0, 60) + '...');
+            console.warn('[useTranscript] Discarding hallucinated transcript (short/silent audio)');
             setError('No clear speech detected. Please record at least a few seconds of clear speech, then stop.');
           } else if (trimmed) {
             transcriptPartsRef.current.push(result.text!.trim());
@@ -323,7 +331,7 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
           }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err);
-          console.error('[useTranscript] Error transcribiendo chunk:', errorMessage, err);
+          console.error('[useTranscript] Error transcribiendo chunk:', errorMessage);
           
           // ✅ SPRINT 2 P3: Show error for ALL failures (user needs to know)
           // Previously errors were hidden, causing confusion

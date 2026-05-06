@@ -232,8 +232,8 @@ export class PersistenceService {
       }
 
       return data;
-    } catch (error) {
-      console.error('Error obteniendo nota por ID:', error);
+    } catch {
+      console.error('Error obteniendo nota por ID');
       return null;
     }
   }

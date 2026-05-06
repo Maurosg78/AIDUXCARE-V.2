@@ -812,14 +812,13 @@ function parseSOAPResponse(
     return String(plan);
   };
 
-  // ✅ WO-PDF-004: Add logging for debugging
-  console.log('[SOAP Builder] Parsing SOAP response...');
-  console.log('[SOAP Builder] Treatment plan type:', typeof soapData?.plan);
-  if (typeof soapData?.plan === 'object' && soapData?.plan !== null) {
-    console.log('[SOAP Builder] Treatment plan is object, will serialize');
-    console.log('[SOAP Builder] Plan object preview:', JSON.stringify(soapData.plan).substring(0, 200));
+  if (import.meta.env.DEV) {
+    console.log('[SOAP Builder] Parsing SOAP response', {
+      planType: typeof soapData?.plan,
+      planIsObject: typeof soapData?.plan === 'object' && soapData?.plan !== null,
+      objectiveLength: String(soapData?.objective || '').length,
+    });
   }
-  console.log('[SOAP Builder] Objective length:', String(soapData?.objective || '').length, 'chars');
   const formattedPlanRaw = formatTreatmentPlan(soapData?.plan);
 
   // ✅ T3: Validate and limit plan size (max 2000 chars)
@@ -1007,7 +1006,7 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
     ((data as any)?.soap ? JSON.stringify((data as any).soap) : '');
 
   if (!rawText || typeof rawText !== 'string') {
-    console.log('[FOLLOWUP-EMPTY-BODY]', { traceId, vertexRaw: data });
+    console.warn('[FOLLOWUP-EMPTY-BODY]', { traceId, hasVertexResponse: Boolean(data) });
     return {
       raw: '',
       soap: null,
@@ -1016,7 +1015,12 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
     };
   }
 
-  console.log('[FOLLOWUP-RAW-STRICT]', rawText);
+  if (import.meta.env.DEV) {
+    console.log('[FOLLOWUP-RAW-STRICT]', {
+      traceId,
+      responseLength: rawText.length,
+    });
+  }
 
   try {
   const jsonString = sanitizeAndExtractJson(rawText);

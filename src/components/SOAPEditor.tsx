@@ -821,9 +821,12 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
             <textarea
               value={(() => {
                 if (!currentSOAP) return '';
-                console.log('[SOAP-DEBUG] currentSOAP keys:', Object.keys(currentSOAP),
-                  'followUp length:', currentSOAP.followUp?.length ?? 'undefined',
-                  'followUp preview:', currentSOAP.followUp?.substring(0, 80) ?? 'null');
+                if (import.meta.env.DEV) {
+                  console.log('[SOAP-DEBUG] currentSOAP summary:', {
+                    keyCount: Object.keys(currentSOAP).length,
+                    followUpLength: currentSOAP.followUp?.length ?? 0,
+                  });
+                }
                 return getFollowUpSingleBlockContent(currentSOAP);
               })()}
               onChange={(e) => handleFollowUpSingleBlockChange(e.target.value)}

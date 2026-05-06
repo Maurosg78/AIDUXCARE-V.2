@@ -276,7 +276,9 @@ class TreatmentPlanService {
 
       const snapshot = await getDocs(q);
       if (snapshot.empty) {
-        console.info(`[TreatmentPlanService] No treatment plan found for patient ${patientId} (user: ${currentUser.uid})`);
+        if (import.meta.env.DEV) {
+          console.info('[TreatmentPlanService] No treatment plan found for current patient');
+        }
         return null;
       }
 
@@ -286,7 +288,12 @@ class TreatmentPlanService {
         ...doc.data(),
       } as TreatmentPlan;
       
-      console.log(`[TreatmentPlanService] ✅ Loaded treatment plan: ${plan.id} (from ${plan.acceptedAt})`);
+      if (import.meta.env.DEV) {
+        console.log('[TreatmentPlanService] Loaded treatment plan', {
+          hasPlanId: Boolean(plan.id),
+          hasAcceptedAt: Boolean(plan.acceptedAt),
+        });
+      }
       return plan;
     } catch (error: any) {
       // WO-FS-DATA-03: Handle permission-denied as "no data yet"
@@ -304,7 +311,7 @@ class TreatmentPlanService {
         return null;
       }
       
-      console.error('[TreatmentPlanService] Error fetching treatment plan:', error);
+      console.error('[TreatmentPlanService] Error fetching treatment plan');
       return null;
     }
   }

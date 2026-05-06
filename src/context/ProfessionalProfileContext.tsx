@@ -211,11 +211,11 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
         const retryable = isNetworkOrBlockedError(err);
         if (!retryable) throw err;
         if (attempt === retries - 1) {
-          logger.warn(`[PROFILE] getDoc failed after ${retries} retries`, { uid, error: err });
+          logger.warn(`[PROFILE] getDoc failed after ${retries} retries`);
           throw err;
         }
         const delay = delays[attempt] || 150;
-        logger.info(`[PROFILE] Retry ${attempt + 1}/${retries} after ${delay}ms`, { uid });
+        logger.info(`[PROFILE] Retry ${attempt + 1}/${retries} after ${delay}ms`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -259,7 +259,7 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
           .map(([field]) => field);
 
         const missingFieldsStr = missingFieldsList.length > 0 ? missingFieldsList.join(', ') : 'NONE';
-        if (missingFieldsList.length > 0) {
+        if (missingFieldsList.length > 0 && import.meta.env.DEV) {
           console.warn('[PROFILE] ⚠️ Profile loaded but MISSING fields:', missingFieldsStr, {
             hasFirstName,
             hasProfessionalTitle,
@@ -272,29 +272,22 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
           });
         }
 
-        logger.info('[PROFILE] Profile loaded from Firestore', {
-          uid,
-          email: userData.email,
-          registrationStatus: userData.registrationStatus,
-          hasFirstName,
-          firstName,
-          hasProfessionalTitle,
-          professionalTitle: userData.professionalTitle,
-          profession: userData.profession,
-          hasSpecialty,
-          specialty: userData.specialty,
-          hasPracticeCountry,
-          practiceCountry,
-          country: userData.country,
-          hasPilotConsent,
-          pilotConsentRaw: (userData as any).pilotConsent,
-          pilotConsentAccepted: (userData as any).pilotConsent?.accepted,
-          missingFields,
-          MISSING_FIELDS: missingFieldsStr
-        });
+        if (import.meta.env.DEV) {
+          logger.info('[PROFILE] Profile loaded from Firestore', {
+            registrationStatus: userData.registrationStatus,
+            hasFirstName,
+            hasProfessionalTitle,
+            hasSpecialty,
+            hasPracticeCountry,
+            hasPilotConsent,
+            pilotConsentAccepted: (userData as any).pilotConsent?.accepted,
+            missingFields,
+            MISSING_FIELDS: missingFieldsStr
+          });
+        }
 
         if (!userData.registrationStatus) {
-          logger.info("[PROFILE] Missing registrationStatus, setting to 'incomplete'", { uid });
+          logger.info("[PROFILE] Missing registrationStatus, setting to 'incomplete'");
           await updateDoc(doc(db, 'users', uid), { registrationStatus: 'incomplete' });
           userData.registrationStatus = 'incomplete';
         }
@@ -309,7 +302,7 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
           await updateDoc(doc(db, 'users', uid), { lastLoginAt: serverTimestamp() });
         }
       } else {
-        logger.info("[PROFILE] Document does not exist (confirmed 'not found'), creating minimal profile", { uid });
+        logger.info("[PROFILE] Document does not exist (confirmed 'not found'), creating minimal profile");
 
         const minimalProfile: Partial<ProfessionalProfile> = {
           uid,
@@ -350,16 +343,14 @@ export const ProfessionalProfileProvider: React.FC<ProfessionalProfileProviderPr
         else if (errorMessage.includes('network') || errorMessage.includes('failed to fetch') || errorMessage.includes('offline')) classifiedType = 'network';
 
         logger.error('[PROFILE] Network/blocked/permission error loading profile - NOT creating minimal profile', {
-          uid,
-          error: e.message,
-          code: errorCode,
+          hasErrorCode: Boolean(errorCode),
           type: classifiedType
         });
 
         setError(e);
         setErrorType(classifiedType);
       } else {
-        logger.error('Error cargando perfil profesional:', e);
+        logger.error('Error cargando perfil profesional');
         setError(e);
         setErrorType('other');
       }
