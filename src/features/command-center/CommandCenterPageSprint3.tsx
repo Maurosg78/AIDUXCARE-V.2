@@ -1008,13 +1008,19 @@ export const CommandCenterPageSprint3: React.FC = () => {
         onAddToToday={
           startSessionModalMode === 'add_to_today'
             ? (patient, type) => {
-	              setTodayQuickList((prev) =>
-	                addToListSafe(prev, {
-	                  patientId: patient.id,
-	                  patientName: patient.fullName || patient.firstName || 'Patient',
-	                  sessionType: type,
-	                }),
-	              );
+              const dateKey = toLocalDateKey(selectedDate);
+              const nextItem = {
+                patientId: patient.id,
+                patientName: patient.fullName || patient.firstName || 'Patient',
+                sessionType: type,
+              };
+              setTodayQuickList((prev) => {
+                const updatedList = addToListSafe(prev, nextItem);
+                if (user?.uid) {
+                  void saveTodayList(user.uid, dateKey, updatedList);
+                }
+                return updatedList;
+              });
               setShowStartSessionModal(false);
               setStartSessionModalStep(1);
               setStartSessionModalPatient(null);
