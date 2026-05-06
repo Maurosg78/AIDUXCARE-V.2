@@ -750,73 +750,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
             </div>
           )}
 
-          <div className="space-y-6">
-            <section className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="lg:w-64 lg:flex-shrink-0">
-                  <h2 className="text-base font-semibold text-slate-900 font-apple">
-                    {t('shell.daySummary.title')}
-                  </h2>
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <div className="rounded-xl border border-purple-100 bg-purple-50 px-3 py-2">
-                      <div className="text-xs font-medium text-purple-700 font-apple">{t('shell.todayPatients.groupAwaitingDocumentation')}</div>
-                      <div className="text-xl font-semibold text-purple-900 font-apple">{summaryAwaitingDocumentationRows.length}</div>
-                    </div>
-                    <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
-                      <div className="text-xs font-medium text-blue-700 font-apple">{t('shell.todayPatients.groupInProgress')}</div>
-                      <div className="text-xl font-semibold text-blue-900 font-apple">{summaryInProgressRows.length}</div>
-                    </div>
-                    <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                      <div className="text-xs font-medium text-slate-600 font-apple">{t('shell.todayPatients.groupToSee')}</div>
-                      <div className="text-xl font-semibold text-slate-900 font-apple">{summaryToSeeRows.length}</div>
-                    </div>
-                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
-                      <div className="text-xs font-medium text-emerald-700 font-apple">{t('shell.daySummary.seen')}</div>
-                      <div className="text-xl font-semibold text-emerald-900 font-apple">{summarySeenTodayRows.length}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex-1 border-t border-slate-100 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 font-apple">
-                    {t('shell.daySummary.seenToday')}
-                  </div>
-                  {summarySeenTodayRows.length > 0 ? (
-                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                      {summarySeenTodayRows.map((row) => {
-                        const sessionType = row.sessionType ?? 'followup';
-                        return (
-                          <div key={`${row.patientId}-${row.status}-${sessionType}`} className="rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2">
-                            <div className="font-apple text-sm font-medium text-emerald-950 truncate">
-                              {row.patientName}
-                            </div>
-                            <div className="mt-0.5 flex items-center justify-between gap-2">
-                              <span className="text-xs font-apple text-emerald-700">
-                                {t(`shell.sessionType.${sessionType}`)}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenClinicalDayRow(row)}
-                                className="text-xs font-medium text-emerald-800 hover:text-emerald-950 font-apple"
-                              >
-                                {t('shell.daySummary.openSoap')}
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="mt-2 text-sm text-slate-500 font-apple font-light">
-                      {t('shell.daySummary.noSeenToday')}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* Block 1: Today's Patients (WO-UX-01: empty state CTA scrolls to Work with patients) */}
-            <TodayPatientsPanel
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
+            <div className="space-y-6 min-w-0">
+              {/* Block 1: Today's Patients (WO-UX-01: empty state CTA scrolls to Work with patients) */}
+              <TodayPatientsPanel
               appointments={todayAppointments}
               loading={appointmentsLoading}
               selectedPatient={selectedPatient}
@@ -878,13 +815,12 @@ export const CommandCenterPageSprint3: React.FC = () => {
                   return updatedList;
                 });
               }}
-            />
-          </div>
+              />
 
-          {/* Hidden in pilot to avoid duplicate clinical queues. */}
+              {/* Hidden in pilot to avoid duplicate clinical queues. */}
 
-          {/* Block 2: Work with Patients */}
-          <WorkWithPatientsPanel
+              {/* Block 2: Work with Patients */}
+              <WorkWithPatientsPanel
             selectedPatient={selectedPatient}
             onSelectPatient={(patient) => {
               setSelectedPatient(patient);
@@ -908,13 +844,74 @@ export const CommandCenterPageSprint3: React.FC = () => {
               setShowOngoingIntake(true);
             }}
             isNewlyCreated={isNewlyCreatedPatient}
-          />
+              />
 
-          {/* Block 3: Work Queue */}
-          <WorkQueuePanel
-            workQueue={workQueue}
-            loading={pendingNotes.loading}
-          />
+              {/* Block 3: Work Queue */}
+              <WorkQueuePanel
+                workQueue={workQueue}
+                loading={pendingNotes.loading}
+              />
+            </div>
+
+            <aside className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm xl:sticky xl:top-6">
+              <h2 className="text-base font-semibold text-slate-900 font-apple">
+                {t('shell.daySummary.title')}
+              </h2>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-xl border border-purple-100 bg-purple-50 px-3 py-2">
+                  <div className="text-xs font-medium text-purple-700 font-apple">{t('shell.todayPatients.groupAwaitingDocumentation')}</div>
+                  <div className="text-xl font-semibold text-purple-900 font-apple">{summaryAwaitingDocumentationRows.length}</div>
+                </div>
+                <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
+                  <div className="text-xs font-medium text-blue-700 font-apple">{t('shell.todayPatients.groupInProgress')}</div>
+                  <div className="text-xl font-semibold text-blue-900 font-apple">{summaryInProgressRows.length}</div>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                  <div className="text-xs font-medium text-slate-600 font-apple">{t('shell.todayPatients.groupToSee')}</div>
+                  <div className="text-xl font-semibold text-slate-900 font-apple">{summaryToSeeRows.length}</div>
+                </div>
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
+                  <div className="text-xs font-medium text-emerald-700 font-apple">{t('shell.daySummary.seen')}</div>
+                  <div className="text-xl font-semibold text-emerald-900 font-apple">{summarySeenTodayRows.length}</div>
+                </div>
+              </div>
+              <div className="mt-4 border-t border-slate-100 pt-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 font-apple">
+                  {t('shell.daySummary.seenToday')}
+                </div>
+                {summarySeenTodayRows.length > 0 ? (
+                  <div className="mt-2 space-y-2">
+                    {summarySeenTodayRows.map((row) => {
+                      const sessionType = row.sessionType ?? 'followup';
+                      return (
+                        <div key={`${row.patientId}-${row.status}-${sessionType}`} className="rounded-xl border border-emerald-100 bg-emerald-50/70 px-3 py-2">
+                          <div className="font-apple text-sm font-medium text-emerald-950 truncate">
+                            {row.patientName}
+                          </div>
+                          <div className="mt-0.5 flex items-center justify-between gap-2">
+                            <span className="text-xs font-apple text-emerald-700">
+                              {t(`shell.sessionType.${sessionType}`)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenClinicalDayRow(row)}
+                              className="text-xs font-medium text-emerald-800 hover:text-emerald-950 font-apple"
+                            >
+                              {t('shell.daySummary.openSoap')}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500 font-apple font-light">
+                    {t('shell.daySummary.noSeenToday')}
+                  </p>
+                )}
+              </div>
+            </aside>
+          </div>
         </div>
       </main>
 
