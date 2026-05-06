@@ -222,9 +222,9 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
     const isSeenTodayRow = row.status === PatientWorkflowStatus.DOCUMENTED_FINAL;
     return isSeenTodayRow;
   });
-  const renderGroupHeader = (label: string) => (
+  const renderGroupHeader = (label: string, count: number) => (
     <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 font-apple">
-      {label}
+      {label} ({count})
     </div>
   );
 
@@ -423,25 +423,25 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
           )}
           {toSeeRows.length > 0 ? (
             <div className="space-y-2">
-              {renderGroupHeader(t('shell.todayPatients.groupToSee'))}
+              {renderGroupHeader(t('shell.todayPatients.groupToSee'), toSeeRows.length)}
               {toSeeRows.map(renderActionClinicalRow)}
             </div>
           ) : null}
           {inProgressRows.length > 0 ? (
             <div className="space-y-2 pt-3 border-t border-gray-100">
-              {renderGroupHeader(t('shell.todayPatients.groupInProgress'))}
+              {renderGroupHeader(t('shell.todayPatients.groupInProgress'), inProgressRows.length)}
               {inProgressRows.map(renderActionClinicalRow)}
             </div>
           ) : null}
           {awaitingDocumentationRows.length > 0 ? (
             <div className="space-y-2 pt-3 border-t border-gray-100">
-              {renderGroupHeader(t('shell.todayPatients.groupAwaitingDocumentation'))}
+              {renderGroupHeader(t('shell.todayPatients.groupAwaitingDocumentation'), awaitingDocumentationRows.length)}
               {awaitingDocumentationRows.map(renderActionClinicalRow)}
             </div>
           ) : null}
           {seenTodayRows.length > 0 ? (
             <div className="space-y-2 pt-3 border-t border-gray-100">
-              {renderGroupHeader(t('shell.todayPatients.groupSeenToday'))}
+              {renderGroupHeader(t('shell.todayPatients.groupSeenToday'), seenTodayRows.length)}
               {seenTodayRows.map(renderCompletedClinicalRow)}
             </div>
           ) : null}
