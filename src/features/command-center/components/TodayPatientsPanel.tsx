@@ -157,22 +157,6 @@ function getPrimaryActionLabel(status: PatientWorkflowStatus): 'Iniciar' | 'Cont
   }
 }
 
-function findDuplicates(ids: string[]): string[] {
-  const seenIds = new Set<string>();
-  const duplicateIds = new Set<string>();
-
-  for (const id of ids) {
-    const hasSeenId = seenIds.has(id);
-    if (hasSeenId) {
-      duplicateIds.add(id);
-    }
-
-    seenIds.add(id);
-  }
-
-  return Array.from(duplicateIds);
-}
-
 export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
   appointments,
   loading,
@@ -220,28 +204,173 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
     }
   }
 
-  const actionRows = clinicalDayRows.filter((row) => {
-    const isActionRow = row.status !== PatientWorkflowStatus.DOCUMENTED_FINAL;
-    return isActionRow;
+  const toSeeRows = clinicalDayRows.filter((row) => {
+    const isToSeeRow = row.status === PatientWorkflowStatus.SCHEDULED;
+    return isToSeeRow;
   });
-  const completedRows = clinicalDayRows.filter((row) => {
-    const isCompletedRow = row.status === PatientWorkflowStatus.DOCUMENTED_FINAL;
-    return isCompletedRow;
+  const inProgressRows = clinicalDayRows.filter((row) => {
+    const isInProgressRow =
+      row.status === PatientWorkflowStatus.IN_PROGRESS ||
+      row.status === PatientWorkflowStatus.ABANDONED;
+    return isInProgressRow;
   });
-  const totalRows = clinicalDayRows.length;
-  const renderedPatients = [...actionRows, ...completedRows];
-  const renderedPatientIds = renderedPatients.map((row) => {
-    const patientId = row.patientId;
-    return patientId;
+  const awaitingDocumentationRows = clinicalDayRows.filter((row) => {
+    const isAwaitingDocumentationRow = row.status === PatientWorkflowStatus.DOCUMENTED_DRAFT;
+    return isAwaitingDocumentationRow;
   });
-  const duplicateRenderedPatients = findDuplicates(renderedPatientIds);
-  const hasDuplicateRenderedPatients = duplicateRenderedPatients.length > 0;
+  const seenTodayRows = clinicalDayRows.filter((row) => {
+    const isSeenTodayRow = row.status === PatientWorkflowStatus.DOCUMENTED_FINAL;
+    return isSeenTodayRow;
+  });
+  const renderGroupHeader = (label: string) => (
+    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 font-apple">
+      {label}
+    </div>
+  );
 
-  if (hasDuplicateRenderedPatients) {
-    console.error('DUPLICATE PATIENT RENDER', {
-      duplicateCount: duplicateRenderedPatients.length,
-    });
-  }
+  const renderActionClinicalRow = (row: ClinicalDayRow) => {
+    const fallbackQuickItem = quickItemByPatientId.get(row.patientId);
+    const primaryActionLabel = getPrimaryActionLabel(row.status);
+    const sessionType = row.sessionType ?? fallbackQuickItem?.sessionType ?? 'followup';
+    const quickItemKey = `${row.patientId}::${sessionType}`;
+    const quickItem = quickItemByKey.get(quickItemKey);
+    const isOverdue =
+      row.status === PatientWorkflowStatus.SCHEDULED &&
+      isPastDate(displayDate);
+    const badgeClass = getStatusBadgeClass(row.status);
+    const itemStyles = isOverdue
+      ? 'border-red-200 bg-red-50/60 hover:bg-red-50/80'
+      : 'border-slate-200 bg-white hover:bg-slate-50';
+    const hasDismissAction = row.status === PatientWorkflowStatus.ABANDONED && onDismissIncomplete && quickItem;
+    const canRemoveFromToday =
+      row.status === PatientWorkflowStatus.SCHEDULED &&
+      quickItem != null &&
+      onRemoveFromToday != null &&
+      !row.hasSession &&
+      !row.hasEncounter &&
+      !row.hasConsultation &&
+      !row.resumeSessionId;
+
+    return (
+      <div
+        key={`${row.patientId}-${row.status}-${sessionType}`}
+        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${itemStyles}`}
+      >
+        <div className="flex-1 min-w-0 text-left">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="font-medium font-apple text-sm text-slate-900">
+              {row.patientName}
+            </div>
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${badgeClass}`}>
+              {getStatusLabel(row.status)}
+            </span>
+          </div>
+          <div className="text-xs font-apple font-light mt-0.5 flex items-center gap-1.5 text-slate-500">
+            {sessionType === 'initial' && <UserPlus className="w-3.5 h-3.5" />}
+            {sessionType === 'followup' && <RefreshCw className="w-3.5 h-3.5" />}
+            {sessionType === 'ongoing' && <FileText className="w-3.5 h-3.5" />}
+            {t(`shell.sessionType.${sessionType}`)}
+            {isOverdue ? <span className="font-medium text-red-700">— {t('shell.todayPatients.overdue')}</span> : null}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {primaryActionLabel === 'Iniciar' || primaryActionLabel === 'Continuar' || primaryActionLabel === 'Reanudar' ? (
+            <button
+              type="button"
+              onClick={() => onStartFromToday?.(row.patientId, sessionType, row.resumeSessionId)}
+              className="p-2 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5"
+            >
+              <Play className="w-4 h-4" /> {primaryActionLabel}
+            </button>
+          ) : null}
+          {primaryActionLabel === 'Revisar' || primaryActionLabel === 'Abrir SOAP' ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenClinicalRow) {
+                  onOpenClinicalRow(row);
+                }
+              }}
+              className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5"
+            >
+              <Play className="w-4 h-4" /> {primaryActionLabel}
+            </button>
+          ) : null}
+          {hasDismissAction ? (
+            <button
+              type="button"
+              onClick={() => setDismissIncompleteItem(quickItem)}
+              className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+              aria-label={t('shell.todayPatients.dismissIncompleteAria')}
+              title={t('shell.todayPatients.dismissIncompleteTooltip')}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          ) : null}
+          {canRemoveFromToday ? (
+            <button
+              type="button"
+              onClick={() => setConfirmRemoveItem(quickItem)}
+              className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+              aria-label={t('shell.todayPatients.removeFromList')}
+              title={t('shell.todayPatients.removeFromListTitle')}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
+  const renderCompletedClinicalRow = (row: ClinicalDayRow) => {
+    const fallbackQuickItem = quickItemByPatientId.get(row.patientId);
+    const sessionType = row.sessionType ?? fallbackQuickItem?.sessionType ?? 'followup';
+    const quickItemKey = `${row.patientId}::${sessionType}`;
+    const quickItemIndex = quickItemIndexByKey.get(quickItemKey);
+
+    return (
+      <div
+        key={`${row.patientId}-${row.status}-${sessionType}`}
+        className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/80 transition-all"
+      >
+        <div className="flex-1 min-w-0 text-left">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="font-medium font-apple text-sm text-emerald-900">
+              {row.patientName}
+            </div>
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(row.status)}`}>
+              {getStatusLabel(row.status)}
+            </span>
+          </div>
+          <div className="text-xs font-apple font-light mt-0.5 flex items-center gap-1.5 text-emerald-700">
+            {sessionType === 'initial' && <UserPlus className="w-3.5 h-3.5" />}
+            {sessionType === 'followup' && <RefreshCw className="w-3.5 h-3.5" />}
+            {sessionType === 'ongoing' && <FileText className="w-3.5 h-3.5" />}
+            {t(`shell.sessionType.${sessionType}`)}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              if (onOpenClinicalRow) {
+                onOpenClinicalRow(row);
+              }
+            }}
+            className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5"
+          >
+            <Play className="w-4 h-4" /> Abrir SOAP
+          </button>
+          {onMarkPendingAgain && quickItemIndex != null ? (
+            <button type="button" onClick={() => onMarkPendingAgain(quickItemIndex)} className="p-2 rounded-lg border border-primary-blue/40 bg-primary-blue/5 text-primary-blue hover:bg-primary-blue/10 transition-colors" title={t('shell.todayPatients.markPendingAgain')} aria-label={t('shell.todayPatients.markPendingAgain')}>
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
@@ -292,179 +421,28 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
               </button>
             </div>
           )}
-          {actionRows.length > 0 ? (
+          {toSeeRows.length > 0 ? (
             <div className="space-y-2">
-              {actionRows.map((row) => {
-                const fallbackQuickItem = quickItemByPatientId.get(row.patientId);
-                const primaryActionLabel = getPrimaryActionLabel(row.status);
-                const sessionType = row.sessionType ?? fallbackQuickItem?.sessionType ?? 'followup';
-                const quickItemKey = `${row.patientId}::${sessionType}`;
-                const quickItem = quickItemByKey.get(quickItemKey);
-                const isOverdue =
-                  row.status === PatientWorkflowStatus.SCHEDULED &&
-                  isPastDate(displayDate);
-                const badgeClass = getStatusBadgeClass(row.status);
-                const itemStyles = isOverdue
-                  ? 'border-red-200 bg-red-50/60 hover:bg-red-50/80'
-                  : 'border-slate-200 bg-white hover:bg-slate-50';
-                const hasDismissAction = row.status === PatientWorkflowStatus.ABANDONED && onDismissIncomplete && quickItem;
-                const canRemoveFromToday =
-                  row.status === PatientWorkflowStatus.SCHEDULED &&
-                  quickItem != null &&
-                  onRemoveFromToday != null &&
-                  !row.hasSession &&
-                  !row.hasEncounter &&
-                  !row.hasConsultation &&
-                  !row.resumeSessionId;
-                const hasInvalidAction =
-                  (primaryActionLabel === 'Iniciar' && row.status !== PatientWorkflowStatus.SCHEDULED) ||
-                  (primaryActionLabel === 'Continuar' && row.status !== PatientWorkflowStatus.IN_PROGRESS) ||
-                  (primaryActionLabel === 'Revisar' && row.status !== PatientWorkflowStatus.DOCUMENTED_DRAFT) ||
-                  (primaryActionLabel === 'Abrir SOAP' && row.status !== PatientWorkflowStatus.DOCUMENTED_FINAL) ||
-                  (primaryActionLabel === 'Reanudar' && row.status !== PatientWorkflowStatus.ABANDONED);
-
-                if (hasInvalidAction) {
-                  console.error('INVALID ACTION FOR STATE', {
-                    status: row.status,
-                    action: primaryActionLabel,
-                  });
-                }
-
-                return (
-                  <div
-                    key={`${row.patientId}-${row.status}-${sessionType}`}
-                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${itemStyles}`}
-                  >
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="font-medium font-apple text-sm text-slate-900">
-                          {row.patientName}
-                        </div>
-                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${badgeClass}`}>
-                          {getStatusLabel(row.status)}
-                        </span>
-                      </div>
-                      <div className="text-xs font-apple font-light mt-0.5 flex items-center gap-1.5 text-slate-500">
-                        {sessionType === 'initial' && <UserPlus className="w-3.5 h-3.5" />}
-                        {sessionType === 'followup' && <RefreshCw className="w-3.5 h-3.5" />}
-                        {sessionType === 'ongoing' && <FileText className="w-3.5 h-3.5" />}
-                        {t(`shell.sessionType.${sessionType}`)}
-                        {isOverdue ? <span className="font-medium text-red-700">— {t('shell.todayPatients.overdue')}</span> : null}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {primaryActionLabel === 'Iniciar' || primaryActionLabel === 'Continuar' || primaryActionLabel === 'Reanudar' ? (
-                        <button
-                          type="button"
-                          onClick={() => onStartFromToday?.(row.patientId, sessionType, row.resumeSessionId)}
-                          className="p-2 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5"
-                        >
-                          <Play className="w-4 h-4" /> {primaryActionLabel}
-                        </button>
-                      ) : null}
-                      {primaryActionLabel === 'Revisar' || primaryActionLabel === 'Abrir SOAP' ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (onOpenClinicalRow) {
-                              onOpenClinicalRow(row);
-                            }
-                          }}
-                          className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5"
-                        >
-                          <Play className="w-4 h-4" /> {primaryActionLabel}
-                        </button>
-                      ) : null}
-                      {hasDismissAction ? (
-                        <button
-                          type="button"
-                          onClick={() => setDismissIncompleteItem(quickItem)}
-                          className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                          aria-label={t('shell.todayPatients.dismissIncompleteAria')}
-                          title={t('shell.todayPatients.dismissIncompleteTooltip')}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      ) : null}
-                      {canRemoveFromToday ? (
-                        <button
-                          type="button"
-                          onClick={() => setConfirmRemoveItem(quickItem)}
-                          className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                          aria-label={t('shell.todayPatients.removeFromList')}
-                          title={t('shell.todayPatients.removeFromListTitle')}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
+              {renderGroupHeader(t('shell.todayPatients.groupToSee'))}
+              {toSeeRows.map(renderActionClinicalRow)}
             </div>
           ) : null}
-          {completedRows.length > 0 ? (
+          {inProgressRows.length > 0 ? (
             <div className="space-y-2 pt-3 border-t border-gray-100">
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 font-apple">
-                Completado
-              </div>
-              {completedRows.map((row) => {
-                const fallbackQuickItem = quickItemByPatientId.get(row.patientId);
-                const sessionType = row.sessionType ?? fallbackQuickItem?.sessionType ?? 'followup';
-                const quickItemKey = `${row.patientId}::${sessionType}`;
-                const quickItemIndex = quickItemIndexByKey.get(quickItemKey);
-                const primaryActionLabel = getPrimaryActionLabel(row.status);
-                const hasInvalidAction = primaryActionLabel !== 'Abrir SOAP';
-
-                if (hasInvalidAction) {
-                  console.error('INVALID ACTION FOR STATE', {
-                    status: row.status,
-                    action: primaryActionLabel,
-                  });
-                }
-
-                return (
-                  <div
-                    key={`${row.patientId}-${row.status}-${sessionType}`}
-                    className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/80 transition-all"
-                  >
-                    <div className="flex-1 min-w-0 text-left">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="font-medium font-apple text-sm text-emerald-900">
-                          {row.patientName}
-                        </div>
-                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(row.status)}`}>
-                          {getStatusLabel(row.status)}
-                        </span>
-                      </div>
-                      <div className="text-xs font-apple font-light mt-0.5 flex items-center gap-1.5 text-emerald-700">
-                        {sessionType === 'initial' && <UserPlus className="w-3.5 h-3.5" />}
-                        {sessionType === 'followup' && <RefreshCw className="w-3.5 h-3.5" />}
-                        {sessionType === 'ongoing' && <FileText className="w-3.5 h-3.5" />}
-                        {t(`shell.sessionType.${sessionType}`)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (onOpenClinicalRow) {
-                            onOpenClinicalRow(row);
-                          }
-                        }}
-                        className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5"
-                      >
-                        <Play className="w-4 h-4" /> Abrir SOAP
-                      </button>
-                      {onMarkPendingAgain && quickItemIndex != null ? (
-                        <button type="button" onClick={() => onMarkPendingAgain(quickItemIndex)} className="p-2 rounded-lg border border-primary-blue/40 bg-primary-blue/5 text-primary-blue hover:bg-primary-blue/10 transition-colors" title={t('shell.todayPatients.markPendingAgain')} aria-label={t('shell.todayPatients.markPendingAgain')}>
-                          <RotateCcw className="w-4 h-4" />
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
+              {renderGroupHeader(t('shell.todayPatients.groupInProgress'))}
+              {inProgressRows.map(renderActionClinicalRow)}
+            </div>
+          ) : null}
+          {awaitingDocumentationRows.length > 0 ? (
+            <div className="space-y-2 pt-3 border-t border-gray-100">
+              {renderGroupHeader(t('shell.todayPatients.groupAwaitingDocumentation'))}
+              {awaitingDocumentationRows.map(renderActionClinicalRow)}
+            </div>
+          ) : null}
+          {seenTodayRows.length > 0 ? (
+            <div className="space-y-2 pt-3 border-t border-gray-100">
+              {renderGroupHeader(t('shell.todayPatients.groupSeenToday'))}
+              {seenTodayRows.map(renderCompletedClinicalRow)}
             </div>
           ) : null}
         </div>
