@@ -620,7 +620,12 @@
       "badge": "Pendiente",
       "pendingSince": "Pendiente desde {{date}}",
       "continue": "Continuar",
-      "resume": "Reanudar"
+      "resume": "Reanudar",
+      "dismissPending": "Descartar pendiente",
+      "dismissPendingTitle": "¿Descartar pendiente?",
+      "dismissPendingMessage": "Esta acción solo ocultará esta sesión de Pendiente de cerrar. No eliminará la ficha del paciente ni la sesión.",
+      "dismissPendingConfirm": "Descartar",
+      "dismissPendingCancel": "Cancelar"
     },
     "sessionType": {
       "initial": "Evaluación inicial",

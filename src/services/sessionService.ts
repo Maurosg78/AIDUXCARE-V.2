@@ -1,4 +1,4 @@
-import { collection, doc, addDoc, getDoc, getDocs, setDoc, query, where, orderBy, serverTimestamp, limit, type Timestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, serverTimestamp, limit, type Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { PhysicalExamResult, SOAPNote } from '../types/vertex-ai';
 
@@ -41,6 +41,7 @@ type InProgressSessionRecord = Omit<InProgressSessionSummary, 'updatedAt'> & {
   soapStatus?: string;
   writeState?: string;
   encounterId?: string;
+  openResponsibilityDismissed?: boolean;
   updatedAt?: unknown;
   createdAt?: unknown;
   timestamp?: unknown;
@@ -409,6 +410,31 @@ class SessionService {
     }
   }
 
+  async dismissOpenResponsibility(sessionId: string, userId: string): Promise<void> {
+    try {
+      const docRef = doc(db, this.COLLECTION_NAME, sessionId);
+      const snapshot = await getDoc(docRef);
+      if (!snapshot.exists()) {
+        throw new Error('Session not found');
+      }
+      const data = snapshot.data();
+      const ownerId = this.getSessionOwnerId(data);
+      if (ownerId !== userId) {
+        throw new Error('Session does not belong to current user');
+      }
+      await updateDoc(docRef, {
+        openResponsibilityDismissed: true,
+        openResponsibilityDismissedAt: serverTimestamp(),
+        openResponsibilityDismissedBy: userId,
+        openResponsibilityDismissedReason: 'manual_dismissal_from_command_center',
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.warn('[SessionService] dismissOpenResponsibility failed.');
+      throw error;
+    }
+  }
+
   async getLatestFinalizedTreatmentDecision(
     patientId: string,
     userId: string
@@ -471,6 +497,7 @@ class SessionService {
             soapStatus: data.soapStatus || undefined,
             writeState: data.writeState || undefined,
             encounterId: data.encounterId || undefined,
+            openResponsibilityDismissed: data.openResponsibilityDismissed === true,
             updatedAt: data.updatedAt,
             createdAt: data.createdAt,
             timestamp: data.timestamp,
@@ -552,6 +579,7 @@ class SessionService {
         }
       }
       const filteredResults = results.filter((session) => {
+        if (session.openResponsibilityDismissed === true) return false;
         if (session.soapStatus === 'finalized') return false;
         if (session.writeState === 'fully_committed') return false;
         if (typeof session.encounterId === 'string' && session.encounterId.trim() !== '') return false;

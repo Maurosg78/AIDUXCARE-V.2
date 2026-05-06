@@ -181,6 +181,8 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [createPatientFromStartSessionModal, setCreatePatientFromStartSessionModal] = useState(false);
   const [startModalPatientIsNewlyCreated, setStartModalPatientIsNewlyCreated] = useState(false);
   const [startSessionModalMode, setStartSessionModalMode] = useState<StartSessionModalMode>('start_now');
+  const [dismissOpenResponsibilityItem, setDismissOpenResponsibilityItem] = useState<InProgressSession | null>(null);
+  const [dismissingOpenResponsibilityId, setDismissingOpenResponsibilityId] = useState<string | null>(null);
   const [todayQuickList, setTodayQuickList] = useState<TodayQuickItem[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [clinicalDayRows, setClinicalDayRows] = useState<ClinicalDayRow[]>([]);
@@ -598,6 +600,22 @@ export const CommandCenterPageSprint3: React.FC = () => {
     navigate(`/workflow?type=${workflowType}&patientId=${session.patientId}&sessionId=${session.id}&resume=true`);
   }, [navigate]);
 
+  const handleDismissOpenResponsibility = useCallback(async () => {
+    if (!dismissOpenResponsibilityItem || !user?.uid) {
+      return;
+    }
+    setDismissingOpenResponsibilityId(dismissOpenResponsibilityItem.id);
+    try {
+      await sessionService.dismissOpenResponsibility(dismissOpenResponsibilityItem.id, user.uid);
+      setDismissOpenResponsibilityItem(null);
+      await inProgressSessions.refetch();
+    } catch {
+      logger.error('Failed to dismiss open responsibility');
+    } finally {
+      setDismissingOpenResponsibilityId(null);
+    }
+  }, [dismissOpenResponsibilityItem, inProgressSessions.refetch, user?.uid]);
+
   const handleOngoingModalSuccess = useCallback(
     (patientId: string, baselineSOAP?: { subjective: string; objective: string; assessment: string; plan: string }, patientName?: string) => {
       setShowOngoingIntake(false);
@@ -674,13 +692,23 @@ export const CommandCenterPageSprint3: React.FC = () => {
                           {hasPendingDate ? ` · ${t('shell.openClinicalResponsibilities.pendingSince', { date: pendingDate })}` : null}
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleContinueOpenResponsibility(session)}
-                        className="p-2 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-apple text-xs font-medium transition-all"
-                      >
-                        {actionLabel}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setDismissOpenResponsibilityItem(session)}
+                          disabled={dismissingOpenResponsibilityId === session.id}
+                          className="p-2 rounded-lg border border-amber-200 bg-white hover:bg-amber-100 text-amber-800 font-apple text-xs font-medium transition-all disabled:opacity-60"
+                        >
+                          {t('shell.openClinicalResponsibilities.dismissPending')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleContinueOpenResponsibility(session)}
+                          className="p-2 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-apple text-xs font-medium transition-all"
+                        >
+                          {actionLabel}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -868,6 +896,37 @@ export const CommandCenterPageSprint3: React.FC = () => {
           patientName={selectedPatient?.fullName || selectedPatient?.firstName}
           onSuccess={handleOngoingModalSuccess}
         />
+      )}
+
+      {dismissOpenResponsibilityItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 font-apple mb-2">
+              {t('shell.openClinicalResponsibilities.dismissPendingTitle')}
+            </h3>
+            <p className="text-sm text-gray-600 font-apple mb-4">
+              {t('shell.openClinicalResponsibilities.dismissPendingMessage')}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setDismissOpenResponsibilityItem(null)}
+                disabled={dismissingOpenResponsibilityId === dismissOpenResponsibilityItem.id}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 font-apple text-sm disabled:opacity-60"
+              >
+                {t('shell.openClinicalResponsibilities.dismissPendingCancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDismissOpenResponsibility}
+                disabled={dismissingOpenResponsibilityId === dismissOpenResponsibilityItem.id}
+                className="px-4 py-2 rounded-lg bg-amber-700 text-white hover:bg-amber-800 font-apple text-sm disabled:opacity-60"
+              >
+                {t('shell.openClinicalResponsibilities.dismissPendingConfirm')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Floating Assistant */}

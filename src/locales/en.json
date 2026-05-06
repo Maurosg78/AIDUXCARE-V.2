@@ -620,7 +620,12 @@
       "badge": "Pending",
       "pendingSince": "Pending since {{date}}",
       "continue": "Continue",
-      "resume": "Resume"
+      "resume": "Resume",
+      "dismissPending": "Dismiss pending",
+      "dismissPendingTitle": "Dismiss pending item?",
+      "dismissPendingMessage": "This only hides this session from Pending closure. It will not delete the patient record or the session.",
+      "dismissPendingConfirm": "Dismiss",
+      "dismissPendingCancel": "Cancel"
     },
     "sessionType": {
       "initial": "Initial Assessment",
