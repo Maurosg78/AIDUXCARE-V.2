@@ -446,28 +446,38 @@ class SessionService {
       const q = query(
         sessionsRef,
         where('patientId', '==', patientId),
-        where('userId', '==', userId),
-        where('status', '==', 'completed'),
-        orderBy('updatedAt', 'desc'),
-        limit(20)
+        limit(50)
       );
       const snapshot = await getDocs(q);
-      for (const sessionDoc of snapshot.docs) {
-        const data = sessionDoc.data();
-        const soapFinalized = data.soapStatus === 'finalized';
-        const sessionKind = this.normalizeSessionKind(data.sessionType);
-        const isFollowUp = sessionKind === 'followup';
-        if (!soapFinalized || !isFollowUp) {
-          continue;
-        }
-        const treatmentDecision = data.treatmentDecision;
-        if (this.isTreatmentDecision(treatmentDecision)) {
-          return treatmentDecision;
-        }
-      }
-      return null;
-    } catch (error) {
-      console.warn('[SessionService] getLatestFinalizedTreatmentDecision failed; continuing with fallback plan hydration.', error);
+      const candidates = snapshot.docs
+        .map((sessionDoc) => sessionDoc.data())
+        .filter((data) => {
+          const ownerId = this.getSessionOwnerId(data);
+          if (ownerId !== userId) return false;
+          if (data.status !== 'completed') return false;
+          if (data.soapStatus !== 'finalized') return false;
+          if (this.normalizeSessionKind(data.sessionType) !== 'followup') return false;
+          return this.isTreatmentDecision(data.treatmentDecision);
+        })
+        .sort((a, b) => {
+          const aTime = Math.max(
+            this.timestampToMillis(a.updatedAt),
+            this.timestampToMillis(a.createdAt),
+            this.timestampToMillis(a.timestamp)
+          );
+          const bTime = Math.max(
+            this.timestampToMillis(b.updatedAt),
+            this.timestampToMillis(b.createdAt),
+            this.timestampToMillis(b.timestamp)
+          );
+          return bTime - aTime;
+        });
+      const latest = candidates[0];
+      if (!latest) return null;
+      const treatmentDecision = latest.treatmentDecision;
+      return this.isTreatmentDecision(treatmentDecision) ? treatmentDecision : null;
+    } catch {
+      console.warn('[SessionService] getLatestFinalizedTreatmentDecision failed; continuing with fallback plan hydration.');
       return null;
     }
   }
