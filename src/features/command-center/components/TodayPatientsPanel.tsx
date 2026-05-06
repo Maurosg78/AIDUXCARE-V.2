@@ -11,7 +11,7 @@ import { Patient } from '@/services/patientService';
 import { PatientWorkflowStatus } from '../../../domain/patientStatus';
 import type { ClinicalDayRow } from '../utils/clinicalDayView';
 import { usePatientsList } from '../hooks/usePatientsList';
-import { Play, UserPlus, RefreshCw, FileText, Trash2, RotateCcw, Calendar } from 'lucide-react';
+import { Play, UserPlus, RefreshCw, FileText, Trash2, Calendar } from 'lucide-react';
 
 export interface TodayAppointment {
   id: string;
@@ -51,8 +51,6 @@ export interface TodayPatientsPanelProps {
   ) => void;
   /** Remove item from today's quick list. Does not delete the patient record. */
   onRemoveFromToday?: (item: TodayQuickItem) => void;
-  /** Mark item as pending again (recycle) after it was documented */
-  onMarkPendingAgain?: (index: number) => void;
   /** Clear entire list to start fresh */
   onClearList?: () => void;
   /** Dismiss an incomplete (red) session so it no longer appears in the list (marks session as cancelled). */
@@ -165,7 +163,6 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
   onAddToToday,
   onStartFromToday,
   onRemoveFromToday,
-  onMarkPendingAgain,
   onClearList,
   onDismissIncomplete,
   selectedDate,
@@ -176,34 +173,6 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
 }) => {
   const { t } = useTranslation();
   const { patients: allPatients } = usePatientsList();
-  const [confirmRemoveItem, setConfirmRemoveItem] = useState<TodayQuickItem | null>(null);
-  const [dismissIncompleteItem, setDismissIncompleteItem] = useState<TodayQuickItem | null>(null);
-  const [isListExpanded, setIsListExpanded] = useState(
-    appointments.length > 0 || clinicalDayRows.length > 0
-  );
-
-  React.useEffect(() => {
-    setIsListExpanded(appointments.length > 0 || clinicalDayRows.length > 0);
-  }, [appointments.length, clinicalDayRows.length]);
-
-  const hasQuickItems = clinicalDayRows.length > 0;
-  const hasAppointments = appointments.length > 0;
-
-  const displayDate = selectedDate || new Date();
-  const quickItemByPatientId = new Map<string, TodayQuickItem>();
-  const quickItemIndexByKey = new Map<string, number>();
-  const quickItemByKey = new Map<string, TodayQuickItem>();
-
-  for (const [index, item] of todayQuickList.entries()) {
-    const itemKey = `${item.patientId}::${item.sessionType}`;
-    quickItemIndexByKey.set(itemKey, index);
-    quickItemByKey.set(itemKey, item);
-
-    if (!quickItemByPatientId.has(item.patientId)) {
-      quickItemByPatientId.set(item.patientId, item);
-    }
-  }
-
   const toSeeRows = clinicalDayRows.filter((row) => {
     const isToSeeRow = row.status === PatientWorkflowStatus.SCHEDULED;
     return isToSeeRow;
@@ -218,10 +187,34 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
     const isAwaitingDocumentationRow = row.status === PatientWorkflowStatus.DOCUMENTED_DRAFT;
     return isAwaitingDocumentationRow;
   });
-  const seenTodayRows = clinicalDayRows.filter((row) => {
-    const isSeenTodayRow = row.status === PatientWorkflowStatus.DOCUMENTED_FINAL;
-    return isSeenTodayRow;
-  });
+  const activeClinicalRowCount =
+    awaitingDocumentationRows.length + inProgressRows.length + toSeeRows.length;
+  const hasActiveClinicalRows = activeClinicalRowCount > 0;
+  const [confirmRemoveItem, setConfirmRemoveItem] = useState<TodayQuickItem | null>(null);
+  const [dismissIncompleteItem, setDismissIncompleteItem] = useState<TodayQuickItem | null>(null);
+  const [isListExpanded, setIsListExpanded] = useState(
+    appointments.length > 0 || hasActiveClinicalRows
+  );
+
+  React.useEffect(() => {
+    setIsListExpanded(appointments.length > 0 || hasActiveClinicalRows);
+  }, [appointments.length, hasActiveClinicalRows]);
+
+  const hasAppointments = appointments.length > 0;
+
+  const displayDate = selectedDate || new Date();
+  const quickItemByPatientId = new Map<string, TodayQuickItem>();
+  const quickItemByKey = new Map<string, TodayQuickItem>();
+
+  for (const item of todayQuickList) {
+    const itemKey = `${item.patientId}::${item.sessionType}`;
+    quickItemByKey.set(itemKey, item);
+
+    if (!quickItemByPatientId.has(item.patientId)) {
+      quickItemByPatientId.set(item.patientId, item);
+    }
+  }
+
   const renderGroupHeader = (label: string, count: number) => (
     <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 font-apple">
       {label} ({count})
@@ -323,55 +316,6 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
     );
   };
 
-  const renderCompletedClinicalRow = (row: ClinicalDayRow) => {
-    const fallbackQuickItem = quickItemByPatientId.get(row.patientId);
-    const sessionType = row.sessionType ?? fallbackQuickItem?.sessionType ?? 'followup';
-    const quickItemKey = `${row.patientId}::${sessionType}`;
-    const quickItemIndex = quickItemIndexByKey.get(quickItemKey);
-
-    return (
-      <div
-        key={`${row.patientId}-${row.status}-${sessionType}`}
-        className="flex items-center gap-3 p-3 rounded-xl border border-emerald-200 bg-emerald-50/80 transition-all"
-      >
-        <div className="flex-1 min-w-0 text-left">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="font-medium font-apple text-sm text-emerald-900">
-              {row.patientName}
-            </div>
-            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(row.status)}`}>
-              {getStatusLabel(row.status)}
-            </span>
-          </div>
-          <div className="text-xs font-apple font-light mt-0.5 flex items-center gap-1.5 text-emerald-700">
-            {sessionType === 'initial' && <UserPlus className="w-3.5 h-3.5" />}
-            {sessionType === 'followup' && <RefreshCw className="w-3.5 h-3.5" />}
-            {sessionType === 'ongoing' && <FileText className="w-3.5 h-3.5" />}
-            {t(`shell.sessionType.${sessionType}`)}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              if (onOpenClinicalRow) {
-                onOpenClinicalRow(row);
-              }
-            }}
-            className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5"
-          >
-            <Play className="w-4 h-4" /> Abrir SOAP
-          </button>
-          {onMarkPendingAgain && quickItemIndex != null ? (
-            <button type="button" onClick={() => onMarkPendingAgain(quickItemIndex)} className="p-2 rounded-lg border border-primary-blue/40 bg-primary-blue/5 text-primary-blue hover:bg-primary-blue/10 transition-colors" title={t('shell.todayPatients.markPendingAgain')} aria-label={t('shell.todayPatients.markPendingAgain')}>
-              <RotateCcw className="w-4 h-4" />
-            </button>
-          ) : null}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -380,7 +324,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
             {isToday(displayDate) ? t('shell.todayPatients.title') : `${formatDateLabel(displayDate, t)}${t('shell.todayPatients.scheduleSuffix')}`}
           </h2>
           <p className="text-base text-gray-600 font-apple font-light">
-            {hasQuickItems
+            {hasActiveClinicalRows
               ? t('shell.todayPatients.clinicalQueueSubtitle')
               : hasAppointments && isToday(displayDate)
                 ? t('shell.todayPatients.appointmentsToday', { count: appointments.length })
@@ -406,7 +350,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
       </div>
 
       {/* Clinical render list derived from status machine; quick-list persistence is backing data only. */}
-      {hasQuickItems && (
+      {hasActiveClinicalRows && (
         <div className="mt-4 space-y-2">
           {onClearList && (
             <div className="flex justify-end mb-2">
@@ -439,12 +383,6 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
               {toSeeRows.map(renderActionClinicalRow)}
             </div>
           ) : null}
-          {seenTodayRows.length > 0 ? (
-            <div className="space-y-2 pt-3 border-t border-gray-100">
-              {renderGroupHeader(t('shell.todayPatients.groupSeenToday'), seenTodayRows.length)}
-              {seenTodayRows.map(renderCompletedClinicalRow)}
-            </div>
-          ) : null}
         </div>
       )}
 
@@ -459,7 +397,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
             <UserPlus className="w-4 h-4" />
             {isToday(displayDate) ? t('shell.todayPatients.addToToday') : t('shell.todayPatients.addToThisDay')}
           </button>
-          {!hasQuickItems && appointments.length === 0 && !loading && (
+          {!hasActiveClinicalRows && appointments.length === 0 && !loading && (
             <p className="text-xs text-gray-500 font-apple font-light mt-2 text-center">
               {t('shell.todayPatients.addPatientsHint')}
             </p>

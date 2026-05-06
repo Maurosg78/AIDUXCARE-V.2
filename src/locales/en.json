@@ -614,6 +614,13 @@
       "inDays": "In {{count}} days",
       "daysAgo": "{{count}} days ago"
     },
+    "daySummary": {
+      "title": "Day summary",
+      "seen": "Seen",
+      "seenToday": "Seen today",
+      "openSoap": "Open SOAP",
+      "noSeenToday": "No patients seen yet."
+    },
     "openClinicalResponsibilities": {
       "title": "Pending closure",
       "subtitle": "Open clinical records or documentation not yet finalized.",
