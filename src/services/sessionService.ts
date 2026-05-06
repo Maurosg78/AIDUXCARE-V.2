@@ -443,14 +443,32 @@ class SessionService {
   ): Promise<TreatmentDecision | null> {
     try {
       const sessionsRef = collection(db, this.COLLECTION_NAME);
-      const q = query(
-        sessionsRef,
-        where('patientId', '==', patientId),
-        limit(50)
-      );
-      const snapshot = await getDocs(q);
-      const candidates = snapshot.docs
-        .map((sessionDoc) => sessionDoc.data())
+      const ownershipFields = [
+        'userId',
+        'authorUid',
+        'ownerUid',
+        'professionalId',
+        'physiotherapistId',
+        'createdBy',
+      ];
+      const sessionDocsById = new Map<string, Record<string, unknown>>();
+      for (const ownershipField of ownershipFields) {
+        try {
+          const q = query(
+            sessionsRef,
+            where('patientId', '==', patientId),
+            where(ownershipField, '==', userId),
+            limit(50)
+          );
+          const snapshot = await getDocs(q);
+          for (const sessionDoc of snapshot.docs) {
+            sessionDocsById.set(sessionDoc.id, sessionDoc.data());
+          }
+        } catch {
+          console.warn('[SessionService] treatmentDecision ownership query failed; continuing with fallback ownership fields.');
+        }
+      }
+      const candidates = Array.from(sessionDocsById.values())
         .filter((data) => {
           const ownerId = this.getSessionOwnerId(data);
           if (ownerId !== userId) return false;

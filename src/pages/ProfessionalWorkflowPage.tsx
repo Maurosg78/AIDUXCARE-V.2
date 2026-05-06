@@ -298,6 +298,29 @@ const formatFileSize = (bytes: number) => {
   return `${bytes} B`;
 };
 
+const formatLocalDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const normalizeDateKey = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  const isDateKey = /^\d{4}-\d{2}-\d{2}$/.test(trimmed);
+  if (!isDateKey) return null;
+  const parsed = new Date(`${trimmed}T12:00:00`);
+  return Number.isFinite(parsed.getTime()) ? trimmed : null;
+};
+
+const dateFromLocalDateKey = (dateKey: string): Date | null => {
+  const normalized = normalizeDateKey(dateKey);
+  if (!normalized) return null;
+  const parsed = new Date(`${normalized}T12:00:00`);
+  return Number.isFinite(parsed.getTime()) ? parsed : null;
+};
+
 const ProfessionalWorkflowPage = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
@@ -306,6 +329,9 @@ const ProfessionalWorkflowPage = () => {
 
   // ✅ DIFFERENT APPROACH: Get URL params and clear localStorage IMMEDIATELY before any state
   const patientIdFromUrl = searchParams.get('patientId');
+  const workflowDateKeyFromUrl = normalizeDateKey(
+    searchParams.get('dateKey') ?? searchParams.get('sessionDateKey')
+  );
   // WO-P0-GATE-01: single source of truth — normalize type vs sessionType (priority: type)
   const rawType = searchParams.get('type') ?? searchParams.get('sessionType');
   const sessionTypeFromUrl = (rawType === 'followup' || rawType === 'follow-up'
@@ -592,7 +618,13 @@ const ProfessionalWorkflowPage = () => {
   const [showCPOBlockModal, setShowCPOBlockModal] = useState(false);
 
   // Value Metrics Tracking - Timestamps
-  const [sessionStartTime] = useState<Date>(new Date());
+  const [sessionStartTime] = useState<Date>(() => new Date());
+  const clinicalSessionDateKey =
+    workflowDateKeyFromUrl ?? formatLocalDateKey(sessionStartTime);
+  const clinicalSessionDate = useMemo(
+    () => dateFromLocalDateKey(clinicalSessionDateKey) ?? sessionStartTime,
+    [clinicalSessionDateKey, sessionStartTime]
+  );
   const [transcriptionStartTime, setTranscriptionStartTime] = useState<Date | null>(null);
   const [transcriptionEndTime, setTranscriptionEndTime] = useState<Date | null>(null);
   const [soapGenerationStartTime, setSoapGenerationStartTime] = useState<Date | null>(null);
@@ -872,7 +904,7 @@ const ProfessionalWorkflowPage = () => {
       if (canCreateRecoverySession) {
         const recoveryAnchorMs = Date.now();
         const recoverySessionId = `${sessionOwnerId}-${recoveryAnchorMs}`;
-        const recoverySessionDateKey = toLocalDateKey(sessionStartTime);
+        const recoverySessionDateKey = clinicalSessionDateKey;
         const recoverySessionPayload = {
           userId: sessionOwnerId,
           patientName: sessionPatientName,
@@ -1808,7 +1840,7 @@ const ProfessionalWorkflowPage = () => {
       try {
         const sessions = await sessionService.getInProgressSessions(user.uid);
         if (cancelled) return;
-        const targetSessionDateKey = toLocalDateKey(sessionStartTime);
+        const targetSessionDateKey = clinicalSessionDateKey;
 
         const match = sessions.find(
           (s) =>
@@ -1845,7 +1877,7 @@ const ProfessionalWorkflowPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [user?.uid, patientIdFromUrl, sessionTypeFromUrl, autoSaveRestoreAttempted, soapStatus]);
+  }, [user?.uid, patientIdFromUrl, sessionTypeFromUrl, autoSaveRestoreAttempted, soapStatus, clinicalSessionDateKey, sessionId, sessionStartTime]);
 
   // ✅ WORKFLOW PERSISTENCE: Restore workflow state from localStorage on mount
   // ✅ CRITICAL FIX: URL parameters take priority over localStorage
@@ -2284,7 +2316,7 @@ const ProfessionalWorkflowPage = () => {
             `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() ||
             demoPatient.name,
           userId: practitionerUid,
-          sessionDateKey: toLocalDateKey(sessionStartTime),
+          sessionDateKey: clinicalSessionDateKey,
           status: 'recording_in_progress' as const,
           sessionType: payloadSessionKind,
           clientBuildId: currentClientBuildId,
@@ -2300,7 +2332,7 @@ const ProfessionalWorkflowPage = () => {
           const idempotencyPatient = patientId;
           const idempotencyUser = practitionerUid;
           const idempotencyKind = currentSessionType;
-          const lookupReferenceDate = new Date();
+          const lookupReferenceDate = clinicalSessionDate;
           const reuseCandidateId = await sessionService.findReusableSessionForDayAndType(
             idempotencyPatient,
             idempotencyUser,
@@ -2330,7 +2362,7 @@ const ProfessionalWorkflowPage = () => {
 
     const interval = setInterval(autoSaveToFirestore, 10000);
     return () => clearInterval(interval);
-  }, [isRecording, transcript, sessionId, sessionStartTime, patientId, user?.uid, currentSessionType]);
+  }, [isRecording, transcript, sessionId, sessionStartTime, patientId, user?.uid, currentSessionType, clinicalSessionDateKey, clinicalSessionDate]);
 
   // WO-RESUME: Create Firestore session as soon as recording starts so sessionId is set before unmount (transcript only exists after stop)
   useEffect(() => {
@@ -2347,7 +2379,7 @@ const ProfessionalWorkflowPage = () => {
     void (async () => {
       const pid = patientIdFromUrl;
       const kind = currentSessionType;
-      const referenceDate = new Date();
+      const referenceDate = clinicalSessionDate;
       const reuseId = await sessionService.findReusableSessionForDayAndType(pid, authUid, kind, referenceDate);
       const hasReuse = reuseId != null;
       const targetRecordingId = hasReuse ? reuseId : proposedRecordingId;
@@ -2359,7 +2391,7 @@ const ProfessionalWorkflowPage = () => {
             patientId: patientIdFromUrl,
             patientName,
             userId: authUid,
-            sessionDateKey: toLocalDateKey(sessionStartTime),
+            sessionDateKey: clinicalSessionDateKey,
             status: 'recording_in_progress',
             transcript: '',
             sessionType: currentSessionType,
@@ -2378,7 +2410,7 @@ const ProfessionalWorkflowPage = () => {
         /* non-blocking */
       }
     })();
-  }, [isRecording, sessionId, user?.uid, patientIdFromUrl, sessionStartTime, currentPatient, currentSessionType]);
+  }, [isRecording, sessionId, user?.uid, patientIdFromUrl, sessionStartTime, currentPatient, currentSessionType, clinicalSessionDateKey, clinicalSessionDate]);
 
   // ✅ PHASE 2: Track if we're actively adding tests to prevent useEffect from overwriting
   const isAddingTestsRef = useRef(false);
@@ -4991,7 +5023,7 @@ const ProfessionalWorkflowPage = () => {
         throw new Error("Auth not ready: cannot persist session without authenticated user");
       }
       const sessionOwnerId = user.uid;
-      const sessionDateKey = toLocalDateKey(sessionStartTime);
+      const sessionDateKey = clinicalSessionDateKey;
       const sessionPayload = {
         userId: sessionOwnerId,
         patientName: currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || demoPatient.name,
@@ -5027,7 +5059,7 @@ const ProfessionalWorkflowPage = () => {
         const soapPatientKey = patientIdFromUrl || demoPatient.id;
         const soapLookupUser = sessionOwnerId;
         const soapSessionKind = currentSessionType;
-        const soapReferenceDate = new Date();
+        const soapReferenceDate = clinicalSessionDate;
         const soapReuseId = await sessionService.findReusableSessionForDayAndType(
           soapPatientKey,
           soapLookupUser,
@@ -5478,7 +5510,7 @@ const ProfessionalWorkflowPage = () => {
         status === 'finalized' ? 'completed' : 'draft';
       const persistedSoapStatus: 'finalized' | 'draft' =
         status === 'finalized' ? 'finalized' : 'draft';
-      const sessionDateKey = toLocalDateKey(sessionStartTime);
+      const sessionDateKey = clinicalSessionDateKey;
       const treatmentDecision = buildTreatmentDecision(
         visitType,
         inClinicItems,
@@ -5514,7 +5546,7 @@ const ProfessionalWorkflowPage = () => {
         const savePatientKey = patientIdFromUrl || demoPatient.id;
         const saveLookupUser = sessionOwnerId;
         const saveSessionKind = currentSessionType;
-        const saveReferenceDate = new Date();
+        const saveReferenceDate = clinicalSessionDate;
         const saveReuseId = await sessionService.findReusableSessionForDayAndType(
           savePatientKey,
           saveLookupUser,
@@ -5651,11 +5683,19 @@ const ProfessionalWorkflowPage = () => {
     try {
       const patientId = patientIdFromUrl || demoPatient.id;
       const linkedSession = await sessionService.getSessionById(activeSessionId);
+      const linkedSessionDateKey = normalizeDateKey(linkedSession?.sessionDateKey);
       const linkedSessionTimestamp = linkedSession?.timestamp;
       const linkedSessionCreatedAt = linkedSession?.createdAt;
+      const openedAtFromSessionDateKey = linkedSessionDateKey
+        ? dateFromLocalDateKey(linkedSessionDateKey)
+        : null;
       const openedAtFromTimestamp = linkedSessionTimestamp?.toDate?.();
       const openedAtFromCreatedAt = linkedSessionCreatedAt?.toDate?.();
-      const clinicalVisitDate = openedAtFromTimestamp || openedAtFromCreatedAt || sessionStartTime;
+      const clinicalVisitDate =
+        openedAtFromSessionDateKey ||
+        openedAtFromTimestamp ||
+        openedAtFromCreatedAt ||
+        clinicalSessionDate;
 
       // WO-FOLLOWUP-PLAN-NEXT: If note only has followUp (raw JSON/text), derive S/O/A/P so the next follow-up has baseline/plan
       const hasStructured = (soap.subjective || soap.objective || soap.assessment || soap.plan || '').trim().length > 0;
@@ -5687,16 +5727,18 @@ const ProfessionalWorkflowPage = () => {
         source: 'workflow',
       };
 
-      console.log('[Workflow] Saving SOAP to Clinical Vault:', {
-        hasPatientId: Boolean(patientId),
-        hasSessionId: Boolean(activeSessionId),
-        soapDataLength: {
-          subjective: soapDataToSave.subjective.length,
-          objective: soapDataToSave.objective.length,
-          assessment: soapDataToSave.assessment.length,
-          plan: soapDataToSave.plan.length,
-        }
-      });
+      if (import.meta.env.DEV) {
+        console.log('[Workflow] Saving SOAP to Clinical Vault', {
+          hasPatientId: Boolean(patientId),
+          hasSessionId: Boolean(activeSessionId),
+          soapDataLength: {
+            subjective: soapDataToSave.subjective.length,
+            objective: soapDataToSave.objective.length,
+            assessment: soapDataToSave.assessment.length,
+            plan: soapDataToSave.plan.length,
+          }
+        });
+      }
 
       // ✅ SPRINT 2 P2: Use enhanced persistence with retry and backup
       await updateSessionFinalizationState(
@@ -5717,6 +5759,7 @@ const ProfessionalWorkflowPage = () => {
           validateBeforeSave: true,
           noteOptions: {
             requestedStatus: 'finalized',
+            clinicalDate: clinicalSessionDateKey,
             acceptedAt: new Date().toISOString(),
             acceptedBy: user?.uid,
             acceptanceOperationId: finalizationOperationId,
@@ -5968,7 +6011,7 @@ const ProfessionalWorkflowPage = () => {
           const completedSessionType =
             visitType === 'initial' ? 'initial' : 'followup';
           const completedSessionDateKey =
-            toLocalDateKey(sessionStartTime);
+            clinicalSessionDateKey;
           if (completedPatientId) {
             setSessionCompleted(
               completedPatientId,
@@ -6508,7 +6551,7 @@ const ProfessionalWorkflowPage = () => {
         patientId={patientIdFromUrl ?? undefined}
         patientName={closeInitialConfirmData?.patientName}
         baselineId={closeInitialConfirmData?.baselineId}
-        sessionDateKey={toLocalDateKey(sessionStartTime)}
+        sessionDateKey={clinicalSessionDateKey}
       />
       {/* WO-PILOT-FIX-07: Two-line header - Professional identity + Session context */}
       <header className="border-b border-slate-200 bg-white px-6 py-4">
@@ -6568,7 +6611,7 @@ const ProfessionalWorkflowPage = () => {
                     const exitBaseId = stateExitId ?? reservedExitId ?? exitFallbackId;
                     const exitPatientKey = patientId || '';
                     const exitSessionKind = currentSessionType;
-                    const exitReferenceDate = new Date();
+                    const exitReferenceDate = clinicalSessionDate;
                     const exitReuseId = await sessionService.findReusableSessionForDayAndType(
                       exitPatientKey,
                       uid,
@@ -6583,7 +6626,7 @@ const ProfessionalWorkflowPage = () => {
                       patientId: patientId || '',
                       patientName: currentPatient?.fullName || 'Unknown',
                       userId: uid,
-                      sessionDateKey: toLocalDateKey(sessionStartTime),
+                      sessionDateKey: clinicalSessionDateKey,
                       sessionType: currentSessionType,
                       transcript: transcript || '',
                       clientBuildId: currentClientBuildId,

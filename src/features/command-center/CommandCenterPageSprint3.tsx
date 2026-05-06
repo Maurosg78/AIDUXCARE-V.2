@@ -44,6 +44,24 @@ function toLocalDateKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+function workflowPath(
+  sessionType: string,
+  patientId: string,
+  dateKey: string,
+  sessionId?: string
+): string {
+  const params = new URLSearchParams({
+    type: sessionType,
+    patientId,
+    dateKey,
+  });
+  if (sessionId) {
+    params.set('sessionId', sessionId);
+    params.set('resume', 'true');
+  }
+  return `/workflow?${params.toString()}`;
+}
+
 function trackStatusTransition(
   prev: PatientWorkflowStatus | undefined,
   next: PatientWorkflowStatus
@@ -457,7 +475,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   // Handle start session (WO-UX-01: no token display; backend may still use tokenBudget internally)
   const handleStartSession = async (sessionType: SessionType) => {
     await withPatientRequired(async (patient) => {
-      navigate(`/workflow?type=${sessionType}&patientId=${patient.id}`);
+      navigate(workflowPath(sessionType, patient.id, toLocalDateKey(selectedDate)));
     });
   };
 
@@ -530,7 +548,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
             }),
           );
         }
-        navigate(`/workflow?type=${sessionType}&patientId=${patientId}`);
+        navigate(workflowPath(sessionType, patientId, toLocalDateKey(selectedDate)));
         return;
       }
 
@@ -597,7 +615,8 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const handleContinueOpenResponsibility = useCallback((session: InProgressSession) => {
     const normalizedSessionType = normalizeOpenResponsibilitySessionType(session.sessionType);
     const workflowType = normalizedSessionType === 'initial' ? 'initial' : 'followup';
-    navigate(`/workflow?type=${workflowType}&patientId=${session.patientId}&sessionId=${session.id}&resume=true`);
+    const sessionDateKey = session.dateKey ?? toLocalDateKey(new Date());
+    navigate(workflowPath(workflowType, session.patientId, sessionDateKey, session.id));
   }, [navigate]);
 
   const handleDismissOpenResponsibility = useCallback(async () => {
@@ -737,23 +756,24 @@ export const CommandCenterPageSprint3: React.FC = () => {
               setShowStartSessionModal(true);
             }}
             onStartFromToday={async (patientId, sessionType, resumeSessionId) => {
-              sessionStorage.setItem(LAST_STARTED_KEY, JSON.stringify({ patientId, sessionType }));
+              const dateKey = toLocalDateKey(selectedDate);
+              sessionStorage.setItem(LAST_STARTED_KEY, JSON.stringify({ patientId, sessionType, dateKey }));
               const patient = await PatientService.getPatientById(patientId);
               if (!patient) return;
               setSelectedPatient(patient);
               if (sessionType === 'initial') {
                 if (resumeSessionId) {
-                  navigate(`/workflow?type=initial&patientId=${patientId}&sessionId=${resumeSessionId}&resume=true`);
+                  navigate(workflowPath('initial', patientId, dateKey, resumeSessionId));
                 } else {
-                  navigate(`/workflow?type=initial&patientId=${patientId}`);
+                  navigate(workflowPath('initial', patientId, dateKey));
                 }
                 return;
               }
               if (sessionType === 'followup') {
                 if (resumeSessionId) {
-                  navigate(`/workflow?type=followup&patientId=${patientId}&sessionId=${resumeSessionId}&resume=true`);
+                  navigate(workflowPath('followup', patientId, dateKey, resumeSessionId));
                 } else {
-                  navigate(`/workflow?type=followup&patientId=${patientId}`);
+                  navigate(workflowPath('followup', patientId, dateKey));
                 }
                 return;
               }
@@ -839,7 +859,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
         onStartSession={(patient, type) => {
           setShowStartSessionModal(false);
           setSelectedPatient(patient);
-          navigate(`/workflow?type=${type}&patientId=${patient.id}`);
+          navigate(workflowPath(type, patient.id, toLocalDateKey(selectedDate)));
         }}
         onStartOngoing={(patient) => {
           setShowStartSessionModal(false);
