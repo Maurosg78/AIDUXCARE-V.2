@@ -1,8 +1,8 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.1  
-**Fecha:** 2026-05-05  
+**Versión:** 1.2  
+**Fecha:** 2026-05-06  
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)  
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
@@ -68,6 +68,11 @@ La deuda técnica no documentada es deuda oculta. Este documento registra toda l
 *Contexto:* Auditoría CPO (Ontario), due diligence de inversores.  
 *Decisión:* Conventional Commits (`fix:`, `feat:`, `chore:`). TSC limpio antes de cada commit.  
 *Consecuencia:* El historial de git es legible por un auditor externo sin contexto adicional.
+
+**ADR-005: Postura regulatoria SaMD/MLMD conservadora**  
+*Contexto:* AiduxCare apoya razonamiento clínico, documentación SOAP y continuidad longitudinal. Health Canada clasifica el software por intended use, claims, etiquetado y grado de autonomía. La guía Health Canada 2026 para ML-enabled medical devices exige evidencia de ciclo de vida, riesgo, datos, validación clínica, transparencia y post-market monitoring cuando el software usa ML para lograr un propósito médico.  
+*Decisión:* Hasta decisión formal regulatoria, AiduxCare debe diseñarse como si pudiera ser evaluado como Clinical Decision Support / SaMD o MLMD en Canadá si sus claims comerciales o funciones pasan de documentación/soporte a recomendación clínica regulada. Todo claim público debe preservar que el sistema propone, el fisioterapeuta decide, y que las recomendaciones son soporte documentado, no diagnóstico autónomo ni tratamiento autónomo.  
+*Consecuencia:* Toda feature clínica debe mantener intended use explícito, human oversight verificable, evidencia trazable, risk controls, versión de modelo/prompts, logs auditables, limitaciones visibles y plan de vigilancia post-market. Cualquier cambio que aumente autonomía clínica requiere revisión CTO + evaluación regulatoria antes de release.
 
 ### ADR-004 — Biblioteca de Evidencia Clínica
 
@@ -309,21 +314,36 @@ La versión 2023 del estándar internacional de calidad de software añadió **s
 | Ley 41/2002 | España | ✅ Implementado | Consentimiento informado previo. Historia clínica trazable |
 | CGCFE | España | ✅ Parcial | Validación SOAP por estándares fisioterapia. Número de colegiado en informes |
 | CPO Ontario | Canadá | ✅ Parcial | SOAP validation. Compliance block modal. Audit-ready encounters |
+| Health Canada SaMD | Canadá | ⚠️ Watchlist regulatoria | Intended use controlado. Sistema propone, fisio decide. No claims de diagnóstico/tratamiento autónomo |
+| Health Canada MLMD | Canadá | ⚠️ Watchlist regulatoria | Vertex/Gemini con humano en el loop. Falta MLMD technical file formal si se comercializa como dispositivo |
+| EU AI Act | Unión Europea | ⚠️ Watchlist regulatoria | Human oversight activo. Falta AI risk management file si se clasifica como high-risk AI |
 
 ### 6.2 Roadmap de certificaciones
 
-El camino de certificación para un healthtech que opera en España con expansión a Canadá sigue esta progresión natural, confirmada por auditores como Bureau Veritas, BSI Group y Schellman:
+El camino de certificación para un healthtech que opera en España con expansión a Canadá debe separar tres frentes:
+
+1. **Privacidad y seguridad de datos:** RGPD/LOPDGDD, PHIPA, PIPEDA, ISO/IEC 27001, SOC 2.
+2. **Software clínico / medical device readiness:** intended use, clasificación SaMD/MLMD, IEC 62304, ISO 14971, ciberseguridad de medical devices.
+3. **Gobernanza de IA:** ISO/IEC 42001, GMLP, transparencia, human-AI team, monitoring y control de cambios.
 
 ```
-[ACTUAL]     RGPD/LOPDGDD + PHIPA/PIPEDA (arquitectura)
-[Q4 2026]    ISO/IEC 27001 — Information Security Management System
-[2027]       SOC 2 Type II (requerido para venta a clínicas enterprise en Norteamérica)
-[2027+]      ISO 42001 — AI Management System (gobernanza de IA en contexto clínico)
+[ACTUAL]     RGPD/LOPDGDD + PHIPA/PIPEDA arquitectura + SoT de ingeniería
+[2026]       ISO/IEC 27001 readiness — ISMS, risk register, asset inventory, access reviews
+[2026]       SaMD/MLMD classification memo — intended use, claims, autonomy, user, workflow
+[2026]       IEC 62304-lite SDLC — requirements, risk traceability, verification, release records
+[2026]       ISO 14971-lite risk file — hazards, harms, controls, residual risk, post-market signals
+[2027]       SOC 2 Type I → Type II — Security required; Availability/Confidentiality/Privacy recommended
+[2027]       ISO/IEC 42001 readiness — AI management system for clinical AI governance
+[2027+]      Health Canada submission readiness if commercial claims trigger SaMD/MLMD licensing
 ```
 
-> ISO 27001 es el punto de entrada lógico porque construye sobre el trabajo de RGPD ya realizado. Según investigación de Assuric (2025): "Si ya cumples con GDPR, estás en una posición excelente para iniciar ISO 27001 — construye sobre el trabajo existente en lugar de empezar desde cero."
+**Regla comercial:** marketing, web, demos, pitch decks y contratos no pueden afirmar diagnóstico, tratamiento autónomo, triage autónomo, sustitución de criterio profesional ni reducción garantizada de riesgo clínico sin revisión regulatoria. Las palabras permitidas son: soporte, propuesta, documentación, trazabilidad, evidencia curada, continuidad clínica y revisión humana obligatoria.
 
-> El costo estimado para una startup en etapa Seed-Series A para ISO 27001 oscila entre $30k-$60k incluyendo implementación y auditoría (RiscLens, 2026).
+**Palabras prohibidas sin revisión regulatoria:** diagnóstico, tratamiento, prescripción, triage autónomo, reemplaza al profesional, reduce errores clínicos, mejora outcomes.
+
+**Palabras permitidas:** soporte, propuesta, documentación, trazabilidad, evidencia curada, continuidad clínica, revisión humana obligatoria.
+
+**Regla de auditoría:** toda certificación futura debe poder reconstruirse desde Git, Firestore audit logs, registros de consentimiento, decisiones de fisioterapeuta, versiones de prompts/modelos, release notes, risk register y evidencias TSC/ISMS.
 
 ### 6.3 Controles técnicos de seguridad activos
 
@@ -333,6 +353,73 @@ El camino de certificación para un healthtech que opera en España con expansi�
 - **PHI:** `stripPHIFields` en analytics. Logs de consola sin datos de pacientes
 - **Consentimiento:** Token de 7 días con URL única. Estado persistido en Firestore
 - **Cifrado:** En reposo (Firestore default). En tránsito (HTTPS forzado)
+
+### 6.4 Baseline de auditoría requerido antes de comercialización
+
+Antes de vender AiduxCare a clínicas fuera del piloto, deben existir estos artefactos vivos:
+
+| Artefacto | Objetivo auditor/regulador | Estado |
+|---|---|---|
+| Intended Use Statement | Definir si AiduxCare es documentación clínica, CDS, SaMD o MLMD | Pendiente |
+| Claims Register | Controlar claims comerciales y evitar claims medical device no aprobados | Pendiente |
+| SaMD/MLMD Classification Memo | Documentar análisis Health Canada por función y grado de autonomía | Pendiente |
+| Risk Management File | ISO 14971-lite: peligros, daños, controles, riesgo residual | Pendiente |
+| Software Safety Classification | IEC 62304-lite por módulo clínico | Pendiente |
+| Requirements Traceability Matrix | Requisito → riesgo → control → test → release | Pendiente |
+| Model/Prompt Card | Intended use, inputs, outputs, limitaciones, versión, known failure modes | Parcial |
+| Evidence Register | ADR-004: evidencia clínica aprobada por CTO | Activo parcial |
+| Human Oversight Evidence | Prueba de que el fisio revisa/decide antes de SOAP final | Activo |
+| Post-market Surveillance Log | Feedback, incidentes, near misses, acciones correctivas | Parcial |
+| Vulnerability Management/SBOM | Dependencias, CVEs, patch policy, secure release | Pendiente |
+| Access Review Log | Revisión periódica de usuarios, roles y permisos | Pendiente |
+| Backup/DR Test Evidence | Evidencia de recuperación y continuidad | Pendiente |
+| DPIA/PIA | Evaluación privacidad RGPD/PHIPA/PIPEDA por flujo clínico | Pendiente |
+| SOC 2 Control Matrix | Mapeo a Security, Availability, Confidentiality, Processing Integrity, Privacy | Pendiente |
+
+### 6.5 Reglas SaMD/MLMD para nuevas features clínicas
+
+Toda feature que afecte análisis clínico, recomendaciones, priorización, alertas, SOAP o continuidad longitudinal debe declarar:
+
+- **Intended use:** qué problema soporta y qué explícitamente no hace.
+- **Usuario previsto:** fisioterapeuta, administrativo, paciente u otro.
+- **Paciente/población prevista:** alcance, exclusiones, limitaciones.
+- **Grado de autonomía:** informativo, recomendación, priorización, bloqueo, automatización.
+- **Datos de entrada:** transcript, historia, tests, evidencia, adjuntos, sensores, EMR.
+- **Output clínico:** texto, alerta, recomendación, score, plan, resumen.
+- **Riesgo clínico principal:** daño posible si output es incorrecto, incompleto o tardío.
+- **Control humano:** dónde el fisio acepta, edita, descarta o documenta decisión.
+- **Evidencia:** fuente clínica o razonamiento documentado.
+- **Trazabilidad:** logs, versión modelo/prompt, commit, test, feedback asociado.
+- **Post-market signal:** qué feedback, incidente o métrica indicaría degradación.
+
+Si una feature cambia de “documentación/soporte” a “recomendación clínica que puede influir tratamiento”, debe revisarse como posible SaMD/MLMD antes de release.
+
+### 6.6 Controles AI/ML mínimos
+
+AiduxCare usa modelos externos (Vertex AI Gemini y OpenAI Whisper) y no entrena modelos propios en runtime clínico actual. Aun así, para auditoría se aplican controles de AI management:
+
+- **Versionado:** registrar proveedor, modelo, versión/configuración, prompt, fecha y commit.
+- **Bounded changes:** ningún cambio de prompt/modelo entra sin diff, TSC y validación clínica.
+- **Human-AI team:** medir el flujo como equipo fisio + IA, no solo calidad del modelo.
+- **Transparency:** mostrar al usuario límites, incertidumbre y base de evidencia cuando aplique.
+- **Performance monitoring:** feedback estructurado, fallos, falsos positivos/negativos clínicos y near misses.
+- **Bias/representativeness:** cuando se use dataset propio o validación clínica, documentar representatividad por sexo/género/edad/origen cuando sea razonable.
+- **Rollback:** toda actualización relevante de prompt/modelo debe tener plan de reversión.
+- **No silent learning:** no se permite entrenamiento automático con datos clínicos de pacientes sin aprobación CTO, DPIA/PIA y base legal/consentimiento explícitos.
+
+### 6.7 Ciberseguridad medical device readiness
+
+Aunque AiduxCare no esté licenciado como medical device, las funciones clínicas deben adoptar baseline de ciberseguridad proporcional al riesgo:
+
+- **Secure design:** requisitos de seguridad desde diseño, no al final.
+- **Risk management:** amenazas de ciberseguridad vinculadas a daño clínico posible.
+- **Verification and validation:** tests de controles críticos, no solo build exitoso.
+- **SBOM:** inventario de dependencias, librerías, servicios cloud y modelos externos.
+- **Vulnerability disclosure:** canal y proceso para recibir, evaluar y corregir vulnerabilidades.
+- **Patch policy:** criterio de severidad, SLA y evidencia de parcheo.
+- **Traceability matrix:** riesgo → requisito → control → prueba → release.
+- **Backup/recovery:** evidencia periódica de restauración, no solo backups configurados.
+- **Incident response:** playbook para brecha PHI, degradación IA, pérdida de sesión y fallo de generación SOAP.
 
 ---
 
@@ -453,6 +540,36 @@ Este documento está fundamentado en los siguientes estándares y publicaciones:
 
 12. **HumanLayer — Writing a good CLAUDE.md (2025)** — "CLAUDE.md should contain as few instructions as possible — ideally only ones which are universally applicable." https://www.humanlayer.dev/blog/writing-a-good-claude-md
 
+13. **Health Canada — Software as a Medical Device (SaMD): Definition and Classification** — Clarifica intended use, CDS/PDS, exclusiones y clasificación SaMD bajo Food and Drugs Act / Medical Devices Regulations. https://www.canada.ca/en/health-canada/services/drugs-health-products/medical-devices/application-information/guidance-documents/software-medical-device-guidance-document.html
+
+14. **Health Canada — Pre-market guidance for machine learning-enabled medical devices (2026)** — Guía vigente para MLMD: lifecycle, GMLP, design, risk management, data, testing, clinical validation, transparency, post-market monitoring y PCCP. https://www.canada.ca/en/health-canada/services/drugs-health-products/medical-devices/application-information/guidance-documents/pre-market-guidance-machine-learning-enabled-medical-devices.html
+
+15. **Health Canada / FDA / MHRA — Good Machine Learning Practice for Medical Device Development** — 10 principios para MLMD, incluyendo human-AI team, representatividad de datos, independencia train/test, transparencia y monitoring post-deployment. https://www.canada.ca/en/health-canada/services/drugs-health-products/medical-devices/good-machine-learning-practice-medical-device-development.html
+
+16. **Health Canada — Predetermined Change Control Plans for ML-enabled Medical Devices** — Principios de PCCP: bounded, risk-based, evidence-based, transparent y lifecycle-oriented. https://www.canada.ca/en/health-canada/services/drugs-health-products/medical-devices/good-machine-learning-practice-medical-device-development/predetermined-change-control-plans-machine-learning-enabled-medical-devices.html
+
+17. **Health Canada — Transparency for ML-enabled Medical Devices** — Principios de transparencia centrados en el usuario, el paciente y la interpretación segura del output MLMD. https://www.canada.ca/en/health-canada/services/drugs-health-products/medical-devices/transparency-machine-learning-guiding-principles.html
+
+18. **Health Canada — Pre-market Requirements for Medical Device Cybersecurity** — Secure design, cybersecurity risk management, verification/validation, BOM, vulnerability management, maintenance plan y traceability matrix. https://www.canada.ca/en/health-canada/services/drugs-health-products/medical-devices/application-information/guidance-documents/cybersecurity/document.html
+
+19. **ISO 14971:2019** — Medical devices — Application of risk management to medical devices. Confirmada como vigente en 2025. https://www.iso.org/standard/72704.html
+
+20. **IEC 62304:2006 + Amendment 1:2015** — Medical device software — Software life cycle processes. Confirmada como vigente en 2021. https://www.iso.org/standard/38421.html
+
+21. **ISO/IEC 27001:2022** — Information security, cybersecurity and privacy protection — Information security management systems — Requirements. https://www.iso.org/standard/27001
+
+22. **ISO/IEC 42001:2023** — Artificial intelligence management system. Primer estándar internacional de sistema de gestión de IA. https://www.iso.org/standard/42001
+
+23. **AICPA & CIMA — 2017 Trust Services Criteria with Revised Points of Focus 2022** — Criterios SOC 2 para Security, Availability, Processing Integrity, Confidentiality y Privacy. https://www.aicpa.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022
+
+24. **AICPA & CIMA — 2018 SOC 2 Description Criteria with Revised Implementation Guidance 2022** — Criterios para preparar/evaluar la descripción del sistema en SOC 2. https://www.aicpa-cima.com/resources/download/get-description-criteria-for-your-organizations-soc-2-r-report
+
+25. **Office of the Privacy Commissioner of Canada — PIPEDA meaningful consent** — Consentimiento significativo, información clara, sensibilidad de datos, control del nivel de detalle y retiro de consentimiento. https://www.priv.gc.ca/en/privacy-topics/collecting-personal-information/consent/gl_omc_201805/
+
+26. **Ontario PHIPA — Personal Health Information Protection Act** — Salvaguardas, proveedores a custodios, audit logs electrónicos y deber de proteger PHI contra pérdida, robo, acceso no autorizado, copia, modificación o disposición. https://www.ontario.ca/laws/statute/04p03
+
+27. **European Commission — AI in healthcare / AI Act** — AI Act vigente desde 2024; high-risk AI para software médico exige risk mitigation, high-quality datasets, user information y human oversight. https://health.ec.europa.eu/ehealth-digital-health-and-care/artificial-intelligence-healthcare_en
+
 ---
 
 ## 10. Control de Versiones de este Documento
@@ -460,6 +577,8 @@ Este documento está fundamentado en los siguientes estándares y publicaciones:
 | Versión | Fecha | Cambios |
 |---|---|---|
 | 1.0 | Abril 2026 | Versión inicial. Piloto España activo. |
+| 1.1 | 2026-05-05 | `ENGINEERING.md` declarado SoT editable; PDFs quedan como referencia histórica. |
+| 1.2 | 2026-05-06 | Añadida postura regulatoria SaMD/MLMD, auditoría comercial, ISO 14971, IEC 62304, Health Canada MLMD 2026, GMLP, PCCP, SOC 2/ISO 27001/ISO 42001 y ciberseguridad medical-device. |
 
 ---
 
