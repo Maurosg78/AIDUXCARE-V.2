@@ -6804,9 +6804,32 @@ const ProfessionalWorkflowPage = () => {
                           ) : null}
                           {hasBriefingHepColumn ? (
                             <div className="px-5 py-4">
-                              <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-semibold mb-2">
-                                {t('workflow.visit.briefingHepColumnHeader')}
-                              </p>
+                              <div className="flex items-center justify-between gap-3 mb-2">
+                                <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-semibold">
+                                  {t('workflow.visit.briefingHepColumnHeader')}
+                                </p>
+                                {homeProgramItems.length >= 2 ? (() => {
+                                  const allHepCompleted = homeProgramItems.every((item) => item.completed);
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const nextCompleted = !allHepCompleted;
+                                        const updatedHepItems = homeProgramItems.map((item) => ({
+                                          ...item,
+                                          completed: nextCompleted,
+                                        }));
+                                        updateHomeProgramItems(updatedHepItems);
+                                      }}
+                                      className="text-xs font-medium text-blue-600 hover:text-blue-800 font-apple"
+                                    >
+                                      {allHepCompleted
+                                        ? t('workflow.visit.clearAllHep')
+                                        : t('workflow.visit.selectAllHep')}
+                                    </button>
+                                  );
+                                })() : null}
+                              </div>
                               <ul className="space-y-2">
                                 {homeProgramItems.map((item) => {
                                   const hepCheckboxId = `patient-context-hep-${item.id}`;
