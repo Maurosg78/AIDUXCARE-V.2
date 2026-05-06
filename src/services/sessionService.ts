@@ -101,17 +101,19 @@ class SessionService {
   private COLLECTION_NAME = 'sessions';
 
   private getSessionOwnerId(data: Record<string, unknown>): string | null {
-    const userId = data.userId;
-    if (typeof userId === 'string' && userId.trim() !== '') {
-      return userId;
-    }
-    const authorUid = data.authorUid;
-    if (typeof authorUid === 'string' && authorUid.trim() !== '') {
-      return authorUid;
-    }
-    const ownerUid = data.ownerUid;
-    if (typeof ownerUid === 'string' && ownerUid.trim() !== '') {
-      return ownerUid;
+    const ownershipFields = [
+      'userId',
+      'authorUid',
+      'ownerUid',
+      'professionalId',
+      'physiotherapistId',
+      'createdBy',
+    ];
+    for (const field of ownershipFields) {
+      const value = data[field];
+      if (typeof value === 'string' && value.trim() !== '') {
+        return value;
+      }
     }
     return null;
   }

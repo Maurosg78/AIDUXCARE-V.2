@@ -160,18 +160,20 @@ export class PersistenceService {
       };
       const sanitizedDataToSave = this.sanitizeForFirestore(dataToSave);
 
-      console.log(`[PersistenceService] Saving note to Firestore:`, {
-        collection: this.COLLECTION_NAME,
-        noteId: resolvedNoteId,
-        hasOwnerUid: Boolean(userId),
-        hasPatientId: Boolean(savedNote.patientId),
-        hasSessionId: Boolean(savedNote.sessionId),
-        createdAt: savedNote.createdAt,
-      });
+      if (import.meta.env.DEV) {
+        console.log('[PersistenceService] Saving note to Firestore', {
+          collection: this.COLLECTION_NAME,
+          hasOwnerUid: Boolean(userId),
+          hasPatientId: Boolean(savedNote.patientId),
+          hasSessionId: Boolean(savedNote.sessionId),
+        });
+      }
 
       await setDoc(noteRef, sanitizedDataToSave);
 
-      console.log(`✅ [PersistenceService] Note saved successfully with ID: ${resolvedNoteId}`);
+      if (import.meta.env.DEV) {
+        console.log('[PersistenceService] Note saved successfully');
+      }
       return resolvedNoteId;
     } catch (error) {
       console.error('Error generating clinical note:', error);
@@ -188,7 +190,11 @@ export class PersistenceService {
     try {
       const notes = await this.fetchAllNotesRaw();
       const latestNotes = this.selectLatestNotes(notes);
-      console.log(`✅ [PersistenceService] Retrieved ${latestNotes.length} notes for current user`);
+      if (import.meta.env.DEV) {
+        console.log('[PersistenceService] Retrieved notes for current user', {
+          count: latestNotes.length,
+        });
+      }
       return latestNotes;
     } catch (error: any) {
       // WO-FS-DATA-03: Handle permission-denied as "no data yet"
@@ -352,20 +358,22 @@ export class PersistenceService {
       orderBy('createdAt', 'desc')
     );
 
-    console.log(`[PersistenceService] Querying notes from Firestore:`, {
-      collection: this.COLLECTION_NAME,
-      hasAuthorUid: Boolean(userId),
-    });
+    if (import.meta.env.DEV) {
+      console.log('[PersistenceService] Querying notes from Firestore', {
+        collection: this.COLLECTION_NAME,
+        hasAuthorUid: Boolean(userId),
+      });
+    }
 
     const snapshot = await getDocs(notesQuery);
     const notes = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
       const data = doc.data() as SavedNote;
-      console.log(`[PersistenceService] Found note:`, {
-        id: doc.id,
-        hasPatientId: Boolean(data.patientId),
-        createdAt: data.createdAt,
-        hasAuthorUid: Boolean(data.authorUid || data.ownerUid),
-      });
+      if (import.meta.env.DEV) {
+        console.log('[PersistenceService] Found note', {
+          hasPatientId: Boolean(data.patientId),
+          hasAuthorUid: Boolean(data.authorUid || data.ownerUid),
+        });
+      }
       return { ...data, id: doc.id };
     });
     return notes;
@@ -382,10 +390,13 @@ export class PersistenceService {
     );
     const snapshot = await getDocs(notesQuery);
 
-    console.log(`[PersistenceService] Found ${snapshot.docs.length} notes for requested patient`, {
-      hasPatientId: Boolean(patientId),
-      hasUserId: Boolean(userId),
-    });
+    if (import.meta.env.DEV) {
+      console.log('[PersistenceService] Found notes for requested patient', {
+        count: snapshot.docs.length,
+        hasPatientId: Boolean(patientId),
+        hasUserId: Boolean(userId),
+      });
+    }
 
     const notes = snapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => {
       const data = doc.data() as SavedNote;
