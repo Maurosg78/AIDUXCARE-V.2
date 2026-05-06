@@ -36,6 +36,10 @@ export interface TodayQuickItem {
   status?: 'pending' | 'documented' | 'done' | 'incomplete';
 }
 
+export type ClinicalQueueGroupKey = 'awaitingDocumentation' | 'inProgress' | 'toSee';
+
+export type ClinicalQueueGroupRefs = Partial<Record<ClinicalQueueGroupKey, React.RefObject<HTMLDivElement>>>;
+
 export interface TodayPatientsPanelProps {
   appointments: TodayAppointment[];
   loading: boolean;
@@ -65,6 +69,10 @@ export interface TodayPatientsPanelProps {
   clinicalDayRows?: ClinicalDayRow[];
   /** Open the existing clinical artifact for a derived row */
   onOpenClinicalRow?: (row: ClinicalDayRow) => void;
+  /** Optional anchors used by the day summary quick links. */
+  clinicalQueueGroupRefs?: ClinicalQueueGroupRefs;
+  /** Briefly highlights the target group after sidebar navigation. */
+  highlightedClinicalGroup?: ClinicalQueueGroupKey | null;
 }
 
 function formatDateKey(d: Date): string {
@@ -170,6 +178,8 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
   todayQuickList = [],
   clinicalDayRows = [],
   onOpenClinicalRow,
+  clinicalQueueGroupRefs,
+  highlightedClinicalGroup,
 }) => {
   const { t } = useTranslation();
   const { patients: allPatients } = usePatientsList();
@@ -220,6 +230,13 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
       {label} ({count})
     </div>
   );
+  const getGroupClassName = (
+    group: ClinicalQueueGroupKey,
+    baseClassName: string
+  ) =>
+    `${baseClassName} scroll-mt-24 rounded-xl transition-shadow duration-500 ${
+      highlightedClinicalGroup === group ? 'ring-2 ring-primary-blue/50 ring-offset-2' : ''
+    }`;
 
   const renderActionClinicalRow = (row: ClinicalDayRow) => {
     const fallbackQuickItem = quickItemByPatientId.get(row.patientId);
@@ -366,19 +383,28 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
             </div>
           )}
           {awaitingDocumentationRows.length > 0 ? (
-            <div className="space-y-2">
+            <div
+              ref={clinicalQueueGroupRefs?.awaitingDocumentation}
+              className={getGroupClassName('awaitingDocumentation', 'space-y-2')}
+            >
               {renderGroupHeader(t('shell.todayPatients.groupAwaitingDocumentation'), awaitingDocumentationRows.length)}
               {awaitingDocumentationRows.map(renderActionClinicalRow)}
             </div>
           ) : null}
           {inProgressRows.length > 0 ? (
-            <div className="space-y-2 pt-3 border-t border-gray-100">
+            <div
+              ref={clinicalQueueGroupRefs?.inProgress}
+              className={getGroupClassName('inProgress', 'space-y-2 pt-3 border-t border-gray-100')}
+            >
               {renderGroupHeader(t('shell.todayPatients.groupInProgress'), inProgressRows.length)}
               {inProgressRows.map(renderActionClinicalRow)}
             </div>
           ) : null}
           {toSeeRows.length > 0 ? (
-            <div className="space-y-2 pt-3 border-t border-gray-100">
+            <div
+              ref={clinicalQueueGroupRefs?.toSee}
+              className={getGroupClassName('toSee', 'space-y-2 pt-3 border-t border-gray-100')}
+            >
               {renderGroupHeader(t('shell.todayPatients.groupToSee'), toSeeRows.length)}
               {toSeeRows.map(renderActionClinicalRow)}
             </div>

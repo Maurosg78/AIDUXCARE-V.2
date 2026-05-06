@@ -11,7 +11,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { SessionTypeService, type SessionType } from '../../services/sessionTypeService';
 import { useAppointmentSchedule, type Appointment } from './hooks/useAppointmentSchedule';
-import { usePendingNotesCount } from './hooks/usePendingNotesCount';
 import { useInProgressSessions, type InProgressSession } from './hooks/useInProgressSessions';
 import { usePatientsList } from './hooks/usePatientsList';
 import { Patient } from '../../services/patientService';
@@ -20,11 +19,10 @@ import sessionService from '../../services/sessionService';
 
 // Components
 import { CommandCenterHeader } from './components/CommandCenterHeader';
-import { TodayPatientsPanel, type TodayAppointment, type TodayQuickItem } from './components/TodayPatientsPanel';
+import { TodayPatientsPanel, type ClinicalQueueGroupKey, type TodayAppointment, type TodayQuickItem } from './components/TodayPatientsPanel';
 import type { StartSessionModalMode } from './components/StartSessionTwoStepModal';
 import { WorkWithPatientsPanel } from './components/WorkWithPatientsPanel';
 import { PatientSearchBar } from './components/PatientSearchBar';
-import { WorkQueuePanel, type WorkQueueSummary } from './components/WorkQueuePanel';
 import { PatientSelectorModal } from './components/PatientSelectorModal';
 import { StartSessionTwoStepModal } from './components/StartSessionTwoStepModal';
 import { CreatePatientModal } from './components/CreatePatientModal';
@@ -61,6 +59,8 @@ function workflowPath(
   }
   return `/workflow?${params.toString()}`;
 }
+
+type DaySummaryTarget = ClinicalQueueGroupKey | 'seenToday';
 
 function trackStatusTransition(
   prev: PatientWorkflowStatus | undefined,
@@ -208,12 +208,16 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const previousStatusByPatientIdRef = React.useRef(new Map<string, PatientWorkflowStatus>());
   const todayListLoadRequestRef = React.useRef(0);
   const removedTodayQuickItemKeysRef = React.useRef(new Set<string>());
+  const awaitingDocumentationRef = React.useRef<HTMLDivElement>(null);
+  const inProgressRef = React.useRef<HTMLDivElement>(null);
+  const toSeeRef = React.useRef<HTMLDivElement>(null);
+  const seenTodayRef = React.useRef<HTMLDivElement>(null);
+  const [highlightedSummaryTarget, setHighlightedSummaryTarget] = useState<DaySummaryTarget | null>(null);
 
   // WO-UX-01: No token display in Command Center (backend/tracking may still exist)
 
   // Hooks
   const { appointments, loading: appointmentsLoading, getAppointments } = useAppointmentSchedule();
-  const pendingNotes = usePendingNotesCount();
   const inProgressSessions = useInProgressSessions();
   const { patients, refresh: refreshPatients } = usePatientsList();
 
@@ -401,12 +405,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const isSelectedDateToday = selectedDate.getDate() === new Date().getDate() &&
     selectedDate.getMonth() === new Date().getMonth() &&
     selectedDate.getFullYear() === new Date().getFullYear();
-
-  const workQueue: WorkQueueSummary = {
-    pendingNotes: pendingNotes.data || 0,
-    missingConsents: 0, // TODO: Implement consent checking
-    draftDocuments: 0, // TODO: Implement draft documents
-  };
 
   const openClinicalResponsibilities = inProgressSessions.data
     .filter((session) => {
@@ -673,6 +671,49 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const summarySeenTodayRows = clinicalDayRows.filter(
     (row) => row.status === PatientWorkflowStatus.DOCUMENTED_FINAL
   );
+  const clinicalQueueGroupRefs = {
+    awaitingDocumentation: awaitingDocumentationRef,
+    inProgress: inProgressRef,
+    toSee: toSeeRef,
+  };
+  const handleSummaryQuickLink = (target: DaySummaryTarget, count: number) => {
+    if (count === 0) {
+      return;
+    }
+    const targetRef =
+      target === 'seenToday'
+        ? seenTodayRef
+        : clinicalQueueGroupRefs[target];
+
+    targetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setHighlightedSummaryTarget(target);
+    window.setTimeout(() => {
+      setHighlightedSummaryTarget((current) => (current === target ? null : current));
+    }, 1400);
+  };
+  const renderSummaryQuickCard = (
+    label: string,
+    count: number,
+    target: DaySummaryTarget,
+    className: string,
+    labelClassName: string,
+    valueClassName: string
+  ) => {
+    const isDisabled = count === 0;
+    return (
+      <button
+        type="button"
+        onClick={() => handleSummaryQuickLink(target, count)}
+        disabled={isDisabled}
+        className={`${className} w-full text-left transition-all ${
+          isDisabled ? 'cursor-not-allowed opacity-50' : 'hover:-translate-y-0.5 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-blue/40'
+        }`}
+      >
+        <div className={labelClassName}>{label}</div>
+        <div className={valueClassName}>{count}</div>
+      </button>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -760,6 +801,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
               onSelectPatient={setSelectedPatient}
               todayQuickList={todayQuickList}
               clinicalDayRows={clinicalDayRows}
+              clinicalQueueGroupRefs={clinicalQueueGroupRefs}
+              highlightedClinicalGroup={
+                highlightedSummaryTarget === 'seenToday' ? null : highlightedSummaryTarget
+              }
               selectedDate={selectedDate}
               onDateChange={setSelectedDate}
               onClearList={() => setTodayQuickList([])}
@@ -845,12 +890,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
             }}
             isNewlyCreated={isNewlyCreatedPatient}
               />
-
-              {/* Block 3: Work Queue */}
-              <WorkQueuePanel
-                workQueue={workQueue}
-                loading={pendingNotes.loading}
-              />
+              {/* WorkQueuePanel intentionally hidden in pilot; clinical queues now live in the day summary and patient queue. */}
             </div>
 
             <aside className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm xl:sticky xl:top-6">
@@ -858,24 +898,45 @@ export const CommandCenterPageSprint3: React.FC = () => {
                 {t('shell.daySummary.title')}
               </h2>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-xl border border-purple-100 bg-purple-50 px-3 py-2">
-                  <div className="text-xs font-medium text-purple-700 font-apple">{t('shell.todayPatients.groupAwaitingDocumentation')}</div>
-                  <div className="text-xl font-semibold text-purple-900 font-apple">{summaryAwaitingDocumentationRows.length}</div>
-                </div>
-                <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
-                  <div className="text-xs font-medium text-blue-700 font-apple">{t('shell.todayPatients.groupInProgress')}</div>
-                  <div className="text-xl font-semibold text-blue-900 font-apple">{summaryInProgressRows.length}</div>
-                </div>
-                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                  <div className="text-xs font-medium text-slate-600 font-apple">{t('shell.todayPatients.groupToSee')}</div>
-                  <div className="text-xl font-semibold text-slate-900 font-apple">{summaryToSeeRows.length}</div>
-                </div>
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2">
-                  <div className="text-xs font-medium text-emerald-700 font-apple">{t('shell.daySummary.seen')}</div>
-                  <div className="text-xl font-semibold text-emerald-900 font-apple">{summarySeenTodayRows.length}</div>
-                </div>
+                {renderSummaryQuickCard(
+                  t('shell.todayPatients.groupAwaitingDocumentation'),
+                  summaryAwaitingDocumentationRows.length,
+                  'awaitingDocumentation',
+                  'rounded-xl border border-purple-100 bg-purple-50 px-3 py-2',
+                  'text-xs font-medium text-purple-700 font-apple',
+                  'text-xl font-semibold text-purple-900 font-apple'
+                )}
+                {renderSummaryQuickCard(
+                  t('shell.todayPatients.groupInProgress'),
+                  summaryInProgressRows.length,
+                  'inProgress',
+                  'rounded-xl border border-blue-100 bg-blue-50 px-3 py-2',
+                  'text-xs font-medium text-blue-700 font-apple',
+                  'text-xl font-semibold text-blue-900 font-apple'
+                )}
+                {renderSummaryQuickCard(
+                  t('shell.todayPatients.groupToSee'),
+                  summaryToSeeRows.length,
+                  'toSee',
+                  'rounded-xl border border-slate-100 bg-slate-50 px-3 py-2',
+                  'text-xs font-medium text-slate-600 font-apple',
+                  'text-xl font-semibold text-slate-900 font-apple'
+                )}
+                {renderSummaryQuickCard(
+                  t('shell.daySummary.seen'),
+                  summarySeenTodayRows.length,
+                  'seenToday',
+                  'rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2',
+                  'text-xs font-medium text-emerald-700 font-apple',
+                  'text-xl font-semibold text-emerald-900 font-apple'
+                )}
               </div>
-              <div className="mt-4 border-t border-slate-100 pt-3">
+              <div
+                ref={seenTodayRef}
+                className={`mt-4 border-t border-slate-100 pt-3 scroll-mt-24 rounded-xl transition-shadow duration-500 ${
+                  highlightedSummaryTarget === 'seenToday' ? 'ring-2 ring-emerald-300 ring-offset-2' : ''
+                }`}
+              >
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 font-apple">
                   {t('shell.daySummary.seenToday')}
                 </div>
