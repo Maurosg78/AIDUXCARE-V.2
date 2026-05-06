@@ -198,8 +198,9 @@ ${currentHepAdherenceSummary.trim()}
     previousPlansSummary && previousPlansSummary.trim().length > 0
       ? `PREVIOUS TREATMENT PLAN(S)
 
-Use the previous plan to maintain clinical continuity with today's encounter.
-Use it to describe whether today's documented care continues, adjusts, or progresses the prior plan.
+Use the previous plan only to maintain clinical continuity with today's encounter.
+Do NOT copy prior plan content into today's note.
+Only include prior-plan material when today's clinical update or confirmed checklist explicitly continues, changes, progresses, or stops it.
 Do NOT introduce new interventions, progressions, or recommendations unless explicitly documented in today's session input.
 Your task is to document what was done and decided today. Reflect logical progressions of existing interventions when the clinical input supports them — this is clinical documentation, not treatment invention.
 
@@ -246,15 +247,18 @@ ROLE AND LANGUAGE:
 - Prioritise what changed since the last session over repeating the full baseline
 
 SOURCE OF TRUTH CONSTRAINT:
-  - All clinical statements must originate from:
-  - the baseline SOAP,
+- All clinical statements must originate from:
   - today's clinical update,
   - in-clinic items and home program items provided,
+  - the baseline SOAP as context only,
   - current structured HEP adherence provided,
   - longitudinal context / pain trend / trajectory data provided,
-  - previous treatment plan information provided,
+  - previous treatment plan information as continuity only,
   - patient longitudinal memory pattern provided,
   - attachment findings explicitly marked as reviewed today.
+- Today's clinical update and confirmed in-clinic checklist govern this note.
+- The baseline SOAP provides context only. Do NOT copy baseline content into today's note.
+- The previous plan provides continuity only. Do NOT copy it unless today's input explicitly changes, continues, progresses, or stops it.
 - Do NOT introduce new tests, findings, diagnoses, treatments, or recommendations that are not present in the input data.
 - Longitudinal memory may be used to document change over time, response to prior care, and continuity of the plan.
 - Longitudinal memory must NOT be used to invent undocumented interventions or new diagnoses.
@@ -321,8 +325,10 @@ It may include symptom changes, functional progress, tolerance, or adherence.
 ${(clinicalUpdate ?? '').trim() || 'No additional clinical update provided.'}
 
 ${reviewedAttachmentsSection}${inClinicSection}${hepSection}${longitudinalSection}${trajectorySection}${patternInsightSection}${currentHepAdherenceSection}${previousPlansSection}
-HIERARCHY: baseline SOAP > today's clinical update > previous treatment plan summary.
-If conflict exists between sources, defer to baseline unless today's update explicitly overrides it.
+HIERARCHY: today's clinical update and confirmed checklist > baseline SOAP context > previous plan continuity.
+If conflict exists between sources, today's clinical update and confirmed checklist govern today's note.
+Use baseline SOAP only to understand the established condition; do not restate baseline findings as today's content.
+Use previous plans only for continuity; do not copy prior interventions into today's note unless today's input explicitly confirms them.
 
 TASK
 
@@ -333,6 +339,34 @@ When the clinical input documents a response pattern (pain with movement, improv
 Justify each plan bullet in ≤8 words using only documented input.
 
 Using only the information above:
+
+SOAP DISTRIBUTION RULES — each section has a unique clinical role:
+
+S (Subjective): Patient's reported experience TODAY ONLY.
+   → symptoms, pain level, functional limitations reported verbally, adherence, frustration, goals mentioned
+   → DO NOT include: clinical observations, treatment performed, assessment conclusions
+
+O (Objective): Clinician's observations TODAY ONLY.
+   → ROM observed, exercise tolerance, performance of exercises, treatments applied, functional tests
+   → DO NOT include: patient-reported symptoms, assessment conclusions, future plans
+
+A (Assessment): Clinical synthesis — ONE statement per problem.
+   → evolution vs previous session, clinical significance of today's findings
+   → DO NOT repeat: specific exercises, patient complaints already in S, treatment details already in O
+
+P (Plan): Next actions ONLY — no evaluation content.
+   → progression, home program changes, next session focus, referrals
+   → DO NOT include: what was done today (already in O), assessment conclusions (already in A)
+
+DEDUPLICATION RULE:
+Do not repeat the same clinical fact in more than one SOAP section.
+If a finding appears across sections, each mention must serve a different clinical role.
+If you cannot assign a different clinical role, include it only in the most appropriate section.
+
+EN ESPAÑOL:
+No repitas el mismo hallazgo clínico en S/O/A/P.
+Si un ejercicio o síntoma aparece en más de una sección, cada aparición debe tener una función clínica distinta.
+Si no puedes asignar función distinta, inclúyelo solo en la sección más apropiada.
 
 Update the Subjective based on today's report and documented change from prior sessions when longitudinal data is provided
 Subjective MUST be MAX 4 lines

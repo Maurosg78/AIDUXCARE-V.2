@@ -96,7 +96,8 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).toContain('Return anything other than the single JSON object');
     expect(prompt).toContain('rewrite the SOAP note reflecting today\'s encounter');
     expect(prompt).toContain('You do not invent interventions absent from the input');
-    expect(prompt).toContain('HIERARCHY: baseline SOAP > today\'s clinical update > previous treatment plan summary');
+    expect(prompt).toContain('HIERARCHY: today\'s clinical update and confirmed checklist > baseline SOAP context > previous plan continuity');
+    expect(prompt).toContain('The baseline SOAP provides context only. Do NOT copy baseline content into today\'s note.');
   });
 
   it('states this is NOT an initial assessment', () => {
@@ -175,7 +176,8 @@ describe('buildFollowUpPromptV3', () => {
       previousPlansSummary: 'Focus: Reassess ROM. Interventions: Manual therapy.',
     });
     expect(prompt).toContain('PREVIOUS TREATMENT PLAN(S)');
-    expect(prompt).toContain('Use the previous plan to maintain clinical continuity');
+    expect(prompt).toContain('Use the previous plan only to maintain clinical continuity');
+    expect(prompt).toContain('Do NOT copy prior plan content into today\'s note');
     expect(prompt).toContain('Do NOT introduce new interventions');
     expect(prompt).toContain('Reassess ROM');
   });
@@ -204,7 +206,7 @@ describe('buildFollowUpPromptV3', () => {
       reviewedAttachmentsSummary: 'Adjunto revisado hoy — imagen: cambios estables.',
     });
     expect(prompt).toContain('longitudinal context / pain trend / trajectory data provided');
-    expect(prompt).toContain('previous treatment plan information provided');
+    expect(prompt).toContain('previous treatment plan information as continuity only');
     expect(prompt).toContain('patient longitudinal memory pattern provided');
     expect(prompt).toContain('attachment findings explicitly marked as reviewed today');
     expect(prompt).toContain('explicitly state the clinical change versus the previous completed session');
@@ -213,7 +215,14 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).toContain('avoid saying "without changes" unless the input explicitly states that today\'s plan was unchanged');
     expect(prompt).toContain('prefer wording such as continuing care with progression according to tolerance');
     expect(prompt).toContain('Prefer concise EMR-style clinical wording over narrative prose');
-    expect(prompt).toContain('If no new objective measures or examination findings are documented today, state clearly that no new objective measures were recorded today');
+    expect(prompt).toContain('SOAP DISTRIBUTION RULES — each section has a unique clinical role');
+    expect(prompt).toContain('S (Subjective): Patient\'s reported experience TODAY ONLY.');
+    expect(prompt).toContain('O (Objective): Clinician\'s observations TODAY ONLY.');
+    expect(prompt).toContain('A (Assessment): Clinical synthesis — ONE statement per problem.');
+    expect(prompt).toContain('P (Plan): Next actions ONLY — no evaluation content.');
+    expect(prompt).toContain('DEDUPLICATION RULE:');
+    expect(prompt).toContain('Do not repeat the same clinical fact in more than one SOAP section.');
+    expect(prompt).toContain('No repitas el mismo hallazgo clínico en S/O/A/P.');
     expect(prompt).toContain('Do NOT restate baseline objective findings as if they were newly measured today');
     expect(prompt).toContain('Do NOT place progress, stability, response to treatment, or general clinical interpretation in Objective');
     expect(prompt).toContain('Only include attachment-derived findings in Objective when they are present in the "attachments reviewed today" section');
