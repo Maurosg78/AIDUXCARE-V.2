@@ -64,6 +64,10 @@ function getTodayQuickItemKey(item: TodayQuickItem): string {
   return `${item.patientId}::${item.sessionType}`;
 }
 
+function getTodayQuickItemScopedKey(dateKey: string, item: TodayQuickItem): string {
+  return `${dateKey}::${getTodayQuickItemKey(item)}`;
+}
+
 function mergeTodayQuickItems(
   localItems: TodayQuickItem[],
   incomingItems: TodayQuickItem[]
@@ -183,6 +187,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [, setClinicalDayLoading] = useState(false);
   const previousStatusByPatientIdRef = React.useRef(new Map<string, PatientWorkflowStatus>());
   const todayListLoadRequestRef = React.useRef(0);
+  const removedTodayQuickItemKeysRef = React.useRef(new Set<string>());
 
   // WO-UX-01: No token display in Command Center (backend/tracking may still exist)
 
@@ -272,10 +277,15 @@ export const CommandCenterPageSprint3: React.FC = () => {
         sessionStorage.removeItem(LAST_STARTED_KEY);
       }
 
+      const filteredMergedList = mergedList.filter((item) => {
+        const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
+        return !removedTodayQuickItemKeysRef.current.has(scopedKey);
+      });
+
       setTodayQuickList((prev) => {
         const hasLocalItems = prev.length > 0;
         skipNextSaveRef.current = !hasLocalItems;
-        return mergeTodayQuickItems(prev, mergedList);
+        return mergeTodayQuickItems(prev, filteredMergedList);
       });
     });
 
@@ -723,8 +733,22 @@ export const CommandCenterPageSprint3: React.FC = () => {
                 setShowOngoingIntake(true);
               }
             }}
-            onRemoveFromToday={(index) => {
-              setTodayQuickList((prev) => prev.filter((_, i) => i !== index));
+            onRemoveFromToday={(item) => {
+              if (!user?.uid) {
+                return;
+              }
+              const dateKey = toLocalDateKey(selectedDate);
+              const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
+              const targetKey = getTodayQuickItemKey(item);
+              removedTodayQuickItemKeysRef.current.add(scopedKey);
+              setTodayQuickList((prev) => {
+                const updatedList = prev.filter((currentItem) => {
+                  const currentKey = getTodayQuickItemKey(currentItem);
+                  return currentKey !== targetKey;
+                });
+                void saveTodayList(user.uid, dateKey, updatedList);
+                return updatedList;
+              });
             }}
           />
 

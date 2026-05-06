@@ -49,8 +49,8 @@ export interface TodayPatientsPanelProps {
     sessionType: 'initial' | 'followup' | 'ongoing',
     resumeSessionId?: string,
   ) => void;
-  /** Remove item from today's quick list (index to remove) */
-  onRemoveFromToday?: (index: number) => void;
+  /** Remove item from today's quick list. Does not delete the patient record. */
+  onRemoveFromToday?: (item: TodayQuickItem) => void;
   /** Mark item as pending again (recycle) after it was documented */
   onMarkPendingAgain?: (index: number) => void;
   /** Clear entire list to start fresh */
@@ -192,7 +192,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
 }) => {
   const { t } = useTranslation();
   const { patients: allPatients } = usePatientsList();
-  const [confirmRemoveIndex, setConfirmRemoveIndex] = useState<number | null>(null);
+  const [confirmRemoveItem, setConfirmRemoveItem] = useState<TodayQuickItem | null>(null);
   const [dismissIncompleteItem, setDismissIncompleteItem] = useState<TodayQuickItem | null>(null);
   const [isListExpanded, setIsListExpanded] = useState(
     appointments.length > 0 || clinicalDayRows.length > 0
@@ -206,13 +206,14 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
   const hasAppointments = appointments.length > 0;
 
   const displayDate = selectedDate || new Date();
-  const quickItemIndexByPatientId = new Map<string, number>();
   const quickItemByPatientId = new Map<string, TodayQuickItem>();
+  const quickItemIndexByKey = new Map<string, number>();
+  const quickItemByKey = new Map<string, TodayQuickItem>();
 
   for (const [index, item] of todayQuickList.entries()) {
-    if (!quickItemIndexByPatientId.has(item.patientId)) {
-      quickItemIndexByPatientId.set(item.patientId, index);
-    }
+    const itemKey = `${item.patientId}::${item.sessionType}`;
+    quickItemIndexByKey.set(itemKey, index);
+    quickItemByKey.set(itemKey, item);
 
     if (!quickItemByPatientId.has(item.patientId)) {
       quickItemByPatientId.set(item.patientId, item);
@@ -294,10 +295,11 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
           {actionRows.length > 0 ? (
             <div className="space-y-2">
               {actionRows.map((row) => {
-                const quickItem = quickItemByPatientId.get(row.patientId);
-                const quickItemIndex = quickItemIndexByPatientId.get(row.patientId);
+                const fallbackQuickItem = quickItemByPatientId.get(row.patientId);
                 const primaryActionLabel = getPrimaryActionLabel(row.status);
-                const sessionType = row.sessionType ?? quickItem?.sessionType ?? 'followup';
+                const sessionType = row.sessionType ?? fallbackQuickItem?.sessionType ?? 'followup';
+                const quickItemKey = `${row.patientId}::${sessionType}`;
+                const quickItem = quickItemByKey.get(quickItemKey);
                 const isOverdue =
                   row.status === PatientWorkflowStatus.SCHEDULED &&
                   isPastDate(displayDate);
@@ -306,6 +308,14 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                   ? 'border-red-200 bg-red-50/60 hover:bg-red-50/80'
                   : 'border-slate-200 bg-white hover:bg-slate-50';
                 const hasDismissAction = row.status === PatientWorkflowStatus.ABANDONED && onDismissIncomplete && quickItem;
+                const canRemoveFromToday =
+                  row.status === PatientWorkflowStatus.SCHEDULED &&
+                  quickItem != null &&
+                  onRemoveFromToday != null &&
+                  !row.hasSession &&
+                  !row.hasEncounter &&
+                  !row.hasConsultation &&
+                  !row.resumeSessionId;
                 const hasInvalidAction =
                   (primaryActionLabel === 'Iniciar' && row.status !== PatientWorkflowStatus.SCHEDULED) ||
                   (primaryActionLabel === 'Continuar' && row.status !== PatientWorkflowStatus.IN_PROGRESS) ||
@@ -376,12 +386,13 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                           <Trash2 className="w-4 h-4" />
                         </button>
                       ) : null}
-                      {quickItemIndex != null && onRemoveFromToday ? (
+                      {canRemoveFromToday ? (
                         <button
                           type="button"
-                          onClick={() => setConfirmRemoveIndex(quickItemIndex)}
+                          onClick={() => setConfirmRemoveItem(quickItem)}
                           className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
                           aria-label={t('shell.todayPatients.removeFromList')}
+                          title={t('shell.todayPatients.removeFromListTitle')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -398,8 +409,10 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                 Completado
               </div>
               {completedRows.map((row) => {
-                const quickItemIndex = quickItemIndexByPatientId.get(row.patientId);
-                const sessionType = row.sessionType ?? quickItemByPatientId.get(row.patientId)?.sessionType ?? 'followup';
+                const fallbackQuickItem = quickItemByPatientId.get(row.patientId);
+                const sessionType = row.sessionType ?? fallbackQuickItem?.sessionType ?? 'followup';
+                const quickItemKey = `${row.patientId}::${sessionType}`;
+                const quickItemIndex = quickItemIndexByKey.get(quickItemKey);
                 const primaryActionLabel = getPrimaryActionLabel(row.status);
                 const hasInvalidAction = primaryActionLabel !== 'Abrir SOAP';
 
@@ -446,17 +459,6 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                       {onMarkPendingAgain && quickItemIndex != null ? (
                         <button type="button" onClick={() => onMarkPendingAgain(quickItemIndex)} className="p-2 rounded-lg border border-primary-blue/40 bg-primary-blue/5 text-primary-blue hover:bg-primary-blue/10 transition-colors" title={t('shell.todayPatients.markPendingAgain')} aria-label={t('shell.todayPatients.markPendingAgain')}>
                           <RotateCcw className="w-4 h-4" />
-                        </button>
-                      ) : null}
-                      {quickItemIndex != null && onRemoveFromToday ? (
-                        <button
-                          type="button"
-                          onClick={() => setConfirmRemoveIndex(quickItemIndex)}
-                          className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                          aria-label={t('shell.todayPatients.removeFromList')}
-                          title={t('shell.todayPatients.removeFromListTitle')}
-                        >
-                          <Trash2 className="w-4 h-4" />
                         </button>
                       ) : null}
                     </div>
@@ -519,17 +521,17 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
       )}
 
       {/* Confirm remove modal */}
-      {confirmRemoveIndex !== null && todayQuickList[confirmRemoveIndex] && (
+      {confirmRemoveItem !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 font-apple mb-2">{t('shell.todayPatients.confirmRemoveTitle')}</h3>
             <p className="text-sm text-gray-600 font-apple mb-4">
-              {t('shell.todayPatients.confirmRemoveMessage', { name: todayQuickList[confirmRemoveIndex].patientName })}
+              {t('shell.todayPatients.confirmRemoveMessage', { name: confirmRemoveItem.patientName })}
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 type="button"
-                onClick={() => setConfirmRemoveIndex(null)}
+                onClick={() => setConfirmRemoveItem(null)}
                 className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 font-apple text-sm"
               >
                 {t('shell.todayPatients.cancel')}
@@ -537,8 +539,8 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  onRemoveFromToday?.(confirmRemoveIndex);
-                  setConfirmRemoveIndex(null);
+                  onRemoveFromToday?.(confirmRemoveItem);
+                  setConfirmRemoveItem(null);
                 }}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-apple text-sm"
               >
