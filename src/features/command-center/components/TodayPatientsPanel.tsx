@@ -421,10 +421,10 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
               </button>
             </div>
           )}
-          {toSeeRows.length > 0 ? (
+          {awaitingDocumentationRows.length > 0 ? (
             <div className="space-y-2">
-              {renderGroupHeader(t('shell.todayPatients.groupToSee'), toSeeRows.length)}
-              {toSeeRows.map(renderActionClinicalRow)}
+              {renderGroupHeader(t('shell.todayPatients.groupAwaitingDocumentation'), awaitingDocumentationRows.length)}
+              {awaitingDocumentationRows.map(renderActionClinicalRow)}
             </div>
           ) : null}
           {inProgressRows.length > 0 ? (
@@ -433,10 +433,10 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
               {inProgressRows.map(renderActionClinicalRow)}
             </div>
           ) : null}
-          {awaitingDocumentationRows.length > 0 ? (
+          {toSeeRows.length > 0 ? (
             <div className="space-y-2 pt-3 border-t border-gray-100">
-              {renderGroupHeader(t('shell.todayPatients.groupAwaitingDocumentation'), awaitingDocumentationRows.length)}
-              {awaitingDocumentationRows.map(renderActionClinicalRow)}
+              {renderGroupHeader(t('shell.todayPatients.groupToSee'), toSeeRows.length)}
+              {toSeeRows.map(renderActionClinicalRow)}
             </div>
           ) : null}
           {seenTodayRows.length > 0 ? (

@@ -674,16 +674,21 @@ export const CommandCenterPageSprint3: React.FC = () => {
           </div>
 
           {openClinicalResponsibilities.length > 0 && (
-            <div className="bg-white border border-amber-200 rounded-2xl p-6 shadow-sm">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 font-apple mb-1">
-                  {t('shell.openClinicalResponsibilities.title')}
-                </h2>
-                <p className="text-base text-gray-600 font-apple font-light">
-                  {t('shell.openClinicalResponsibilities.subtitle')}
-                </p>
+            <div className="bg-white border border-amber-200 rounded-2xl p-4 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1">
+                <div>
+                  <h2 className="text-base font-semibold text-gray-900 font-apple">
+                    {t('shell.openClinicalResponsibilities.title')}
+                  </h2>
+                  <p className="text-sm text-gray-600 font-apple font-light">
+                    {t('shell.openClinicalResponsibilities.subtitle')}
+                  </p>
+                </div>
+                <span className="text-xs font-semibold text-amber-800 bg-amber-100 border border-amber-200 rounded-full px-2.5 py-1 self-start sm:self-auto">
+                  {openClinicalResponsibilities.length}
+                </span>
               </div>
-              <div className="mt-4 space-y-2">
+              <div className="mt-3 space-y-1.5">
                 {openClinicalResponsibilities.map((session) => {
                   const normalizedSessionType = normalizeOpenResponsibilitySessionType(session.sessionType);
                   const pendingDate = formatOpenResponsibilityDate(session);
@@ -695,35 +700,30 @@ export const CommandCenterPageSprint3: React.FC = () => {
                   return (
                     <div
                       key={session.id}
-                      className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3"
+                      className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/50 px-3 py-2.5"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="font-medium font-apple text-sm text-slate-900">
-                            {session.patientName || t('shell.startSessionModal.patientFallbackName')}
-                          </div>
-                          <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
-                            {t('shell.openClinicalResponsibilities.badge')}
-                          </span>
+                        <div className="font-medium font-apple text-sm text-slate-900 truncate">
+                          {session.patientName || t('shell.startSessionModal.patientFallbackName')}
                         </div>
-                        <div className="text-xs font-apple font-light mt-0.5 text-slate-600">
+                        <div className="text-xs font-apple font-light text-slate-600">
                           {t(`shell.sessionType.${normalizedSessionType}`)}
                           {hasPendingDate ? ` · ${t('shell.openClinicalResponsibilities.pendingSince', { date: pendingDate })}` : null}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 sm:flex-shrink-0">
                         <button
                           type="button"
                           onClick={() => setDismissOpenResponsibilityItem(session)}
                           disabled={dismissingOpenResponsibilityId === session.id}
-                          className="p-2 rounded-lg border border-amber-200 bg-white hover:bg-amber-100 text-amber-800 font-apple text-xs font-medium transition-all disabled:opacity-60"
+                          className="px-2 py-1.5 rounded-lg border border-transparent hover:border-amber-200 hover:bg-white text-amber-700 font-apple text-xs font-medium transition-all disabled:opacity-60"
                         >
                           {t('shell.openClinicalResponsibilities.dismissPending')}
                         </button>
                         <button
                           type="button"
                           onClick={() => handleContinueOpenResponsibility(session)}
-                          className="p-2 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-apple text-xs font-medium transition-all"
+                          className="px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-apple text-xs font-medium transition-all"
                         >
                           {actionLabel}
                         </button>
