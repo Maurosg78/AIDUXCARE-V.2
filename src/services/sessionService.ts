@@ -39,6 +39,8 @@ type InProgressSessionSummary = {
 
 type InProgressSessionRecord = Omit<InProgressSessionSummary, 'updatedAt'> & {
   soapStatus?: string;
+  writeState?: string;
+  encounterId?: string;
   updatedAt?: unknown;
   createdAt?: unknown;
   timestamp?: unknown;
@@ -467,6 +469,8 @@ class SessionService {
             transcript: data.transcript || '',
             status,
             soapStatus: data.soapStatus || undefined,
+            writeState: data.writeState || undefined,
+            encounterId: data.encounterId || undefined,
             updatedAt: data.updatedAt,
             createdAt: data.createdAt,
             timestamp: data.timestamp,
@@ -504,34 +508,64 @@ class SessionService {
           latestFinalizedByPatientSessionType.set(key, updatedAtMs);
         }
       }
+      const consultationOwnershipFields = ['authorUid', 'ownerUid', 'userId'] as const;
+      const consultationDocsById = new Map<string, Record<string, unknown>>();
       const consultationsRef = collection(db, 'consultations');
-      const consultationsQuery = query(
-        consultationsRef,
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc'),
-        limit(20)
-      );
-      const consultationsSnapshot = await getDocs(consultationsQuery);
+      for (const ownershipField of consultationOwnershipFields) {
+        try {
+          const consultationsQuery = query(
+            consultationsRef,
+            where(ownershipField, '==', userId),
+            limit(200)
+          );
+          const consultationsSnapshot = await getDocs(consultationsQuery);
+          for (const consultationDoc of consultationsSnapshot.docs) {
+            const data = consultationDoc.data();
+            consultationDocsById.set(consultationDoc.id, data);
+          }
+        } catch (_error) {
+          console.warn('[SessionService] consultation closure query failed; continuing with available closure evidence.', {
+            ownershipField,
+          });
+        }
+      }
       const latestConsultationByPatientSessionType = new Map<string, number>();
-      for (const consultationDoc of consultationsSnapshot.docs) {
-        const data = consultationDoc.data();
+      const latestConsultationByPatient = new Map<string, number>();
+      for (const data of consultationDocsById.values()) {
         const patientId = data.patientId;
-        const normalizedSessionType = this.normalizeSessionKind(data.visitType || 'initial');
-        if (!patientId) continue;
+        if (typeof patientId !== 'string' || patientId.trim() === '') continue;
+        const noteStatus = data.status;
+        const hasSoapData = typeof data.soapData === 'object' && data.soapData !== null;
+        const isFinalizedConsultation = noteStatus === 'finalized' || (noteStatus == null && hasSoapData);
+        if (!isFinalizedConsultation) continue;
+        const createdAtMs = this.timestampToMillis(data.createdAt);
+        const currentPatientConsultation = latestConsultationByPatient.get(patientId) ?? 0;
+        if (createdAtMs > currentPatientConsultation) {
+          latestConsultationByPatient.set(patientId, createdAtMs);
+        }
+        const normalizedSessionType = this.normalizeSessionKind(data.visitType);
         if (normalizedSessionType == null) continue;
         const key = `${patientId}::${normalizedSessionType}`;
-        const createdAtMs = data.createdAt?.toMillis?.() ?? 0;
-        const current = latestConsultationByPatientSessionType.get(key) ?? 0;
-        if (createdAtMs > current) {
+        const currentSessionTypeConsultation = latestConsultationByPatientSessionType.get(key) ?? 0;
+        if (createdAtMs > currentSessionTypeConsultation) {
           latestConsultationByPatientSessionType.set(key, createdAtMs);
         }
       }
       const filteredResults = results.filter((session) => {
         if (session.soapStatus === 'finalized') return false;
-        const sessionKey = `${session.patientId}::${session.sessionType}`;
+        if (session.writeState === 'fully_committed') return false;
+        if (typeof session.encounterId === 'string' && session.encounterId.trim() !== '') return false;
+        const normalizedSessionType = this.normalizeSessionKind(session.sessionType);
+        const sessionTypeKey = normalizedSessionType ?? session.sessionType;
+        const sessionKey = `${session.patientId}::${sessionTypeKey}`;
         const latestFinalizedAt = latestFinalizedByPatientSessionType.get(sessionKey) ?? 0;
         const latestConsultationAt = latestConsultationByPatientSessionType.get(sessionKey) ?? 0;
-        const latestCompletedAt = Math.max(latestFinalizedAt, latestConsultationAt);
+        const latestPatientConsultationAt = latestConsultationByPatient.get(session.patientId) ?? 0;
+        const latestCompletedAt = Math.max(
+          latestFinalizedAt,
+          latestConsultationAt,
+          latestPatientConsultationAt
+        );
         const sessionUpdatedAt = Math.max(
           this.timestampToMillis(session.updatedAt),
           this.timestampToMillis(session.createdAt),
@@ -544,9 +578,31 @@ class SessionService {
         }
         return true;
       });
-      // Sort merged by updatedAt desc and dedupe by id
-      const byId = new Map(filteredResults.map(r => [r.id, r]));
-      const sorted = [...byId.values()].sort((a, b) => {
+      const latestByPatientSessionType = new Map<string, InProgressSessionRecord>();
+      for (const session of filteredResults) {
+        const normalizedSessionType = this.normalizeSessionKind(session.sessionType);
+        const sessionTypeKey = normalizedSessionType ?? session.sessionType;
+        const dedupeKey = `${session.patientId}::${sessionTypeKey}`;
+        const current = latestByPatientSessionType.get(dedupeKey);
+        if (!current) {
+          latestByPatientSessionType.set(dedupeKey, session);
+          continue;
+        }
+        const sessionTime = Math.max(
+          this.timestampToMillis(session.updatedAt),
+          this.timestampToMillis(session.createdAt),
+          this.timestampToMillis(session.timestamp)
+        );
+        const currentTime = Math.max(
+          this.timestampToMillis(current.updatedAt),
+          this.timestampToMillis(current.createdAt),
+          this.timestampToMillis(current.timestamp)
+        );
+        if (sessionTime > currentTime) {
+          latestByPatientSessionType.set(dedupeKey, session);
+        }
+      }
+      const sorted = [...latestByPatientSessionType.values()].sort((a, b) => {
         const aT = Math.max(
           this.timestampToMillis(a.updatedAt),
           this.timestampToMillis(a.createdAt),
