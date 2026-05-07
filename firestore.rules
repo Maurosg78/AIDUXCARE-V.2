@@ -82,6 +82,11 @@ service cloud.firestore {
       match /token_purchases/{purchaseId} {
         allow read, write: if isAuthenticated() && request.auth.uid == uid;
       }
+
+      match /todayLists/{dateKey} {
+        allow read, create, update, delete: if isAuthenticated()
+          && request.auth.uid == uid;
+      }
     }
 
     // ─── professional_profiles ───────────────────────────────────────────
