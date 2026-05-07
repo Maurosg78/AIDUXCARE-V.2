@@ -56,7 +56,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   const currentJurisdiction = getCurrentJurisdiction();
   const effectiveJurisdiction = normalizeConsentJurisdiction(jurisdiction || currentJurisdiction);
   const isGdpr = effectiveJurisdiction === 'ES-ES';
-  const [step, setStep] = useState<'read' | 'response' | 'confirm'>('read');
+  const [step, setStep] = useState<'read' | 'response' | 'confirm' | 'declineConfirm'>('read');
   const [readStarted, setReadStarted] = useState(false);
   const [patientResponse, setPatientResponse] = useState<'authorized' | 'authorized_by_representative' | 'denied' | 'unable_to_respond' | null>(null);
   const [patientUnderstood, setPatientUnderstood] = useState(false);
@@ -89,8 +89,8 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     if (response === 'authorized' || response === 'authorized_by_representative') {
       setStep('confirm');
     } else {
-      // Patient denied or unable to respond
-      handleSubmit(response);
+      // Patient denied or unable to respond: require an explicit second confirmation.
+      setStep('declineConfirm');
     }
   };
 
@@ -374,12 +374,56 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
               )}
 
               <div className="flex justify-end gap-3">
-<button
-                onClick={() => setStep('read')}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
-              >
-                {t('consent.verbal.back')}
-              </button>
+                <button
+                  onClick={() => setStep('read')}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+                >
+                  {t('consent.verbal.back')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 'declineConfirm' && (patientResponse === 'denied' || patientResponse === 'unable_to_respond') && (
+            <div className="space-y-6">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-red-900 mb-2">
+                      {t('consent.verbal.declineConfirmTitle')}
+                    </h3>
+                    <p className="text-red-800 text-sm">
+                      {t('consent.verbal.declineConfirmBody')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep('response')}
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t('consent.verbal.back')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmit(patientResponse)}
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmitting && <Clock className="w-4 h-4 animate-spin" />}
+                  {isSubmitting ? t('consent.verbal.registering') : t('consent.verbal.confirmDeclineFinal')}
+                </button>
               </div>
             </div>
           )}
