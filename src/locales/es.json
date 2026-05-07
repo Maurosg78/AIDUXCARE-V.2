@@ -360,6 +360,8 @@
       "finalizeModal": {
         "title": "¿Finalizar nota SOAP?",
         "body": "Al finalizar, la nota SOAP se guardará y se marcará como completada. Podrás editarla después, pero antes tendrás que \"desfinalizarla\".",
+        "treatmentDecisionCheckboxLabel": "Confirmo el plan de tratamiento / HEP como mi decisión clínica",
+        "treatmentDecisionCheckboxHint": "Si se marca, el plan confirmado podrá hidratar el siguiente seguimiento como continuidad aprobada por el fisioterapeuta.",
         "cancel": "Cancelar",
         "finalize": "Finalizar"
       },
@@ -568,7 +570,9 @@
       "markAllDone": "Marcar todo como hecho",
       "unmarkAll": "Desmarcar todo",
       "allDoneLabel": "Todo listo",
-      "todayTreatmentConfirmed": "Tratamiento de hoy confirmado"
+      "todayTreatmentConfirmed": "Tratamiento de hoy confirmado",
+      "confirmTreatmentDecision": "Confirmar tratamiento",
+      "treatmentDecisionConfirmed": "Decisión de tratamiento confirmada"
     },
     "nav": {
       "backToCommandCenter": "Volver al Centro de mando",

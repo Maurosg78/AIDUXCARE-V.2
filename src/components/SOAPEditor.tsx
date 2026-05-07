@@ -55,6 +55,8 @@ export interface SOAPEditorProps {
   /** Red flag decisions — used to gate the referral report button. */
   redFlagDecisions?: Record<string, { decision: 'continue' | 'referral_stop' | 'referral_continue_partial'; continuationNote?: string }>;
   onFieldEdited?: (fieldEdited: 'subjective' | 'objective' | 'assessment' | 'plan' | 'follow_up') => void;
+  isTreatmentDecisionConfirmed?: boolean;
+  onTreatmentDecisionConfirmationChange?: (confirmed: boolean) => void;
 }
 
 export const SOAPEditor: React.FC<SOAPEditorProps> = ({
@@ -79,6 +81,8 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   sessionState,
   redFlagDecisions,
   onFieldEdited,
+  isTreatmentDecisionConfirmed = false,
+  onTreatmentDecisionConfirmationChange,
 }) => {
   const { t } = useTranslation();
   const soapReview = getSoapReviewConfig();
@@ -672,6 +676,9 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   // ✅ DÍA 2: Review state tracking
   const requiresReview = currentSOAP?.requiresReview || false;
   const isReviewed = currentSOAP?.isReviewed || false;
+  const canConfirmTreatmentDecision =
+    Boolean(onTreatmentDecisionConfirmationChange) &&
+    Boolean(currentSOAP?.plan?.trim());
   
   // ✅ DÍA 2: Handler para marcar como reviewed
   const handleMarkAsReviewed = () => {
@@ -1335,6 +1342,25 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
                     {t('clinical.soap.review.checkboxHint')}
                   </p>
                 )}
+              </div>
+            )}
+
+            {canConfirmTreatmentDecision && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isTreatmentDecisionConfirmed}
+                    onChange={(e) => onTreatmentDecisionConfirmationChange?.(e.target.checked)}
+                    className="mt-1 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-blue-900">
+                    {t('clinical.soap.finalizeModal.treatmentDecisionCheckboxLabel')}
+                  </span>
+                </label>
+                <p className="text-xs text-blue-700 mt-2 ml-6">
+                  {t('clinical.soap.finalizeModal.treatmentDecisionCheckboxHint')}
+                </p>
               </div>
             )}
             

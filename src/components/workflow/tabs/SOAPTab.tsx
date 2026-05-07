@@ -115,6 +115,8 @@ export interface SOAPTabProps {
   patientName?: string;
   /** Red flag decisions — threaded to SOAPEditor to gate referral button. */
   redFlagDecisions?: Record<string, { decision: 'continue' | 'referral_stop' | 'referral_continue_partial'; continuationNote?: string }>;
+  isTreatmentDecisionConfirmed?: boolean;
+  onTreatmentDecisionConfirmationChange?: (confirmed: boolean) => void;
 }
 
 type EditableSOAPField = 'subjective' | 'objective' | 'assessment' | 'plan' | 'follow_up';
@@ -176,6 +178,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   professionalTitle,
   patientName,
   redFlagDecisions,
+  isTreatmentDecisionConfirmed,
+  onTreatmentDecisionConfirmationChange,
 }) => {
   const { t } = useTranslation();
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
@@ -326,6 +330,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             // ✅ WORKFLOW OPTIMIZATION: Pass optimization props
             isOptimized={workflowRoute?.analysisLevel === 'optimized'}
             tokenOptimization={soapTokenOptimization}
+            isTreatmentDecisionConfirmed={isTreatmentDecisionConfirmed}
+            onTreatmentDecisionConfirmationChange={onTreatmentDecisionConfirmationChange}
             onBackToCommandCenter={onBackToCommandCenter}
             sessionState={
               sessionId

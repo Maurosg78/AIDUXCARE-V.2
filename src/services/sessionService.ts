@@ -22,6 +22,10 @@ export type TreatmentDecisionItem = {
 export type TreatmentDecision = {
   source: 'physio_final_decision';
   updatedAt: string;
+  acceptedAt?: string;
+  acceptedBy?: string;
+  sourceSessionId?: string;
+  confirmationMethod?: 'edited' | 'explicit_confirmed';
   inClinicItems: TreatmentDecisionItem[];
   homeProgramItems: TreatmentDecisionItem[];
 };
@@ -211,10 +215,19 @@ class SessionService {
     const source = decision.source;
     const inClinicItems = decision.inClinicItems;
     const homeProgramItems = decision.homeProgramItems;
+    const acceptedAt = decision.acceptedAt;
+    const acceptedBy = decision.acceptedBy;
+    const confirmationMethod = decision.confirmationMethod;
     const hasExpectedSource = source === 'physio_final_decision';
     const hasInClinicItems = Array.isArray(inClinicItems);
     const hasHomeProgramItems = Array.isArray(homeProgramItems);
-    if (!hasExpectedSource || !hasInClinicItems || !hasHomeProgramItems) {
+    const hasHumanConfirmation =
+      typeof acceptedAt === 'string' &&
+      acceptedAt.trim() !== '' &&
+      typeof acceptedBy === 'string' &&
+      acceptedBy.trim() !== '' &&
+      (confirmationMethod === 'edited' || confirmationMethod === 'explicit_confirmed');
+    if (!hasExpectedSource || !hasInClinicItems || !hasHomeProgramItems || !hasHumanConfirmation) {
       return false;
     }
     const inClinicItemsValid = inClinicItems.every((item) => this.isTreatmentDecisionItem(item));

@@ -176,6 +176,13 @@ type EvaluationTestEntry = {
   _prefillDefaults?: Record<string, number | null>; // Internal: track pre-filled normal values
 };
 
+type TreatmentDecisionConfirmationMethod = 'edited' | 'explicit_confirmed';
+
+type TreatmentDecisionConfirmation = {
+  method: TreatmentDecisionConfirmationMethod;
+  confirmedAt: string;
+};
+
 function normalizeTreatmentDecisionItem(item: TodayFocusItem): TreatmentDecisionItem {
   const normalizedItem: TreatmentDecisionItem = {
     id: item.id,
@@ -189,10 +196,13 @@ function normalizeTreatmentDecisionItem(item: TodayFocusItem): TreatmentDecision
 function buildTreatmentDecision(
   visitType: VisitType,
   inClinicItems: TodayFocusItem[],
-  homeProgramItems: TodayFocusItem[]
+  homeProgramItems: TodayFocusItem[],
+  confirmation: TreatmentDecisionConfirmation | null,
+  acceptedBy: string,
+  sourceSessionId: string
 ): TreatmentDecision | null {
-  const isFollowUp = visitType === 'follow-up';
-  if (!isFollowUp) {
+  const canPersistTreatmentDecision = visitType === 'follow-up' || visitType === 'initial';
+  if (!canPersistTreatmentDecision || !confirmation) {
     return null;
   }
 
@@ -204,6 +214,10 @@ function buildTreatmentDecision(
   const treatmentDecision: TreatmentDecision = {
     source: 'physio_final_decision',
     updatedAt: new Date().toISOString(),
+    acceptedAt: confirmation.confirmedAt,
+    acceptedBy,
+    sourceSessionId,
+    confirmationMethod: confirmation.method,
     inClinicItems: inClinicItems.map(normalizeTreatmentDecisionItem),
     homeProgramItems: homeProgramItems.map(normalizeTreatmentDecisionItem),
   };
@@ -219,6 +233,27 @@ function hydrateTreatmentDecisionItems(items: TreatmentDecisionItem[]): TodayFoc
     source: 'plan' as const,
   }));
   return hydratedItems;
+}
+
+function buildTreatmentDecisionItemsFromPlan(planText: string): {
+  inClinicItems: TodayFocusItem[];
+  homeProgramItems: TodayFocusItem[];
+} {
+  const derivedPlan = derivePlanFromText(planText);
+  return {
+    inClinicItems: derivedPlan.inClinic.map((label, index) => ({
+      id: `soap-plan-in-clinic-${index}`,
+      label,
+      completed: false,
+      source: 'plan' as const,
+    })),
+    homeProgramItems: derivedPlan.homeProgram.map((label, index) => ({
+      id: `soap-plan-hep-${index}`,
+      label,
+      completed: false,
+      source: 'plan' as const,
+    })),
+  };
 }
 
 const demoPatient = {
@@ -566,6 +601,8 @@ const ProfessionalWorkflowPage = () => {
   // WO-FU-PLAN-SPLIT-01: In-clinic vs HEP — FOLLOW-UP ONLY; poblado solo cuando visitType === 'follow-up'
   const [inClinicItems, setInClinicItems] = useState<TodayFocusItem[]>([]);
   const [homeProgramItems, setHomeProgramItems] = useState<TodayFocusItem[]>([]);
+  const [treatmentDecisionConfirmation, setTreatmentDecisionConfirmation] =
+    useState<TreatmentDecisionConfirmation | null>(null);
   // Follow-up path: baseline for SOAP (no Niagara). Single source of truth — loaded when visitType === 'follow-up'.
   const [followUpClinicalState, setFollowUpClinicalState] = useState<{ baselineSOAP: { subjective: string; objective: string; assessment: string; plan: string } } | null>(null);
   const [previousTreatmentDecision, setPreviousTreatmentDecision] = useState<TreatmentDecision | null>(null);
@@ -578,6 +615,49 @@ const ProfessionalWorkflowPage = () => {
     const interval = setInterval(() => setGreeting(getTimeBasedGreeting()), 60000);
     return () => clearInterval(interval);
   }, []);
+
+  const markTreatmentDecisionEdited = useCallback(() => {
+    setTreatmentDecisionConfirmation((current) =>
+      current ?? {
+        method: 'edited',
+        confirmedAt: new Date().toISOString(),
+      }
+    );
+  }, []);
+
+  const confirmTreatmentDecisionExplicitly = useCallback(() => {
+    setTreatmentDecisionConfirmation({
+      method: 'explicit_confirmed',
+      confirmedAt: new Date().toISOString(),
+    });
+  }, []);
+
+  const handleTreatmentDecisionConfirmationChange = useCallback((confirmed: boolean) => {
+    if (confirmed) {
+      setTreatmentDecisionConfirmation({
+        method: 'explicit_confirmed',
+        confirmedAt: new Date().toISOString(),
+      });
+      return;
+    }
+    setTreatmentDecisionConfirmation(null);
+  }, []);
+
+  const handleInClinicItemsChange = useCallback(
+    (next: TodayFocusItem[]) => {
+      markTreatmentDecisionEdited();
+      setInClinicItems(next);
+    },
+    [markTreatmentDecisionEdited]
+  );
+
+  const handleTodayFocusChange = useCallback(
+    (next: TodayFocusItem[]) => {
+      markTreatmentDecisionEdited();
+      setTodayFocus(next);
+    },
+    [markTreatmentDecisionEdited]
+  );
 
   // ✅ WORKFLOW OPTIMIZATION: Follow-up detection and routing
   const [workflowRoute, setWorkflowRoute] = useState<WorkflowRoute | null>(null);
@@ -4594,11 +4674,13 @@ const ProfessionalWorkflowPage = () => {
     if (visitType !== 'follow-up') {
       setInClinicItems([]);
       setHomeProgramItems([]);
+      setTreatmentDecisionConfirmation(null);
       return;
     }
     if (previousTreatmentDecision) {
       setInClinicItems(hydrateTreatmentDecisionItems(previousTreatmentDecision.inClinicItems));
       setHomeProgramItems(hydrateTreatmentDecisionItems(previousTreatmentDecision.homeProgramItems));
+      setTreatmentDecisionConfirmation(null);
       return;
     }
     const previousPlanInput = previousTreatmentPlan
@@ -4619,8 +4701,10 @@ const ProfessionalWorkflowPage = () => {
     if (!hasDerivedPlan) {
       setInClinicItems([]);
       setHomeProgramItems([]);
+      setTreatmentDecisionConfirmation(null);
       return;
     }
+    setTreatmentDecisionConfirmation(null);
     setInClinicItems(
       derived.inClinic.map((label, i) => ({
         id: `in-clinic-${i}`,
@@ -5180,7 +5264,7 @@ const ProfessionalWorkflowPage = () => {
         console.warn('[Workflow] Longitudinal summary unavailable, continuing without it.', error);
       }
       // Fase B: previous plan as context only (guardrails in prompt)
-      const previousPlansSummary = previousTreatmentPlan?.planText?.trim()
+      const previousPlansSummary = !previousTreatmentDecision && previousTreatmentPlan?.planText?.trim()
         ? (previousTreatmentPlan.nextSessionFocus
             ? `Focus for today (from last plan): ${String(previousTreatmentPlan.nextSessionFocus).trim()}\n\n`
             : '') +
@@ -5271,7 +5355,7 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, inClinicItems, homeProgramItems, previousTreatmentPlan, patientIdFromUrl]);
+  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, inClinicItems, homeProgramItems, previousTreatmentDecision, previousTreatmentPlan, patientIdFromUrl]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -5511,10 +5595,41 @@ const ProfessionalWorkflowPage = () => {
       const persistedSoapStatus: 'finalized' | 'draft' =
         status === 'finalized' ? 'finalized' : 'draft';
       const sessionDateKey = clinicalSessionDateKey;
+      const reservedWorkflowId = workflowReservedSessionIdRef.current;
+      const effectiveSessionId = sessionId ?? sessionIdRef.current ?? reservedWorkflowId;
+      const saveAnchorMs = sessionStartTime.getTime();
+      const saveFallbackId = `${sessionOwnerId}-${saveAnchorMs}`;
+      const proposedSaveSessionId = reservedWorkflowId ?? saveFallbackId;
+      const savePatientKey = patientIdFromUrl || demoPatient.id;
+      const saveReferenceDate = clinicalSessionDate;
+      let saveTargetId = effectiveSessionId ?? proposedSaveSessionId;
+      let saveMergeWrite = false;
+      if (!effectiveSessionId) {
+        const saveReuseId = await sessionService.findReusableSessionForDayAndType(
+          savePatientKey,
+          sessionOwnerId,
+          currentSessionType,
+          saveReferenceDate
+        );
+        saveMergeWrite = saveReuseId != null;
+        saveTargetId = saveReuseId ?? proposedSaveSessionId;
+      }
+      const planDecisionItems = visitType === 'initial'
+        ? buildTreatmentDecisionItemsFromPlan(soap.plan || '')
+        : { inClinicItems: [], homeProgramItems: [] };
+      const decisionInClinicItems =
+        visitType === 'initial'
+          ? (todayFocus.length > 0 ? todayFocus : planDecisionItems.inClinicItems)
+          : inClinicItems;
+      const decisionHomeProgramItems =
+        visitType === 'initial' ? planDecisionItems.homeProgramItems : homeProgramItems;
       const treatmentDecision = buildTreatmentDecision(
         visitType,
-        inClinicItems,
-        homeProgramItems
+        decisionInClinicItems,
+        decisionHomeProgramItems,
+        status === 'finalized' ? treatmentDecisionConfirmation : null,
+        sessionOwnerId,
+        saveTargetId
       );
       const savePayload = {
         userId: sessionOwnerId,
@@ -5533,29 +5648,9 @@ const ProfessionalWorkflowPage = () => {
         clientAppVersion: currentClientAppVersion,
         ...(treatmentDecision ? { treatmentDecision } : {}),
       };
-      const reservedWorkflowId = workflowReservedSessionIdRef.current;
-      const effectiveSessionId = sessionId ?? sessionIdRef.current ?? reservedWorkflowId;
       if (effectiveSessionId) {
-        const saveUpdateTarget = effectiveSessionId;
-        await sessionService.updateSession(saveUpdateTarget, savePayload);
+        await sessionService.updateSession(saveTargetId, savePayload);
       } else {
-        const saveAnchorMs = sessionStartTime.getTime();
-        const saveUid = sessionOwnerId;
-        const saveFallbackId = `${saveUid}-${saveAnchorMs}`;
-        const proposedSaveSessionId = reservedWorkflowId ?? saveFallbackId;
-        const savePatientKey = patientIdFromUrl || demoPatient.id;
-        const saveLookupUser = sessionOwnerId;
-        const saveSessionKind = currentSessionType;
-        const saveReferenceDate = clinicalSessionDate;
-        const saveReuseId = await sessionService.findReusableSessionForDayAndType(
-          savePatientKey,
-          saveLookupUser,
-          saveSessionKind,
-          saveReferenceDate
-        );
-        const saveHasReuse = saveReuseId != null;
-        const saveTargetId = saveHasReuse ? saveReuseId : proposedSaveSessionId;
-        const saveMergeWrite = saveHasReuse;
         const saveActualId = await sessionService.createSessionWithId(saveTargetId, savePayload, {
           merge: saveMergeWrite,
         });
@@ -7024,15 +7119,26 @@ const ProfessionalWorkflowPage = () => {
                               />
                               <span>{t('shell.professionalWorkflow.allDoneLabel')}</span>
                             </button>
-                            <div className="flex items-center gap-2 text-sm text-blue-600">
-                              <CheckCircle className="w-4 h-4" />
-                              <span>{t('shell.professionalWorkflow.todayTreatmentConfirmed')}</span>
-                            </div>
+                            {treatmentDecisionConfirmation ? (
+                              <div className="flex items-center gap-2 text-sm text-blue-600">
+                                <CheckCircle className="w-4 h-4" />
+                                <span>{t('shell.professionalWorkflow.treatmentDecisionConfirmed')}</span>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={confirmTreatmentDecisionExplicitly}
+                                className="flex items-center gap-1.5 rounded-lg border border-blue-200 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                                <span>{t('shell.professionalWorkflow.confirmTreatmentDecision')}</span>
+                              </button>
+                            )}
                           </div>
                         </div>
                         <SuggestedFocusEditor
                           items={inClinicItems}
-                          onChange={setInClinicItems}
+                          onChange={handleInClinicItemsChange}
                           onFinishSession={undefined}
                           hideHeader={true}
                           allowAdd={true}
@@ -7145,7 +7251,7 @@ const ProfessionalWorkflowPage = () => {
                     successMessage={successMessage}
                     setAnalysisError={setAnalysisErrorWithRecovery}
                     setSuccessMessage={setSuccessMessage}
-                    onTodayFocusChange={setTodayFocus}
+                    onTodayFocusChange={handleTodayFocusChange}
                     onFinishSession={undefined}
                     hideHeader={true}
                     hideTranscriptArea={visitType === 'follow-up'}
@@ -7241,6 +7347,8 @@ const ProfessionalWorkflowPage = () => {
                     handleFinalizeSOAP={handleFinalizeSOAP}
                     handleUnfinalizeSOAP={handleUnfinalizeSOAP}
                     setIsShareMenuOpen={setIsShareMenuOpen}
+                    isTreatmentDecisionConfirmed={Boolean(treatmentDecisionConfirmation)}
+                    onTreatmentDecisionConfirmationChange={handleTreatmentDecisionConfirmationChange}
                     skipPlanValidation={Object.values(redFlagDecisions).some(d => d.decision === 'referral_stop')}
                     workflowMetrics={workflowMetrics}
                     workflowRoute={workflowRoute}
@@ -7279,7 +7387,7 @@ const ProfessionalWorkflowPage = () => {
                     handleAttachmentRemove={handleAttachmentRemove}
                     onCloseInitialAssessment={undefined}
                     onBackToCommandCenter={() => {
-                      if (sessionId) {
+                      if (sessionId && soapStatus !== 'finalized') {
                         sessionService.updateSession(sessionId, { status: 'interrupted' }).catch(() => {});
                       }
                       navigate('/command-center');
@@ -7466,7 +7574,7 @@ const ProfessionalWorkflowPage = () => {
                   successMessage={successMessage}
                   setAnalysisError={setAnalysisErrorWithRecovery}
                   setSuccessMessage={setSuccessMessage}
-                  onTodayFocusChange={setTodayFocus}
+                  onTodayFocusChange={handleTodayFocusChange}
                   onFinishSession={undefined}
                   hideHeader={false}
                   hideTranscriptArea={currentSessionType === 'followup'}
@@ -7535,6 +7643,8 @@ const ProfessionalWorkflowPage = () => {
                     handleFinalizeSOAP={handleFinalizeSOAP}
                     handleUnfinalizeSOAP={handleUnfinalizeSOAP}
                     setIsShareMenuOpen={setIsShareMenuOpen}
+                    isTreatmentDecisionConfirmed={Boolean(treatmentDecisionConfirmation)}
+                    onTreatmentDecisionConfirmationChange={handleTreatmentDecisionConfirmationChange}
                     skipPlanValidation={Object.values(redFlagDecisions).some(d => d.decision === 'referral_stop')}
                     workflowMetrics={workflowMetrics}
                     workflowRoute={workflowRoute}
@@ -7550,7 +7660,7 @@ const ProfessionalWorkflowPage = () => {
                     setSuccessMessage={setSuccessMessage}
                     setVisitType={setVisitType}
                     onBackToCommandCenter={() => {
-                      if (sessionId) {
+                      if (sessionId && soapStatus !== 'finalized') {
                         sessionService.updateSession(sessionId, { status: 'interrupted' }).catch(() => {});
                       }
                       navigate('/command-center');

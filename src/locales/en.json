@@ -360,6 +360,8 @@
       "finalizeModal": {
         "title": "Finalize SOAP Note?",
         "body": "Once finalized, this SOAP note will be saved and marked as complete. You can still edit it, but it will require \"unfinalizing\" first.",
+        "treatmentDecisionCheckboxLabel": "I confirm the treatment plan / HEP as my clinical decision",
+        "treatmentDecisionCheckboxHint": "If checked, the confirmed treatment plan can hydrate the next follow-up as clinician-approved continuity.",
         "cancel": "Cancel",
         "finalize": "Finalize"
       },
@@ -568,7 +570,9 @@
       "markAllDone": "Mark all as done",
       "unmarkAll": "Unmark all",
       "allDoneLabel": "All done",
-      "todayTreatmentConfirmed": "Today's treatment confirmed"
+      "todayTreatmentConfirmed": "Today's treatment confirmed",
+      "confirmTreatmentDecision": "Confirm treatment",
+      "treatmentDecisionConfirmed": "Treatment decision confirmed"
     },
     "nav": {
       "backToCommandCenter": "Back to Command Center",
