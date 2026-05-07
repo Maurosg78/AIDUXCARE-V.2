@@ -1,5 +1,11 @@
 # ENGINEERING.md Changelog
 
+## 2026-05-07 — v1.3
+
+- Added product north star: AiduxCare as a clinical operating system with auditable AI agents, not an isolated AI note generator.
+- Added agentic architecture principles: traceable inputs, verifiable outputs, explicit memory, bounded tools, human confirmation, auditability and prudent escalation.
+- Clarified that models are interchangeable components and product advantage lives in the surrounding clinical system: memory, prompts, validators, traceability and clinician authority.
+
 ## 2026-05-06 — v1.2
 
 - Added conservative SaMD/MLMD regulatory posture for future commercialization.

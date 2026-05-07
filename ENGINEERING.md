@@ -1,8 +1,8 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.2  
-**Fecha:** 2026-05-06  
+**Versión:** 1.3  
+**Fecha:** 2026-05-07  
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)  
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
@@ -32,6 +32,26 @@ El código generado con asistencia de IA tiende a ser funcional pero arquitectó
 **1.4 Deuda técnica documentada es deuda manejable**  
 La deuda técnica no documentada es deuda oculta. Este documento registra toda la deuda conocida con criterio de cierre y responsable. Un inversor o CTO externo que haga due diligence encontrará aquí la verdad — no en el código.
 
+**1.5 Norte de producto: agentes clínicos auditables**  
+AiduxCare no compite por tener "el mejor modelo" aislado. Compite por construir el sistema clínico más fiable alrededor de modelos probabilísticos. Los modelos son componentes intercambiables; la ventaja del producto vive en la arquitectura de memoria clínica, prompts versionados, validadores, trazabilidad, revisión humana y experiencia operativa.
+
+Un agente de IA en AiduxCare no es autónomo porque "sabe más"; es delegable solo cuando es auditable. Debe ejecutar tareas repetitivas, documentar qué datos usó, dejar evidencia de su propuesta, pedir confirmación cuando corresponda y permitir que el fisioterapeuta acepte, edite o descarte el resultado. En salud, la inteligencia sin trazabilidad no es una ventaja técnica: es un riesgo clínico.
+
+Principio operativo:
+
+```
+AiduxCare is not an AI note generator.
+It is a clinical operating system where AI agents assist, document,
+verify, and escalate under human clinical authority.
+```
+
+Traducción de ingeniería:
+- Modelo intercambiable, sistema estable.
+- Prompt versionado, output verificable.
+- Memoria clínica estructurada, no contexto opaco.
+- Acción delegable solo si deja trazabilidad.
+- El fisioterapeuta mantiene autoridad clínica explícita.
+
 ---
 
 ## 2. Stack Tecnológico y Decisiones de Arquitectura
@@ -46,6 +66,22 @@ La deuda técnica no documentada es deuda oculta. Este documento registra toda l
 | Transcripción | OpenAI Whisper (gpt-4o-mini-transcribe) | GPT-4o | Precisión multilingual, terminología clínica |
 | Deploy | GCP VPS + PM2 | — | Control total del entorno, trazabilidad de deploys |
 | SMS Consentimiento | Vonage (Cloud Function) | — | Trazabilidad de consentimiento digital RGPD |
+
+### 2.1.1 Principios de arquitectura agéntica
+
+Toda capacidad agéntica en AiduxCare debe cumplir estos controles mínimos:
+
+| Control | Requisito |
+|---|---|
+| Entrada trazable | Registrar qué fuentes clínicas alimentaron la propuesta: transcript, SOAP previo, HEP, adjuntos, memoria longitudinal o checklist. |
+| Salida verificable | Generar outputs estructurados, validados y revisables antes de guardarse como historia clínica. |
+| Memoria explícita | Guardar hechos clínicos como estructuras versionables; no depender solo de contexto conversacional o texto libre. |
+| Herramientas acotadas | Cada acción debe tener permisos, alcance y efectos laterales definidos. |
+| Confirmación humana | Toda acción que afecte documentación clínica, tratamiento, comunicación al paciente o escalado requiere revisión del fisioterapeuta. |
+| Auditoría | Mantener versionado de modelo, prompt, commit, timestamp y decisión humana cuando la acción sea clínicamente relevante. |
+| Escalado prudente | Ante ambigüedad, riesgo o conflicto de fuentes, el agente debe pedir confirmación o escalar; no resolver por autonomía propia. |
+
+Los agentes no deben ocultar incertidumbre tras una interfaz fluida. La UI debe hacer eficiente el trabajo clínico sin borrar la responsabilidad profesional.
 
 ### 2.2 Decisiones de arquitectura registradas (ADRs)
 
