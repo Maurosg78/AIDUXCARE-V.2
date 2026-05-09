@@ -5548,6 +5548,10 @@ const ProfessionalWorkflowPage = () => {
 
     setLocalSoapNote(soap);
     setSoapStatus(status);
+    // Keep the cleanup ref in sync so unmount persistence cannot overwrite finalized state.
+    if (unmountPersistRef.current) {
+      unmountPersistRef.current.soapStatus = status;
+    }
 
     // Clean SOAP note: replace undefined with null for Firestore compatibility
     const cleanSoap: SOAPNote = {
@@ -6104,6 +6108,8 @@ const ProfessionalWorkflowPage = () => {
             'fully_committed',
             {
               soapNoteId: result.noteId,
+              status: 'completed',
+              soapStatus: 'finalized',
             }
           );
           const completedPatientId = patientIdFromUrl;
