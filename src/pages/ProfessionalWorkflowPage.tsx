@@ -5646,7 +5646,11 @@ const ProfessionalWorkflowPage = () => {
         attachments: attachments || [],
         clientBuildId: currentClientBuildId,
         clientAppVersion: currentClientAppVersion,
-        ...(treatmentDecision ? { treatmentDecision } : {}),
+        ...(status === 'finalized'
+          ? { treatmentDecision: treatmentDecision ?? null }
+          : treatmentDecision
+            ? { treatmentDecision }
+            : {}),
       };
       if (effectiveSessionId) {
         await sessionService.updateSession(saveTargetId, savePayload);

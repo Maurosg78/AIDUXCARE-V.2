@@ -678,7 +678,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   const isReviewed = currentSOAP?.isReviewed || false;
   const canConfirmTreatmentDecision =
     Boolean(onTreatmentDecisionConfirmationChange) &&
-    Boolean(currentSOAP?.plan?.trim());
+    (Boolean(currentSOAP?.plan?.trim()) || Boolean(currentSOAP?.followUp?.trim()));
   
   // ✅ DÍA 2: Handler para marcar como reviewed
   const handleMarkAsReviewed = () => {
