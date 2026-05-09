@@ -109,6 +109,13 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/patients/$(patientId))
           && patientDocVisible(patientId);
       }
+
+      match /clinicalDecisions/{decisionId} {
+        allow read, create, update: if isAuthenticated()
+          && exists(/databases/$(database)/documents/patients/$(patientId))
+          && patientDocVisible(patientId);
+        allow delete: if false;
+      }
     }
 
     // ─── sessions (PHI — documentación clínica) ──────────────────────────
