@@ -56,11 +56,11 @@ export function getPatientStatus(input: PatientWorkflowInput): PatientWorkflowSt
     return PatientWorkflowStatus.CANCELLED;
   }
 
-  if (input.hasEncounter) {
-    if (input.soapStatus === 'finalized') {
-      return PatientWorkflowStatus.DOCUMENTED_FINAL;
-    }
+  if (input.soapStatus === 'finalized') {
+    return PatientWorkflowStatus.DOCUMENTED_FINAL;
+  }
 
+  if (input.hasEncounter) {
     if (isEncounterClosed(input) && !input.hasConsultation) {
       return PatientWorkflowStatus.DOCUMENTED_FINAL;
     }
@@ -95,8 +95,12 @@ export function validatePatientStatusInvariants(
 ): void {
   const clinicalActivity = hasClinicalActivity(input);
 
-  if (status === PatientWorkflowStatus.DOCUMENTED_FINAL && !input.hasEncounter) {
-    console.error('DOCUMENTED_FINAL without encounter', {
+  if (
+    status === PatientWorkflowStatus.DOCUMENTED_FINAL &&
+    !input.hasEncounter &&
+    input.soapStatus !== 'finalized'
+  ) {
+    console.error('DOCUMENTED_FINAL without encounter or finalized SOAP', {
       status,
       rawData: input,
     });

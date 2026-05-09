@@ -33,7 +33,7 @@ type BuildClinicalDayViewOptions = {
 
 /**
  * Doctrine for B7 / patient workflow v1:
- * - Encounter is the only source that can promote a row to DOCUMENTED_FINAL.
+ * - SOAP finalized is sufficient for DOCUMENTED_FINAL. Encounter is additional evidence.
  * - Consultation without encounter remains DOCUMENTED_DRAFT only.
  * - Administrative cancellation must not hide clinical activity already recorded that day.
  */
@@ -70,6 +70,14 @@ function normalizeSessionStatus(status?: string): string | undefined {
   }
 
   return status;
+}
+
+function normalizeSoapStatus(status?: string | null): 'draft' | 'finalized' | null {
+  if (status === 'draft' || status === 'finalized') {
+    return status;
+  }
+
+  return null;
 }
 
 function normalizeAppointmentStatus(status?: Appointment['status']): 'scheduled' | 'cancelled' | undefined {
@@ -231,7 +239,9 @@ export async function buildClinicalDayView(
       const hasConsultation = Boolean(consultation);
       const appointmentStatus = normalizeAppointmentStatus(appointment?.status);
       const sessionStatus = normalizeSessionStatus(session?.status);
-      const soapStatus = consultation ? (consultation.status ?? 'finalized') : null;
+      const consultationSoapStatus = normalizeSoapStatus(consultation?.status ?? null);
+      const sessionSoapStatus = normalizeSoapStatus(session?.soapStatus ?? null);
+      const soapStatus = consultationSoapStatus ?? sessionSoapStatus;
       const encounterStatus = encounter?.status;
       const encounterClosed =
         encounterStatus === 'completed' ||

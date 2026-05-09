@@ -91,6 +91,17 @@ describe('patientStatus', () => {
     expect(status).toBe(PatientWorkflowStatus.DOCUMENTED_DRAFT);
   });
 
+  it('returns DOCUMENTED_FINAL for interrupted session with finalized soap', () => {
+    const input = createInput({
+      hasSession: true,
+      sessionStatus: 'interrupted',
+      soapStatus: 'finalized',
+    });
+    const status = getPatientStatus(input);
+
+    expect(status).toBe(PatientWorkflowStatus.DOCUMENTED_FINAL);
+  });
+
   it('returns DOCUMENTED_DRAFT over IN_PROGRESS when consultation and active session coexist', () => {
     const input = createInput({
       hasConsultation: true,
