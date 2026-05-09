@@ -29,6 +29,9 @@ import { parsePlanToFocusItems, type TodayFocusItem } from '../../../utils/parse
 import { filterTrivialRedFlagEntries, normalizeRedFlagsForDisplay } from '@/utils/normalizeRedFlagsForDisplay';
 import { trackRedFlagAccepted } from '../../../services/analytics/AnalyticsEvents';
 import type { AsyncState } from '../../../features/command-center/hooks/useUserProfile';
+import { RedFlagDismissModal } from '@/components/clinical-decisions/RedFlagDismissModal';
+import { saveClinicalDecision } from '@/core/clinical-decisions/clinicalDecisionService';
+import type { ClinicalDecisionReason } from '@/core/clinical-decisions/types';
 
 /** Strings aligned with TranscriptArea follow-up Vertex CTA (pilot-aware). */
 const FOLLOW_UP_VERTEX_CTA = isSpainPilot()
@@ -172,6 +175,9 @@ export interface AnalysisTabProps {
   redFlagsDetected?: Array<{ id: string; description: string; severity?: string }>;
   redFlagDecisions?: Record<string, RedFlagDecision>;
   onRedFlagDecisionChange?: (decisions: Record<string, RedFlagDecision>) => void;
+  currentUserId?: string | null;
+  currentSessionId?: string | null;
+  currentPatientId?: string | null;
   // WO-PART-C-REFERRAL-REPORT: Optional callback to trigger medical referral report generation
   onGenerateReferralReport?: () => void;
   // WO-REDFLAG-ANALYSIS-UI-001: Optional callback when follow-up red flag decisions are confirmed
@@ -253,6 +259,9 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   redFlagsDetected = [],
   redFlagDecisions = {},
   onRedFlagDecisionChange,
+  currentUserId,
+  currentSessionId,
+  currentPatientId,
   onGenerateReferralReport,
   onConfirmFollowUpRedFlags,
 }) => {
@@ -267,8 +276,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
     [normalizedRedFlagsRaw]
   );
   const [dismissedRedFlags, setDismissedRedFlags] = useState<Record<string, DismissedRedFlagEntry>>({});
-  const [dismissTargetId, setDismissTargetId] = useState<string | null>(null);
-  const [dismissNote, setDismissNote] = useState('');
+  const [dismissTarget, setDismissTarget] = useState<{ id: string; text: string } | null>(null);
   const getRedFlagId = (
     flag: string | { label?: string },
     idx: number
@@ -296,6 +304,56 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   }, [filteredRedFlagsForRender, dismissedRedFlags, dismissedRedFlagIds]);
   const redFlagsRenderCount = visibleRedFlagsForRender.length;
   const shouldShowRedFlagsBlock = redFlagsRenderCount > 0;
+  const handleConfirmRedFlagDismiss = async (
+    reason: ClinicalDecisionReason,
+    note?: string,
+  ) => {
+    if (!dismissTarget) {
+      return;
+    }
+
+    if (!currentUserId || !currentSessionId || !currentPatientId) {
+      setAnalysisError('No se pudo registrar la decision clinica: faltan datos de sesion.');
+      return;
+    }
+
+    try {
+      await saveClinicalDecision({
+        kind: 'red_flag',
+        status: reason === 'false_positive' || reason === 'resolved' ? reason : 'monitoring',
+        source: 'vertex',
+        text: dismissTarget.text,
+        decidedBy: currentUserId,
+        decidedAt: new Date().toISOString(),
+        sessionId: currentSessionId,
+        patientId: currentPatientId,
+        reason,
+        ...(note ? { note } : {}),
+      });
+    } catch (error) {
+      console.error('[AnalysisTab] Failed to persist red flag clinical decision', error);
+      setAnalysisError('No se pudo registrar la decision clinica. Intenta nuevamente.');
+      return;
+    }
+
+    const dismissalTimestamp = new Date().toISOString();
+    const nextDismissedRedFlags = {
+      ...dismissedRedFlags,
+      [dismissTarget.id]: {
+        timestamp: dismissalTimestamp,
+        note: note ?? '',
+      },
+    };
+    const nextSelectedRedFlagIds = selectedRedFlagIds.filter((flagId) => flagId !== dismissTarget.id);
+    const nextRedFlagDecisions = { ...redFlagDecisions };
+    delete nextRedFlagDecisions[dismissTarget.id];
+
+    setDismissedRedFlags(nextDismissedRedFlags);
+    onRedFlagDismiss(dismissTarget.id);
+    onRedFlagSelectionChange(nextSelectedRedFlagIds);
+    onRedFlagDecisionChange?.(nextRedFlagDecisions);
+    setDismissTarget(null);
+  };
 
   // WO-FLOW-005: Estado local para focos clínicos editables
   const [todayFocus, setTodayFocus] = useState<TodayFocusItem[]>([]);
@@ -532,7 +590,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                     const suggestedAction = typeof flag === 'object' && flag && 'suggested_action' in flag ? (flag as { suggested_action?: string }).suggested_action : undefined;
                     const urgency = typeof flag === 'object' && flag && 'urgency' in flag ? (flag as { urgency?: string }).urgency : undefined;
                     const isChecked = selectedRedFlagIds.includes(id);
-                    const isDismissTarget = dismissTargetId === id;
                     const urgencyBadgeClass = urgency === 'immediate' ? 'bg-red-600 text-white' : urgency === 'today' ? 'bg-amber-500 text-white' : urgency === 'monitor' ? 'bg-slate-500 text-white' : '';
                     return (
                       <label
@@ -561,8 +618,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                                 onClick={(event) => {
                                   event.preventDefault();
                                   event.stopPropagation();
-                                  setDismissTargetId(id);
-                                  setDismissNote('');
+                                  setDismissTarget({ id, text: label });
                                 }}
                                 className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
                               >
@@ -576,51 +632,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                             {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">{t('workflow.analysis.suggestedAction', { action: suggestedAction })}</p>}
                           </div>
                         </div>
-
-                        {isDismissTarget && (
-                          <div className="ml-7 mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
-                            <textarea
-                              className="w-full text-xs border border-slate-200 rounded p-2 text-slate-700 placeholder:text-slate-400"
-                              rows={2}
-                              placeholder="Justificación opcional — para tu protección clínica"
-                              value={dismissNote}
-                              onChange={(event) => {
-                                const nextDismissNote = event.target.value;
-                                setDismissNote(nextDismissNote);
-                              }}
-                            />
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.preventDefault();
-                                  event.stopPropagation();
-                                  const dismissalTimestamp = new Date().toISOString();
-                                  const dismissalNote = dismissNote;
-                                  const nextDismissedRedFlags = {
-                                    ...dismissedRedFlags,
-                                    [id]: {
-                                      timestamp: dismissalTimestamp,
-                                      note: dismissalNote,
-                                    },
-                                  };
-                                  const nextSelectedRedFlagIds = selectedRedFlagIds.filter((flagId) => flagId !== id);
-                                  const nextRedFlagDecisions = { ...redFlagDecisions };
-                                  delete nextRedFlagDecisions[id];
-                                  setDismissedRedFlags(nextDismissedRedFlags);
-                                  onRedFlagDismiss(id);
-                                  onRedFlagSelectionChange(nextSelectedRedFlagIds);
-                                  onRedFlagDecisionChange?.(nextRedFlagDecisions);
-                                  setDismissTargetId(null);
-                                  setDismissNote('');
-                                }}
-                                className="inline-flex items-center px-3 py-2 rounded-lg text-xs font-medium bg-slate-700 text-white hover:bg-slate-800 transition"
-                              >
-                                Confirmar eliminación
-                              </button>
-                            </div>
-                          </div>
-                        )}
 
                         {isChecked && (
                           <div className="mt-2 ml-7 space-y-2">
@@ -771,7 +782,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                   const suggestedAction = typeof flag === 'object' && flag && 'suggested_action' in flag ? (flag as { suggested_action?: string }).suggested_action : undefined;
                   const urgency = typeof flag === 'object' && flag && 'urgency' in flag ? (flag as { urgency?: string }).urgency : undefined;
                   const isChecked = selectedRedFlagIds.includes(id);
-                  const isDismissTarget = dismissTargetId === id;
                   const urgencyBadgeClass = urgency === 'immediate' ? 'bg-red-600 text-white' : urgency === 'today' ? 'bg-amber-500 text-white' : urgency === 'monitor' ? 'bg-slate-500 text-white' : '';
                   return (
                     <label
@@ -800,8 +810,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                               onClick={(event) => {
                                 event.preventDefault();
                                 event.stopPropagation();
-                                setDismissTargetId(id);
-                                setDismissNote('');
+                                setDismissTarget({ id, text: label });
                               }}
                               className="text-xs font-medium text-slate-500 underline hover:text-slate-700"
                             >
@@ -815,51 +824,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                           {suggestedAction && <p className="mt-0.5 text-xs text-slate-500 italic">{t('workflow.analysis.suggestedAction', { action: suggestedAction })}</p>}
                         </div>
                       </div>
-
-                      {isDismissTarget && (
-                        <div className="ml-7 mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
-                          <textarea
-                            className="w-full text-xs border border-slate-200 rounded p-2 text-slate-700 placeholder:text-slate-400"
-                            rows={2}
-                            placeholder="Justificación opcional — para tu protección clínica"
-                            value={dismissNote}
-                            onChange={(event) => {
-                              const nextDismissNote = event.target.value;
-                              setDismissNote(nextDismissNote);
-                            }}
-                          />
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                const dismissalTimestamp = new Date().toISOString();
-                                const dismissalNote = dismissNote;
-                                const nextDismissedRedFlags = {
-                                  ...dismissedRedFlags,
-                                  [id]: {
-                                    timestamp: dismissalTimestamp,
-                                    note: dismissalNote,
-                                  },
-                                };
-                                const nextSelectedRedFlagIds = selectedRedFlagIds.filter((flagId) => flagId !== id);
-                                const nextRedFlagDecisions = { ...redFlagDecisions };
-                                delete nextRedFlagDecisions[id];
-                                setDismissedRedFlags(nextDismissedRedFlags);
-                                onRedFlagDismiss(id);
-                                onRedFlagSelectionChange(nextSelectedRedFlagIds);
-                                onRedFlagDecisionChange?.(nextRedFlagDecisions);
-                                setDismissTargetId(null);
-                                setDismissNote('');
-                              }}
-                              className="inline-flex items-center px-3 py-2 rounded-lg text-xs font-medium bg-slate-700 text-white hover:bg-slate-800 transition"
-                            >
-                              Confirmar eliminación
-                            </button>
-                          </div>
-                        </div>
-                      )}
 
                       {isChecked && (
                         <div className="mt-2 ml-7 space-y-2">
@@ -1023,6 +987,14 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
           {t('workflow.analysis.runAnalysisEmptyState')}
         </div>
       )}
+      <RedFlagDismissModal
+        flagText={dismissTarget?.text ?? ''}
+        isOpen={dismissTarget != null}
+        onConfirm={(reason, note) => {
+          void handleConfirmRedFlagDismiss(reason, note);
+        }}
+        onCancel={() => setDismissTarget(null)}
+      />
     </div>
   );
 };

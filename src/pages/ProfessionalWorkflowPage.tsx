@@ -7278,6 +7278,9 @@ const ProfessionalWorkflowPage = () => {
                     onRedFlagDismiss={handleRedFlagDismiss}
                     redFlagDecisions={redFlagDecisions}
                     onRedFlagDecisionChange={setRedFlagDecisions}
+                    currentUserId={user?.uid ?? null}
+                    currentSessionId={sessionId ?? sessionIdRef.current ?? workflowReservedSessionIdRef.current ?? (user?.uid ? `${user.uid}-${sessionStartTime.getTime()}` : null)}
+                    currentPatientId={patientIdFromUrl || currentPatient?.id || demoPatient.id}
                     onConfirmFollowUpRedFlags={handleConfirmFollowUpRedFlags}
                     onGenerateReferralReport={handleOpenReferralReport}
                   />
@@ -7596,6 +7599,9 @@ const ProfessionalWorkflowPage = () => {
                   onRedFlagDismiss={handleRedFlagDismiss}
                   redFlagDecisions={redFlagDecisions}
                   onRedFlagDecisionChange={setRedFlagDecisions}
+                  currentUserId={user?.uid ?? null}
+                  currentSessionId={sessionId ?? sessionIdRef.current ?? workflowReservedSessionIdRef.current ?? (user?.uid ? `${user.uid}-${sessionStartTime.getTime()}` : null)}
+                  currentPatientId={patientIdFromUrl || currentPatient?.id || demoPatient.id}
                   onConfirmFollowUpRedFlags={handleConfirmFollowUpRedFlags}
                   onGenerateReferralReport={handleOpenReferralReport}
                 />
