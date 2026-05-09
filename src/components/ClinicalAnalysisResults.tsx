@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Heart, Brain, Activity, AlertTriangle } from 'lucide-react';
 import { EditableCheckbox } from './EditableCheckbox';
 import { AddCustomItemButton } from './AddCustomItemButton';
@@ -6,6 +6,9 @@ import { useEditableResults } from '../hooks/useEditableResults';
 import { sortPhysicalTestsByImportance, getTopPhysicalTests } from '../utils/sortPhysicalTestsByImportance';
 import { isSpainPilot } from '@/core/pilotDetection';
 import type { EvidenceRecommendation } from '@/core/clinical-reasoning/prioritizeEvidence';
+import { AddMedicationModal } from '@/components/clinical-decisions/AddMedicationModal';
+import { saveClinicalDecision } from '@/core/clinical-decisions/clinicalDecisionService';
+import type { MedicationDecisionState } from '@/core/clinical-decisions/types';
 
 interface ClinicalAnalysisResultsProps {
   results: any;
@@ -16,6 +19,9 @@ interface ClinicalAnalysisResultsProps {
   /** WO-BUG-009: Resumen de solo lectura; red flags decididos en AnalysisTab */
   selectedRedFlagIds?: string[];
   redFlagsDetected?: Array<{ id: string; description: string; severity?: string }>;
+  currentUserId?: string | null;
+  currentSessionId?: string | null;
+  currentPatientId?: string | null;
 }
 
 type MedicationConfidence = 'high' | 'medium' | 'low';
@@ -62,7 +68,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   visitType = 'initial',
   selectedRedFlagIds,
   redFlagsDetected = [],
+  currentUserId,
+  currentSessionId,
+  currentPatientId,
 }) => {
+  const [isAddMedicationModalOpen, setIsAddMedicationModalOpen] = useState(false);
+  const [medicationError, setMedicationError] = useState<string | null>(null);
   const esPilot = isSpainPilot();
   const ui = esPilot
     ? {
@@ -198,12 +209,70 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
   if (!editedResults) return null;
 
+  const handleAddMedication = async (medication: {
+    name: string;
+    dose?: string;
+    frequency?: string;
+    state: MedicationDecisionState;
+    note?: string;
+  }) => {
+    if (!currentUserId || !currentSessionId || !currentPatientId) {
+      setMedicationError('No se pudo registrar el medicamento: faltan datos de sesion.');
+      return;
+    }
+
+    try {
+      await saveClinicalDecision({
+        kind: 'medication',
+        status: 'active',
+        source: 'physio_added',
+        text: medication.name,
+        decidedBy: currentUserId,
+        decidedAt: new Date().toISOString(),
+        sessionId: currentSessionId,
+        patientId: currentPatientId,
+        reason: null,
+        ...(medication.dose ? { medicationDose: medication.dose } : {}),
+        ...(medication.frequency ? { medicationFrequency: medication.frequency } : {}),
+        medicationState: medication.state,
+        ...(medication.note ? { note: medication.note } : {}),
+      });
+      setMedicationError(null);
+      setIsAddMedicationModalOpen(false);
+    } catch (error) {
+      console.error('[ClinicalAnalysisResults] Failed to persist medication clinical decision', error);
+      setMedicationError('No se pudo registrar el medicamento. Intenta nuevamente.');
+    }
+  };
+
   // Follow-up: mostrar mensaje simple, sin secciones de análisis
   if (visitType === 'follow-up') {
     return (
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
-        {ui.followUpMessage}
-      </div>
+      <>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
+          <p>{ui.followUpMessage}</p>
+          {medicationError && (
+            <p className="mt-3 text-sm font-medium text-red-700">{medicationError}</p>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setMedicationError(null);
+              setIsAddMedicationModalOpen(true);
+            }}
+            className="mt-4 inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
+          >
+            ＋ Añadir medicamento
+          </button>
+        </div>
+        <AddMedicationModal
+          isOpen={isAddMedicationModalOpen}
+          onConfirm={(medication) => {
+            void handleAddMedication(medication);
+          }}
+          onCancel={() => setIsAddMedicationModalOpen(false)}
+        />
+      </>
     );
   }
 

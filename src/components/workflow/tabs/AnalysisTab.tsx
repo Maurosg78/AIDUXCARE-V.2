@@ -955,6 +955,9 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                 visitType={visitType}
                 selectedRedFlagIds={selectedRedFlagIds}
                 redFlagsDetected={redFlagsDetected}
+                currentUserId={currentUserId}
+                currentSessionId={currentSessionId}
+                currentPatientId={currentPatientId}
               />
             </div>
           )}
