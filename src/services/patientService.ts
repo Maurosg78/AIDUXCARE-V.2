@@ -445,3 +445,32 @@ export class PatientService {
 
 // Exportar la clase directamente para uso estático
 export default PatientService;
+
+export function calculatePatientAge(dateOfBirth?: string | null): number | null {
+  if (!dateOfBirth) return null;
+
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age -= 1;
+  }
+
+  return age;
+}
+
+export function requiresRepresentativeConsent(
+  dateOfBirth?: string | null,
+  jurisdiction?: string
+): boolean {
+  if (jurisdiction !== 'ES-ES') return false;
+
+  const age = calculatePatientAge(dateOfBirth);
+  if (age === null) return false;
+
+  return age < 16;
+}

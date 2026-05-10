@@ -14,7 +14,7 @@
  * - Patient retains full control
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, CheckCircle, AlertCircle, User, Clock, Shield } from 'lucide-react';
 import VerbalConsentService, {
@@ -26,6 +26,9 @@ import VerbalConsentService, {
 } from '../../services/verbalConsentService';
 // ✅ WO-CONSENT-VERBAL-01-LANG: Multi-jurisdiction support
 import { getCurrentJurisdiction } from '../../core/consent/consentJurisdiction';
+import PatientService, { requiresRepresentativeConsent } from '../../services/patientService';
+
+type RepresentativeAuthorityBasis = 'minor_parent_guardian' | 'legal_guardian' | 'other';
 
 export interface VerbalConsentModalProps {
   isOpen: boolean;
@@ -67,6 +70,8 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   const [notes, setNotes] = useState('');
   const [representativeName, setRepresentativeName] = useState('');
   const [representativeRelationship, setRepresentativeRelationship] = useState('');
+  const [representativeAuthorityBasis, setRepresentativeAuthorityBasis] = useState<RepresentativeAuthorityBasis | ''>('');
+  const [patientDateOfBirth, setPatientDateOfBirth] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,6 +80,35 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     ? getConsentTextVersionForJurisdiction(effectiveJurisdiction)
     : getConsentTextVersionForCurrentJurisdiction();
   const consentText = getVerbalConsentText(consentTextVersion);
+  const representativeConsentRequired = requiresRepresentativeConsent(
+    patientDateOfBirth,
+    effectiveJurisdiction
+  );
+
+  useEffect(() => {
+    if (!isOpen || !patientId) {
+      setPatientDateOfBirth(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    PatientService.getPatientById(patientId)
+      .then((patient) => {
+        if (cancelled) return;
+
+        setPatientDateOfBirth(patient?.dateOfBirth || null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+
+        setPatientDateOfBirth(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, patientId]);
 
   if (!isOpen) return null;
 
@@ -84,6 +118,12 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   };
 
   const handleResponseSelect = (response: 'authorized' | 'authorized_by_representative' | 'denied' | 'unable_to_respond') => {
+    if (representativeConsentRequired && response === 'authorized') {
+      setPatientResponse('authorized_by_representative');
+      setStep('confirm');
+      return;
+    }
+
     setPatientResponse(response);
     
     if (response === 'authorized' || response === 'authorized_by_representative') {
@@ -112,6 +152,10 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
         setError(t('consent.verbal.errorRepresentativeRequired'));
         return;
       }
+      if (finalResponse === 'authorized_by_representative' && !representativeAuthorityBasis) {
+        setError('Selecciona la base legal del representante.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -136,6 +180,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
           notes: notes.trim() || undefined,
           representativeName: finalResponse === 'authorized_by_representative' ? representativeName.trim() || undefined : undefined,
           representativeRelationship: finalResponse === 'authorized_by_representative' ? representativeRelationship.trim() || undefined : undefined,
+          representativeAuthorityBasis: finalResponse === 'authorized_by_representative' ? representativeAuthorityBasis || undefined : undefined,
         };
 
         const result = await VerbalConsentService.obtainConsent(
@@ -275,10 +320,13 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                 <div className="space-y-3">
                   <button
                     onClick={() => handleResponseSelect('authorized')}
+                    disabled={representativeConsentRequired}
                     className={`w-full p-4 text-left border-2 rounded-lg transition ${
                       patientResponse === 'authorized'
                         ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 hover:border-green-300'
+                        : representativeConsentRequired
+                          ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                          : 'border-gray-200 hover:border-green-300'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -341,6 +389,12 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                       </div>
                     </div>
                   </button>
+
+                  {representativeConsentRequired && (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+                      Este paciente es menor de 16 años. Según la Ley 41/2002 art. 9, el consentimiento debe ser otorgado por su representante legal.
+                    </div>
+                  )}
 
                   <button
                     onClick={() => handleResponseSelect('unable_to_respond')}
@@ -443,6 +497,11 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
 
               {patientResponse === 'authorized_by_representative' && (
                 <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                  {representativeConsentRequired && (
+                    <div className="rounded-lg border border-blue-200 bg-white p-3 text-sm text-blue-900">
+                      Este paciente es menor de 16 años. Según la Ley 41/2002 art. 9, el consentimiento debe ser otorgado por su representante legal.
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       {t('consent.verbal.representativeNameLabel')}
@@ -466,6 +525,21 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                       placeholder={t('consent.verbal.representativeRelationshipPlaceholder')}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Base legal del representante
+                    </label>
+                    <select
+                      value={representativeAuthorityBasis}
+                      onChange={(e) => setRepresentativeAuthorityBasis(e.target.value as RepresentativeAuthorityBasis | '')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue"
+                    >
+                      <option value="">Seleccionar base legal</option>
+                      <option value="minor_parent_guardian">Padre/madre o tutor legal</option>
+                      <option value="legal_guardian">Tutor legal designado</option>
+                      <option value="other">Otro representante legal</option>
+                    </select>
                   </div>
                 </div>
               )}

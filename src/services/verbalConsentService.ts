@@ -26,6 +26,7 @@ export interface VerbalConsentDetails {
   notes?: string;
   representativeName?: string;
   representativeRelationship?: string;
+  representativeAuthorityBasis?: 'minor_parent_guardian' | 'legal_guardian' | 'other';
 }
 
 export interface ObtainConsentOptions {
@@ -176,6 +177,7 @@ export async function obtainConsent(
       notes: details.notes ?? null,
       representativeName: details.representativeName ?? null,
       representativeRelationship: details.representativeRelationship ?? null,
+      representativeAuthorityBasis: details.representativeAuthorityBasis ?? null,
       updatedAt: now,
       timestamp: now,
     }, { merge: true });
