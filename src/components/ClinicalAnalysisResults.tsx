@@ -7,8 +7,11 @@ import { sortPhysicalTestsByImportance, getTopPhysicalTests } from '../utils/sor
 import { isSpainPilot } from '@/core/pilotDetection';
 import type { EvidenceRecommendation } from '@/core/clinical-reasoning/prioritizeEvidence';
 import { AddMedicationModal } from '@/components/clinical-decisions/AddMedicationModal';
-import { saveClinicalDecision } from '@/core/clinical-decisions/clinicalDecisionService';
-import type { MedicationDecisionState } from '@/core/clinical-decisions/types';
+import {
+  getPatientClinicalDecisions,
+  saveClinicalDecision,
+} from '@/core/clinical-decisions/clinicalDecisionService';
+import type { ClinicalDecision, MedicationDecisionState } from '@/core/clinical-decisions/types';
 
 interface ClinicalAnalysisResultsProps {
   results: any;
@@ -73,6 +76,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   currentPatientId,
 }) => {
   const [isAddMedicationModalOpen, setIsAddMedicationModalOpen] = useState(false);
+  const [physioAddedMedications, setPhysioAddedMedications] = useState<ClinicalDecision[]>([]);
   const [medicationError, setMedicationError] = useState<string | null>(null);
   const esPilot = isSpainPilot();
   const ui = esPilot
@@ -124,6 +128,32 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   const evidenceRecommendations: EvidenceRecommendation[] = Array.isArray(editedResults?.evidence_recommendations)
     ? editedResults.evidence_recommendations
     : [];
+
+  useEffect(() => {
+    if (visitType !== 'follow-up' || !currentPatientId) return;
+
+    let cancelled = false;
+
+    getPatientClinicalDecisions(currentPatientId)
+      .then((decisions) => {
+        if (cancelled) return;
+        const medications = decisions.filter(
+          (decision) =>
+            decision.kind === 'medication' &&
+            decision.source === 'physio_added' &&
+            decision.status === 'active'
+        );
+        setPhysioAddedMedications(medications);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPhysioAddedMedications([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visitType, currentPatientId]);
 
   const handleToggle = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -222,7 +252,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     }
 
     try {
-      await saveClinicalDecision({
+      const saved = await saveClinicalDecision({
         kind: 'medication',
         status: 'active',
         source: 'physio_added',
@@ -237,6 +267,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         medicationState: medication.state,
         ...(medication.note ? { note: medication.note } : {}),
       });
+      setPhysioAddedMedications((prev) => [...prev, saved]);
       setMedicationError(null);
       setIsAddMedicationModalOpen(false);
     } catch (error) {
@@ -253,6 +284,29 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
           <p>{ui.followUpMessage}</p>
           {medicationError && (
             <p className="mt-3 text-sm font-medium text-red-700">{medicationError}</p>
+          )}
+          {physioAddedMedications.length > 0 && (
+            <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-left">
+              <p className="mb-2 text-xs font-medium text-slate-600">
+                Medicamentos registrados por el fisioterapeuta
+              </p>
+              {physioAddedMedications.map((medication) => (
+                <div
+                  key={medication.id}
+                  className="flex items-center justify-between border-b border-slate-100 py-1 last:border-0"
+                >
+                  <span className="text-xs text-slate-700">{medication.text}</span>
+                  <div className="flex items-center gap-2">
+                    {medication.medicationState && (
+                      <span className="text-xs text-slate-400">{medication.medicationState}</span>
+                    )}
+                    {medication.medicationDose && (
+                      <span className="text-xs text-slate-400">{medication.medicationDose}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
           <button
             type="button"
