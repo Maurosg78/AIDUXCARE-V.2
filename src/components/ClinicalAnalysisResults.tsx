@@ -336,6 +336,36 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     return hasOriginalText && isDifferent;
   };
 
+  const normalizeForMatch = (text: string): string => {
+    const decomposed = text.normalize('NFD');
+    const withoutDiacritics = decomposed.replace(/[\u0300-\u036f]/g, '');
+    const lowercased = withoutDiacritics.toLowerCase();
+    const trimmed = lowercased.trim();
+    return trimmed;
+  };
+
+  const redFlagTexts = (results?.red_flags ?? [])
+    .map((flag: unknown) => {
+      if (typeof flag === 'string') return normalizeForMatch(flag);
+      const flagRecord = flag as { label?: string; text?: string };
+      return normalizeForMatch(flagRecord?.label ?? flagRecord?.text ?? '');
+    })
+    .filter(Boolean);
+
+  const isCoveredByRedFlag = (med: unknown): boolean => {
+    const medRecord = med as { medication_data?: { normalized_name?: string; original_text?: string }; text?: string };
+    const medName = normalizeForMatch(
+      medRecord?.medication_data?.normalized_name ??
+      medRecord?.medication_data?.original_text ??
+      (typeof med === 'string' ? med : '') ??
+      ''
+    );
+    if (!medName || medName.length < 4) return false;
+    return redFlagTexts.some((flagText) =>
+      flagText.includes(medName) || medName.includes(flagText.slice(0, Math.max(flagText.length - 2, 4)))
+    );
+  };
+
   const medicationEntities = entities.filter((entity) => {
     const isMedication = isMedicationEntity(entity);
     return isMedication;
@@ -483,15 +513,25 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                     const medicationData = entity.medication_data;
                     const originalText = medicationData?.original_text || '';
                     const showOriginalText = hasDifferentOriginalMedicationText(entity);
+                    const coveredByRedFlag = isCoveredByRedFlag(entity);
                     return (
                       <div key={`clarification-${entity.id}`} className="rounded border border-yellow-200 bg-white px-2 py-1.5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-xs font-medium text-slate-700">
-                            {displayName}
-                          </span>
-                          <span className="inline-flex items-center rounded border border-yellow-300 bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">
-                            Por confirmar
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-medium text-slate-700">
+                              {displayName}
+                            </span>
+                            {coveredByRedFlag && (
+                              <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+                                Cubierto por alerta
+                              </span>
+                            )}
+                          </div>
+                          {!coveredByRedFlag && (
+                            <span className="inline-flex items-center rounded border border-yellow-300 bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">
+                              Por confirmar
+                            </span>
+                          )}
                         </div>
                         {showOriginalText && (
                           <p className="mt-1 text-xs text-slate-500">
