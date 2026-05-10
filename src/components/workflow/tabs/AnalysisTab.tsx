@@ -31,7 +31,10 @@ import { trackRedFlagAccepted } from '../../../services/analytics/AnalyticsEvent
 import type { AsyncState } from '../../../features/command-center/hooks/useUserProfile';
 import { RedFlagDismissModal } from '@/components/clinical-decisions/RedFlagDismissModal';
 import { saveClinicalDecision } from '@/core/clinical-decisions/clinicalDecisionService';
-import type { ClinicalDecisionReason } from '@/core/clinical-decisions/types';
+import type {
+  ClinicalDecisionReason,
+  ClinicalDecisionStatus,
+} from '@/core/clinical-decisions/types';
 
 /** Strings aligned with TranscriptArea follow-up Vertex CTA (pilot-aware). */
 const FOLLOW_UP_VERTEX_CTA = isSpainPilot()
@@ -178,6 +181,11 @@ export interface AnalysisTabProps {
   currentUserId?: string | null;
   currentSessionId?: string | null;
   currentPatientId?: string | null;
+  previouslyReviewedRedFlags?: Array<{
+    text: string;
+    status: ClinicalDecisionStatus;
+    reason: ClinicalDecisionReason;
+  }>;
   // WO-PART-C-REFERRAL-REPORT: Optional callback to trigger medical referral report generation
   onGenerateReferralReport?: () => void;
   // WO-REDFLAG-ANALYSIS-UI-001: Optional callback when follow-up red flag decisions are confirmed
@@ -262,6 +270,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   currentUserId,
   currentSessionId,
   currentPatientId,
+  previouslyReviewedRedFlags = [],
   onGenerateReferralReport,
   onConfirmFollowUpRedFlags,
 }) => {
@@ -760,6 +769,21 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                   );
                 })()}
               </div>
+              </div>
+            )}
+            {previouslyReviewedRedFlags.length > 0 && (
+              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-medium text-slate-500 mb-2">
+                  Alertas previamente revisadas
+                </p>
+                {previouslyReviewedRedFlags.map((flag, idx) => (
+                  <div key={`${flag.text}-${idx}`} className="text-xs text-slate-600 py-1 border-b border-slate-100 last:border-0">
+                    <span>{flag.text}</span>
+                    <span className="ml-2 text-slate-400">
+                      - {flag.reason ?? flag.status}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </>

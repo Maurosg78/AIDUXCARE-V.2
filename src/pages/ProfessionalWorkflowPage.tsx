@@ -77,6 +77,11 @@ import {
   resolveRedFlagsAgainstHistory,
   upsertRedFlagHistoryEntry,
 } from "../services/redFlagHistoryService";
+import { filterRedFlagsAgainstDecisions } from '@/core/clinical-decisions/clinicalDecisionService';
+import type {
+  ClinicalDecisionReason,
+  ClinicalDecisionStatus,
+} from '@/core/clinical-decisions/types';
 import {
   extractSecondaryClinicalMemory,
   persistSecondaryClinicalMemory,
@@ -453,6 +458,8 @@ const ProfessionalWorkflowPage = () => {
     continuationNote?: string;
   }>>({});
   const [followUpRedFlagHistoryResolutions, setFollowUpRedFlagHistoryResolutions] = useState<RedFlagHistoryResolution[]>([]);
+  const [followUpPreviouslyReviewedRedFlags, setFollowUpPreviouslyReviewedRedFlags] =
+    useState<Array<{ text: string; status: ClinicalDecisionStatus; reason: ClinicalDecisionReason }>>([]);
   const [followUpDecisionResolved, setFollowUpDecisionResolved] = useState(false);
   const [soapStatus, setSoapStatus] = useState<SOAPStatus>('draft');
   const [visitType, setVisitType] = useState<VisitType>(isExplicitFollowUp ? 'follow-up' : 'initial');
@@ -5294,6 +5301,7 @@ const ProfessionalWorkflowPage = () => {
       if (followUpError) {
         setAnalysisError('La generación automática no está disponible en este momento. No se ha producido ningún contenido por IA.');
         setFollowUpAlerts(null);
+        setFollowUpPreviouslyReviewedRedFlags([]);
         setFollowUpConsiderations(null);
         return;
       }
@@ -5306,14 +5314,22 @@ const ProfessionalWorkflowPage = () => {
       } catch {
         setFollowUpPatternInsight(null);
       }
-      const safeAlerts = {
-        red_flags: Array.isArray((alerts as any)?.red_flags) ? (alerts as any).red_flags : [],
-      };
+      const rawRedFlags = Array.isArray((alerts as any)?.red_flags)
+        ? (alerts as any).red_flags as string[]
+        : [];
+      const patientIdForDecisions = patientIdFromUrl || currentPatient?.id || demoPatient.id;
+      const resolvedRedFlags = await filterRedFlagsAgainstDecisions(
+        patientIdForDecisions,
+        rawRedFlags,
+      );
+      setFollowUpPreviouslyReviewedRedFlags(resolvedRedFlags.previouslyReviewed);
+      const activeRedFlags = resolvedRedFlags.active;
       const hasStructuredContent = soap?.subjective?.trim() || soap?.objective?.trim() || soap?.assessment?.trim() || soap?.plan?.trim();
       const hasFollowUpBlock = (soap as any)?.followUp?.trim?.();
       if (!soap || (!hasStructuredContent && !hasFollowUpBlock)) {
         setAnalysisError('La generación automática no está disponible en este momento. No se ha producido ningún contenido por IA.');
         setFollowUpAlerts(null);
+        setFollowUpPreviouslyReviewedRedFlags([]);
         return;
       }
       setLocalSoapNote({
@@ -5332,10 +5348,10 @@ const ProfessionalWorkflowPage = () => {
       });
       // WO-REDFLAG-FOLLOWUP-002/003: if red flags detected, stay in Analysis; otherwise go to SOAP
       // Set followUpAlerts first; navigation to Analysis is done in useEffect so the same render has both (avoids async state race).
-      if (safeAlerts.red_flags.length > 0) {
-        setFollowUpAlerts({ ...alerts, red_flags: safeAlerts.red_flags } as any);
+      if (activeRedFlags.length > 0) {
+        setFollowUpAlerts({ ...alerts, red_flags: activeRedFlags } as any);
         console.log('[WORKFLOW] ⚠️ Follow-up red flags from alerts — staying in Analysis tab', {
-          redFlagCount: safeAlerts.red_flags.length,
+          redFlagCount: activeRedFlags.length,
           yellowFlagCount: Array.isArray((alerts as any)?.yellow_flags) ? (alerts as any).yellow_flags.length : 0,
         });
         // Do NOT setActiveTab('analysis') here — see useEffect below so AnalysisTab mounts with followUpAlerts already in state
@@ -7281,6 +7297,7 @@ const ProfessionalWorkflowPage = () => {
                     currentUserId={user?.uid ?? null}
                     currentSessionId={sessionId ?? sessionIdRef.current ?? workflowReservedSessionIdRef.current ?? (user?.uid ? `${user.uid}-${sessionStartTime.getTime()}` : null)}
                     currentPatientId={patientIdFromUrl || currentPatient?.id || demoPatient.id}
+                    previouslyReviewedRedFlags={followUpPreviouslyReviewedRedFlags}
                     onConfirmFollowUpRedFlags={handleConfirmFollowUpRedFlags}
                     onGenerateReferralReport={handleOpenReferralReport}
                   />
@@ -7602,6 +7619,7 @@ const ProfessionalWorkflowPage = () => {
                   currentUserId={user?.uid ?? null}
                   currentSessionId={sessionId ?? sessionIdRef.current ?? workflowReservedSessionIdRef.current ?? (user?.uid ? `${user.uid}-${sessionStartTime.getTime()}` : null)}
                   currentPatientId={patientIdFromUrl || currentPatient?.id || demoPatient.id}
+                  previouslyReviewedRedFlags={followUpPreviouslyReviewedRedFlags}
                   onConfirmFollowUpRedFlags={handleConfirmFollowUpRedFlags}
                   onGenerateReferralReport={handleOpenReferralReport}
                 />
