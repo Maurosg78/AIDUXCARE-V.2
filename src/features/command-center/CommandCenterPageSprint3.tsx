@@ -256,10 +256,11 @@ export const CommandCenterPageSprint3: React.FC = () => {
   }, [user?.uid, getAppointments, selectedDate]);
 
   // Sync refs when selectedDate changes: reset loaded state and update current key.
-  // This runs before the subscription effect so the save effect is blocked during the transition.
+  // Also resets the list to [] so items from the previous date are not carried forward.
   useEffect(() => {
     hasLoadedRef.current = false;
     currentDateKeyRef.current = toLocalDateKey(selectedDate);
+    setTodayQuickList([]);
   }, [selectedDate]);
 
   // Subscribe to today's list in Firestore for the selected date (real-time, multi-device).
@@ -275,7 +276,13 @@ export const CommandCenterPageSprint3: React.FC = () => {
         const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
         return !removedTodayQuickItemKeysRef.current.has(scopedKey);
       });
-      setTodayQuickList((prev) => mergeTodayQuickItems(prev, filteredItems));
+      if (!hasLoadedRef.current) {
+        // First load for this date — replace to avoid carrying items from the previous date.
+        setTodayQuickList(filteredItems);
+      } else {
+        // Subsequent updates (remote changes) — merge to preserve transient UI state.
+        setTodayQuickList((prev) => mergeTodayQuickItems(prev, filteredItems));
+      }
       hasLoadedRef.current = true;
     });
 
