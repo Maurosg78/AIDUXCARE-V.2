@@ -16,6 +16,8 @@ export interface AuditEvent {
   userRole: string;
   patientId?: string;
   visitId?: string;
+  /** Regulatory jurisdiction — required for PHIPA audit filtering. Values: 'CA-ON' | 'ES-ES' */
+  jurisdiction?: string;
   // Bloque 2: Campos opcionales para security audit (hospital portal)
   resourceType?: string; // Tipo de recurso accedido (ej: 'hospital_portal_note')
   resourceId?: string; // ID del recurso específico

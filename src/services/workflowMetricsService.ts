@@ -12,6 +12,7 @@
  */
 
 import { AnalyticsService } from './analyticsService';
+import { getCurrentJurisdiction } from '../core/consent/consentJurisdiction';
 
 // ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
@@ -113,6 +114,7 @@ export async function trackWorkflowSessionStart(
     userId,
     userRole: 'professional',
     patientId,
+    jurisdiction: getCurrentJurisdiction(),
     metadata: {
       sessionId,
       workflowType,
@@ -234,6 +236,7 @@ export async function trackWorkflowSessionEnd(
     userId,
     userRole: 'professional',
     patientId,
+    jurisdiction: getCurrentJurisdiction(),
     metadata: {
       sessionId,
       workflowType: metrics.workflowType,
