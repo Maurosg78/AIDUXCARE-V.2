@@ -145,6 +145,11 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
     // Append-only: create new document, never overwrite
     // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Write fields that getConsentStatus reads
     const tokenHash = hashToken(trimmedToken);
+    // CA-ON compliance: read jurisdiction/version from token for PHIPA/PIPEDA traceability
+    const jurisdiction = tokenData.jurisdiction || 'CA-ON';
+    const consentTextVersion = tokenData.consentTextVersion || 'v2-en-CA';
+    const language = tokenData.language || 'en';
+    const consentVersion = tokenData.consentVersion || '2.0.0';
     const consentRecord = {
       patientId: tokenData.patientId,
       patientName: tokenData.patientName || 'Patient',
@@ -153,11 +158,12 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
       consentStatus: decision === 'granted' ? 'granted' : 'declined', // For query compatibility
       consentMethod: 'digital', // ✅ Canonical: 'digital' for SMS portal consent
       tokenHash,
-      jurisdiction: 'CA-ON', // Default jurisdiction (can be enhanced to read from token)
+      jurisdiction,
+      language,
       // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Write BOTH version fields for compatibility
-      consentVersion: '1.0.0', // ✅ Required by getConsentStatus
-      consentTextVersion: '1.0.0', // ✅ Required by getConsentStatus (alternative check)
-      textVersion: 'v1-en-CA', // ✅ Legacy compatibility
+      consentVersion, // ✅ Required by getConsentStatus
+      consentTextVersion, // ✅ Required by getConsentStatus (alternative check)
+      textVersion: consentTextVersion, // ✅ Legacy compatibility
       grantedAt: admin.firestore.FieldValue.serverTimestamp(),
       source: 'patient_portal',
       consented: decision === 'granted',
@@ -192,6 +198,10 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
         patientId: tokenData.patientId,
         obtainedBy: 'patient_portal',
         physiotherapistId: tokenData.physiotherapistId,
+        jurisdiction,
+        language,
+        consentVersion,
+        consentTextVersion,
         updatedAt: new Date().toISOString(),
         timestamp: new Date().toISOString(),
       }, { merge: true });
@@ -207,6 +217,8 @@ exports.acceptPatientConsentByToken = functions.region(LOCATION).https.onRequest
         tokenHash,
         method: 'patient_portal',
         decision,
+        jurisdiction,
+        consentTextVersion,
         ipAddress: ip || null,
         userAgent: userAgent || null,
       },
