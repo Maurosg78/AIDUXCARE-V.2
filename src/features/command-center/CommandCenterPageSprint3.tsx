@@ -32,7 +32,7 @@ import { PatientWorkflowStatus } from '../../domain/patientStatus';
 
 import logger from '../../shared/utils/logger';
 import { LAST_STARTED_KEY } from './todayListSessionStorage';
-import { getTodayList, saveTodayList } from '../../services/todayListService';
+import { subscribeTodayList, saveTodayList } from '../../services/todayListService';
 import { buildClinicalDayView, type ClinicalDayRow } from './utils/clinicalDayView';
 
 function toLocalDateKey(d: Date): string {
@@ -106,8 +106,10 @@ function mergeTodayQuickItems(
     }
 
     const mergedItem = {
-      ...incomingItem,
       ...localItem,
+      // Firestore is the source of truth for status and name; local wins for transient UI fields.
+      status: incomingItem.status ?? localItem.status,
+      patientName: incomingItem.patientName ?? localItem.patientName,
       resumeSessionId: localItem.resumeSessionId ?? incomingItem.resumeSessionId,
     };
     mergedByKey.set(key, mergedItem);
@@ -206,8 +208,13 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [clinicalDayRows, setClinicalDayRows] = useState<ClinicalDayRow[]>([]);
   const [, setClinicalDayLoading] = useState(false);
   const previousStatusByPatientIdRef = React.useRef(new Map<string, PatientWorkflowStatus>());
-  const todayListLoadRequestRef = React.useRef(0);
   const removedTodayQuickItemKeysRef = React.useRef(new Set<string>());
+  // hasLoadedRef: true once the first onSnapshot for the current dateKey has fired.
+  // Prevents the save effect from writing an empty list to Firestore before the load completes.
+  const hasLoadedRef = React.useRef(false);
+  // currentDateKeyRef: tracks the dateKey that the loaded list belongs to.
+  // Prevents the save effect from writing items from a previous date under a new dateKey.
+  const currentDateKeyRef = React.useRef(toLocalDateKey(new Date()));
   const awaitingDocumentationRef = React.useRef<HTMLDivElement>(null);
   const inProgressRef = React.useRef<HTMLDivElement>(null);
   const toSeeRef = React.useRef<HTMLDivElement>(null);
@@ -248,84 +255,79 @@ export const CommandCenterPageSprint3: React.FC = () => {
     }
   }, [user?.uid, getAppointments, selectedDate]);
 
-  const skipNextSaveRef = React.useRef(false);
+  // Sync refs when selectedDate changes: reset loaded state and update current key.
+  // This runs before the subscription effect so the save effect is blocked during the transition.
+  useEffect(() => {
+    hasLoadedRef.current = false;
+    currentDateKeyRef.current = toLocalDateKey(selectedDate);
+  }, [selectedDate]);
 
-  // Load quick list from Firestore for selected date; status is derived later from clinical truth.
+  // Subscribe to today's list in Firestore for the selected date (real-time, multi-device).
   useEffect(() => {
     if (!user?.uid) return;
 
     const dateKey = toLocalDateKey(selectedDate);
-    const requestId = todayListLoadRequestRef.current + 1;
-    todayListLoadRequestRef.current = requestId;
-    let cancelled = false;
 
-    getTodayList(user.uid, dateKey).then((list) => {
-      if (cancelled) {
-        return;
-      }
-      if (requestId !== todayListLoadRequestRef.current) {
-        return;
-      }
+    sessionStorage.removeItem(LAST_STARTED_KEY);
 
-      const mergedList = [...list];
-      for (const session of inProgressSessions.data) {
-        const sessionDateKey = session.dateKey;
-        const isMatchingSelectedDate = sessionDateKey === dateKey;
-        if (!isMatchingSelectedDate) {
-          continue;
-        }
+    const unsubscribe = subscribeTodayList(user.uid, dateKey, (firestoreItems) => {
+      const filteredItems = firestoreItems.filter((item) => {
+        const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
+        return !removedTodayQuickItemKeysRef.current.has(scopedKey);
+      });
+      setTodayQuickList((prev) => mergeTodayQuickItems(prev, filteredItems));
+      hasLoadedRef.current = true;
+    });
+
+    return unsubscribe;
+  }, [user?.uid, selectedDate]);
+
+  // Merge in-progress sessions into the quick list whenever they change.
+  useEffect(() => {
+    if (!user?.uid) return;
+    const dateKey = toLocalDateKey(selectedDate);
+    const matchingSessions = inProgressSessions.data.filter(
+      (session) => session.dateKey === dateKey
+    );
+    if (matchingSessions.length === 0) return;
+    setTodayQuickList((prev) => {
+      const merged = [...prev];
+      for (const session of matchingSessions) {
         const sessionType =
           (session.sessionType as TodayQuickItem['sessionType']) || 'followup';
-        const existingIndex = mergedList.findIndex(
+        const existingIndex = merged.findIndex(
           (i) => i.patientId === session.patientId && i.sessionType === sessionType
         );
         if (existingIndex === -1) {
-          mergedList.unshift({
+          merged.unshift({
             patientId: session.patientId,
             patientName: session.patientName || 'Patient',
             sessionType,
             resumeSessionId: session.id,
           });
         } else {
-          const currentItem = mergedList[existingIndex];
+          const currentItem = merged[existingIndex];
           const nextItem = {
             ...currentItem,
             resumeSessionId: session.id,
           };
-          mergedList[existingIndex] = nextItem;
+          merged[existingIndex] = nextItem;
         }
       }
-
-      const lastStartedRaw = sessionStorage.getItem(LAST_STARTED_KEY);
-      if (lastStartedRaw) {
-        sessionStorage.removeItem(LAST_STARTED_KEY);
-      }
-
-      const filteredMergedList = mergedList.filter((item) => {
-        const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
-        return !removedTodayQuickItemKeysRef.current.has(scopedKey);
-      });
-
-      setTodayQuickList((prev) => {
-        const hasLocalItems = prev.length > 0;
-        skipNextSaveRef.current = !hasLocalItems;
-        return mergeTodayQuickItems(prev, filteredMergedList);
-      });
+      return merged;
     });
-
-    return () => {
-      cancelled = true;
-    };
   }, [user?.uid, selectedDate, inProgressSessions.data]);
 
-  // Persist quick list to Firestore whenever it changes (key = selectedDate)
+  // Persist quick list to Firestore whenever it changes.
+  // Guards: only save once the initial load has completed (hasLoadedRef) and
+  // only for the dateKey that is currently loaded (currentDateKeyRef), preventing
+  // stale items from a previous date being written to the new date's document.
   useEffect(() => {
     if (!user?.uid) return;
-    if (skipNextSaveRef.current) {
-      skipNextSaveRef.current = false;
-      return;
-    }
-    saveTodayList(user.uid, toLocalDateKey(selectedDate), todayQuickList);
+    if (!hasLoadedRef.current) return;
+    const dateKey = toLocalDateKey(selectedDate);
+    if (dateKey !== currentDateKeyRef.current) return;
+    saveTodayList(user.uid, dateKey, todayQuickList);
   }, [user?.uid, selectedDate, todayQuickList]);
 
   useEffect(() => {

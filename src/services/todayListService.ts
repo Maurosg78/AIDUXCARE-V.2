@@ -2,6 +2,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  onSnapshot,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -9,6 +10,25 @@ import type { TodayQuickItem } from '../features/command-center/components/Today
 
 const todayListDoc = (uid: string, dateKey: string) =>
   doc(db, 'users', uid, 'todayLists', dateKey);
+
+function normalizeItems(raw: TodayQuickItem[]): TodayQuickItem[] {
+  return raw.map((item) => {
+    const persistedStatus = item.status;
+    const normalizedDocumentedStatus =
+      persistedStatus === 'done'
+        ? 'documented'
+        : persistedStatus;
+    const normalizedStatus =
+      normalizedDocumentedStatus === 'incomplete'
+        ? 'pending'
+        : normalizedDocumentedStatus ?? 'pending';
+    const normalizedItem = {
+      ...item,
+      status: normalizedStatus,
+    };
+    return normalizedItem;
+  });
+}
 
 export async function getTodayList(
   uid: string,
@@ -18,26 +38,43 @@ export async function getTodayList(
     const snap = await getDoc(todayListDoc(uid, dateKey));
     if (!snap.exists()) return [];
     const data = snap.data();
-    const items: TodayQuickItem[] = Array.isArray(data?.items) ? data.items : [];
-    return items.map((item) => {
-      const persistedStatus = item.status;
-      const normalizedDocumentedStatus =
-        persistedStatus === 'done'
-          ? 'documented'
-          : persistedStatus;
-      const normalizedStatus =
-        normalizedDocumentedStatus === 'incomplete'
-          ? 'pending'
-          : normalizedDocumentedStatus ?? 'pending';
-      const normalizedItem = {
-        ...item,
-        status: normalizedStatus,
-      };
-      return normalizedItem;
-    });
+    const rawItems: TodayQuickItem[] = Array.isArray(data?.items) ? data.items : [];
+    return normalizeItems(rawItems);
   } catch {
     return [];
   }
+}
+
+/**
+ * Real-time subscription to a user's today list for a given date.
+ * Returns an unsubscribe function — must be called on cleanup.
+ */
+export function subscribeTodayList(
+  uid: string,
+  dateKey: string,
+  onData: (items: TodayQuickItem[]) => void,
+  onError?: (error: Error) => void
+): () => void {
+  const docRef = todayListDoc(uid, dateKey);
+  const unsubscribe = onSnapshot(
+    docRef,
+    (snap) => {
+      if (!snap.exists()) {
+        onData([]);
+        return;
+      }
+      const data = snap.data();
+      const rawItems: TodayQuickItem[] = Array.isArray(data?.items) ? data.items : [];
+      const normalizedItems = normalizeItems(rawItems);
+      onData(normalizedItems);
+    },
+    (error) => {
+      if (onError) {
+        onError(error);
+      }
+    }
+  );
+  return unsubscribe;
 }
 
 export async function saveTodayList(
