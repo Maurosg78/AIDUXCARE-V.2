@@ -56,6 +56,8 @@ coverage/
 # Firebase / GCP credentials (NEVER commit)
 serviceAccountKey.json
 *-service-account*.json
+usuarios_firebase.json
+firebase-users*.json
 
 # Temp files
 *.timestamp-*.mjs

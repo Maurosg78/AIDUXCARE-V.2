@@ -1,12 +1,12 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.3  
-**Fecha:** 2026-05-07  
-**Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)  
+**Versión:** 1.4
+**Fecha:** 2026-05-13
+**Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
-**Propietario del SoT:** CTO  
+**Propietario del SoT:** CTO
 
 **Gobernanza del SoT:** `ENGINEERING.md` es la fuente editable oficial. Los PDFs son artefactos de referencia histórica, no fuente normativa. Todo cambio a este documento requiere commit semántico, revisión CTO y entrada en `docs/governance/CHANGELOG_ENGINEERING.md`.
 
@@ -20,19 +20,19 @@
 
 AiduxCare es un producto clínico de alta responsabilidad. Cada decisión de código tiene implicaciones para la seguridad del paciente, el cumplimiento regulatorio y la trazabilidad clínica. Esta filosofía guía todas las decisiones técnicas:
 
-**1.1 El código es evidencia clínica**  
+**1.1 El código es evidencia clínica**
 El sistema genera, almacena y transmite notas clínicas que forman parte del historial médico del paciente. Un bug no es solo un fallo de software: puede ser una discrepancia en un registro médico. Esto eleva el estándar de calidad por encima del software de consumo genérico.
 
-**1.2 La autonomía clínica es no negociable**  
+**1.2 La autonomía clínica es no negociable**
 El sistema propone. El fisioterapeuta decide siempre. Ninguna función del sistema puede tomar decisiones clínicas en nombre del profesional, bloquear su juicio, ni generar documentación sin su revisión explícita. Esto no es solo un requisito de producto — es un principio ético y legal.
 
-**1.3 Mantenibilidad sobre velocidad**  
+**1.3 Mantenibilidad sobre velocidad**
 El código generado con asistencia de IA tiende a ser funcional pero arquitectónicamente débil si no se gobierna correctamente. La investigación de GitClear (2024-2025) analizando 211 millones de líneas de código documentó un aumento de 8x en bloques de código duplicado tras la adopción masiva de herramientas de IA, y una disminución de líneas "movidas" (reutilización) frente a líneas "copiadas". Este documento existe precisamente para contrarrestar esa tendencia.
 
-**1.4 Deuda técnica documentada es deuda manejable**  
+**1.4 Deuda técnica documentada es deuda manejable**
 La deuda técnica no documentada es deuda oculta. Este documento registra toda la deuda conocida con criterio de cierre y responsable. Un inversor o CTO externo que haga due diligence encontrará aquí la verdad — no en el código.
 
-**1.5 Norte de producto: agentes clínicos auditables**  
+**1.5 Norte de producto: agentes clínicos auditables**
 AiduxCare no compite por tener "el mejor modelo" aislado. Compite por construir el sistema clínico más fiable alrededor de modelos probabilísticos. Los modelos son componentes intercambiables; la ventaja del producto vive en la arquitectura de memoria clínica, prompts versionados, validadores, trazabilidad, revisión humana y experiencia operativa.
 
 Un agente de IA en AiduxCare no es autónomo porque "sabe más"; es delegable solo cuando es auditable. Debe ejecutar tareas repetitivas, documentar qué datos usó, dejar evidencia de su propuesta, pedir confirmación cuando corresponda y permitir que el fisioterapeuta acepte, edite o descarte el resultado. En salud, la inteligencia sin trazabilidad no es una ventaja técnica: es un riesgo clínico.
@@ -51,6 +51,79 @@ Traducción de ingeniería:
 - Memoria clínica estructurada, no contexto opaco.
 - Acción delegable solo si deja trazabilidad.
 - El fisioterapeuta mantiene autoridad clínica explícita.
+
+**1.6 AiduxCare amplifica criterio clínico — Principio Sócrates**
+La historia de la IA médica desde 1970 documenta un patrón consistente: los sistemas que intentan reemplazar el juicio clínico tienden a fracasar en adopción clínica real. Los sistemas que amplifican al profesional, preservando su autoridad y responsabilidad, muestran mayor viabilidad. AiduxCare opera con este principio como restricción de diseño, no como aspiración.
+
+Dos modos con propósitos distintos:
+
+**Modo 1 — Reducción de carga documental**
+Transcripción, generación de SOAP, organización de información clínica y persistencia de decisiones reducen fricción administrativa. Este modo no interviene en el juicio clínico ni convierte outputs generados por IA en decisiones clínicas sin revisión humana.
+
+**Modo 2 — Sócrates, a demanda explícita del fisioterapeuta**
+Se activa solo cuando el fisioterapeuta lo decide. Nunca es automático ni intrusivo. Sus capacidades son:
+- Detectar patrones longitudinales del paciente y de la interacción clínica documentada.
+- Contrastar decisiones clínicas contra evidencia curada, versionada y trazable.
+- Formular preguntas que ayuden a custodiar la continuidad del paciente.
+
+Regla canónica:
+
+```
+Sócrates no emite decisiones clínicas. Sócrates genera preguntas,
+señales, tensiones clínicas y puntos de reflexión basados en datos
+trazables, para revisión del fisioterapeuta.
+```
+
+Arquitectura obligatoria:
+- `ClinicalContextLedger`: separa hechos documentados, observaciones IA, decisiones humanas, patrones longitudinales y preguntas no resueltas.
+- `SocraticThresholdEvaluator`: decide con reglas explícitas si una señal merece convertirse en candidata a pregunta.
+- `SocraticCandidateGenerator`: redacta preguntas prudentes desde contexto estructurado y trazable.
+- `SocraticInteractionLog`: registra si el fisioterapeuta acepta, ignora, pospone o edita la pregunta.
+- `ClinicalMemoryUpdater`: actualiza memoria longitudinal solo con fuente, contexto y trazabilidad suficientes.
+
+La LLM socrática es la última capa del flujo, no la primera. No debe recibir audio o texto libre como única fuente de razonamiento. Antes debe existir contexto estructurado y clasificado por procedencia:
+
+```
+hecho documentado != inferencia IA != decisión del fisioterapeuta
+```
+
+Reglas de uso de información:
+- Un hecho documentado puede alimentar memoria si conserva fuente, sesión y texto base.
+- Una observación IA solo puede alimentar Sócrates como hipótesis o señal, nunca como verdad clínica.
+- Una decisión clínica canónica exige acción humana explícita del fisioterapeuta.
+- Evidencia no aprobada por CTO clínico no puede usarse como base fuerte de contraste.
+- Una pregunta socrática no se muestra si no puede responder "¿por qué me estás preguntando esto?" con trazabilidad.
+
+El lenguaje de Sócrates es asistencial, trazable y orientado al futuro.
+
+Correcto:
+
+> "Noto que has documentado confusión y olvido de instrucciones básicas. ¿Quieres que recuerde ahondar en esta condición en la siguiente sesión?"
+
+Incorrecto:
+
+> "Este paciente presenta signos de deterioro cognitivo. Considera derivación a neurología."
+
+La diferencia no es solo de tono; es de arquitectura. La primera formulación muestra lo que el sistema observó en datos documentados, no asume causas, no interroga decisiones pasadas y ofrece una acción concreta hacia adelante. La segunda reemplaza criterio clínico con una conclusión que el sistema no está autorizado a tomar.
+
+Restricciones de diseño no negociables para el Modo 2:
+- Sócrates nunca usa lenguaje imperativo clínico como "debe", "tiene que" o "es necesario".
+- Toda observación debe ser trazable a datos documentados en AiduxCare.
+- Toda pregunta mira hacia adelante; nunca juzga decisiones ya tomadas.
+- El fisioterapeuta puede ignorar, posponer o rechazar cualquier pregunta.
+- Sócrates nunca pregunta dos veces sobre lo mismo en la misma sesión.
+- **Sócrates no puede razonar sobre un hecho como actual si no conserva vigencia temporal.** Un hecho cuyo `validUntil` ha expirado o cuyo `supersededBy` está definido no puede ser base de ninguna pregunta socrática. Solo la salida de `getActiveFacts()` alimenta el `SocraticThresholdEvaluator`.
+
+Riesgo mitigado:
+
+La IA que reduce carga cognitiva puede, si no se diseña con cuidado, atrofiar el razonamiento clínico con el tiempo. AiduxCare lo previene haciendo que Sócrates exija participación activa del fisioterapeuta. El sistema no piensa por el profesional. Le muestra lo que vio, con trazabilidad, y le pregunta qué quiere hacer con eso.
+
+Prerrequisito técnico:
+
+Sócrates solo es posible con memoria longitudinal activa. Sin contexto acumulado del paciente y del tratante, las preguntas son genéricas y pierden valor clínico. La memoria longitudinal no es una feature accesoria: es la condición de existencia del Modo 2.
+
+Referencia fundacional:
+Maojo V, Kulikowski CA. Inteligencia Artificial y medicina: diez lecciones aprendidas (y olvidadas): 1970-2026. An RANM. 2026;143(01):67-75. DOI: https://doi.org/10.32440/ar.2026.143.01.rev05. Revista: https://analesranm.es/revista/2026/143_01/14301_rev05.
 
 ---
 
@@ -85,29 +158,29 @@ Los agentes no deben ocultar incertidumbre tras una interfaz fluida. La UI debe 
 
 ### 2.2 Decisiones de arquitectura registradas (ADRs)
 
-**ADR-001: Firestore como base de datos principal**  
-*Contexto:* Sistema clínico con datos de pacientes protegidos bajo RGPD/PHIPA/PIPEDA.  
-*Decisión:* Firebase Firestore con reglas de seguridad a nivel de documento por `userId`.  
+**ADR-001: Firestore como base de datos principal**
+*Contexto:* Sistema clínico con datos de pacientes protegidos bajo RGPD/PHIPA/PIPEDA.
+*Decisión:* Firebase Firestore con reglas de seguridad a nivel de documento por `userId`.
 *Consecuencia:* No hay acceso cruzado entre fisioterapeutas. Auditoría automática en `FirestoreAuditLogger`. Deuda: reglas de Firestore para sesiones legacy con `temp-user-` siguen siendo permisivas.
 
-**ADR-002: Vertex AI para análisis clínico, no fine-tuning propio**  
-*Contexto:* Riesgo de alucinaciones en contexto clínico.  
-*Decisión:* Prompt engineering con contexto profesional explícito + validación humana obligatoria antes de finalizar toda nota SOAP.  
+**ADR-002: Vertex AI para análisis clínico, no fine-tuning propio**
+*Contexto:* Riesgo de alucinaciones en contexto clínico.
+*Decisión:* Prompt engineering con contexto profesional explícito + validación humana obligatoria antes de finalizar toda nota SOAP.
 *Consecuencia:* El fisioterapeuta siempre revisa. El sistema nunca finaliza documentación sin aprobación.
 
-**ADR-003: Deploy siempre desde Mac local**  
-*Contexto:* Control de auditoría de versiones desplegadas.  
-*Decisión:* `VITE_ENABLE_ES_PILOT=true npm run build` + gcloud SCP + pm2 restart. Nunca buildear en VPS.  
+**ADR-003: Deploy siempre desde Mac local**
+*Contexto:* Control de auditoría de versiones desplegadas.
+*Decisión:* `VITE_ENABLE_ES_PILOT=true npm run build` + gcloud SCP + pm2 restart. Nunca buildear en VPS.
 *Consecuencia:* Trazabilidad completa de qué commit está en producción en cada momento.
 
-**ADR-004: Un commit por fix, mensaje semántico**  
-*Contexto:* Auditoría CPO (Ontario), due diligence de inversores.  
-*Decisión:* Conventional Commits (`fix:`, `feat:`, `chore:`). TSC limpio antes de cada commit.  
+**ADR-004: Un commit por fix, mensaje semántico**
+*Contexto:* Auditoría CPO (Ontario), due diligence de inversores.
+*Decisión:* Conventional Commits (`fix:`, `feat:`, `chore:`). TSC limpio antes de cada commit.
 *Consecuencia:* El historial de git es legible por un auditor externo sin contexto adicional.
 
-**ADR-005: Postura regulatoria SaMD/MLMD conservadora**  
-*Contexto:* AiduxCare apoya razonamiento clínico, documentación SOAP y continuidad longitudinal. Health Canada clasifica el software por intended use, claims, etiquetado y grado de autonomía. La guía Health Canada 2026 para ML-enabled medical devices exige evidencia de ciclo de vida, riesgo, datos, validación clínica, transparencia y post-market monitoring cuando el software usa ML para lograr un propósito médico.  
-*Decisión:* Hasta decisión formal regulatoria, AiduxCare debe diseñarse como si pudiera ser evaluado como Clinical Decision Support / SaMD o MLMD en Canadá si sus claims comerciales o funciones pasan de documentación/soporte a recomendación clínica regulada. Todo claim público debe preservar que el sistema propone, el fisioterapeuta decide, y que las recomendaciones son soporte documentado, no diagnóstico autónomo ni tratamiento autónomo.  
+**ADR-005: Postura regulatoria SaMD/MLMD conservadora**
+*Contexto:* AiduxCare apoya razonamiento clínico, documentación SOAP y continuidad longitudinal. Health Canada clasifica el software por intended use, claims, etiquetado y grado de autonomía. La guía Health Canada 2026 para ML-enabled medical devices exige evidencia de ciclo de vida, riesgo, datos, validación clínica, transparencia y post-market monitoring cuando el software usa ML para lograr un propósito médico.
+*Decisión:* Hasta decisión formal regulatoria, AiduxCare debe diseñarse como si pudiera ser evaluado como Clinical Decision Support / SaMD o MLMD en Canadá si sus claims comerciales o funciones pasan de documentación/soporte a recomendación clínica regulada. Todo claim público debe preservar que el sistema propone, el fisioterapeuta decide, y que las recomendaciones son soporte documentado, no diagnóstico autónomo ni tratamiento autónomo.
 *Consecuencia:* Toda feature clínica debe mantener intended use explícito, human oversight verificable, evidencia trazable, risk controls, versión de modelo/prompts, logs auditables, limitaciones visibles y plan de vigilancia post-market. Cualquier cambio que aumente autonomía clínica requiere revisión CTO + evaluación regulatoria antes de release.
 
 ### ADR-004 — Biblioteca de Evidencia Clínica
@@ -117,9 +190,9 @@ Los agentes no deben ocultar incertidumbre tras una interfaz fluida. La UI debe 
 **Decisor:** CTO clínico (Mauricio Sobarzo)
 
 **Decisión:**
-La evidencia clínica vive en `src/core/clinical-evidence/` separada 
-de `KnowledgeBaseService`. Cada diagnóstico es un archivo TypeScript 
-versionado en git. Ningún cambio entra sin revisión clínica aprobada 
+La evidencia clínica vive en `src/core/clinical-evidence/` separada
+de `KnowledgeBaseService`. Cada diagnóstico es un archivo TypeScript
+versionado en git. Ningún cambio entra sin revisión clínica aprobada
 por el CTO médico.
 
 **Estructura:**
@@ -132,7 +205,7 @@ src/core/clinical-evidence/
 
 **Fuentes aceptadas:**
 - PubMed Central (PMC) — texto completo gratuito
-- PEDro — texto completo cuando disponible  
+- PEDro — texto completo cuando disponible
 - Cochrane — resúmenes open access
 - Revistas open access con DOI verificable
 
@@ -141,7 +214,7 @@ src/core/clinical-evidence/
 - Score PEDro ≥ 6/10 para estudios individuales
 - GRADE moderado o alto para revisiones sistemáticas
 - Publicación 2018 en adelante salvo evidencia seminal sin actualización
-- Abstract consistente con paper completo — si no se puede leer 
+- Abstract consistente con paper completo — si no se puede leer
   el paper completo, no se acepta como fuente primaria
 
 **Flujo de actualización:**
@@ -157,7 +230,7 @@ src/core/clinical-evidence/
 - Capa 2: Perfil del fisio (filtro de competencias)
 - Capa 3: Variables del círculo del paciente (filtro de viabilidad)
 
-El output es una propuesta priorizada para este fisio con este 
+El output es una propuesta priorizada para este fisio con este
 paciente. El sistema avisa, no decide. El fisio siempre en el loop.
 
 **Umbral mínimo para status: approved:**
@@ -615,6 +688,8 @@ Este documento está fundamentado en los siguientes estándares y publicaciones:
 | 1.0 | Abril 2026 | Versión inicial. Piloto España activo. |
 | 1.1 | 2026-05-05 | `ENGINEERING.md` declarado SoT editable; PDFs quedan como referencia histórica. |
 | 1.2 | 2026-05-06 | Añadida postura regulatoria SaMD/MLMD, auditoría comercial, ISO 14971, IEC 62304, Health Canada MLMD 2026, GMLP, PCCP, SOC 2/ISO 27001/ISO 42001 y ciberseguridad medical-device. |
+| 1.3 | 2026-05-07 | Añadido norte de producto: agentes clínicos auditables, arquitectura agéntica y autoridad clínica explícita del fisioterapeuta. |
+| 1.4 | 2026-05-13 | Añadido Principio Sócrates: AiduxCare amplifica criterio clínico con razonamiento a demanda, trazable y no imperativo. |
 
 ---
 

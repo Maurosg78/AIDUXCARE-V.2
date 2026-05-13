@@ -1,5 +1,15 @@
 # ENGINEERING.md Changelog
 
+## 2026-05-13 — v1.4
+
+- Added Principio Sócrates: AiduxCare amplifies clinical reasoning instead of replacing clinician judgment.
+- Defined two explicit operating modes: documentation burden reduction and clinician-activated Socratic reasoning.
+- Added non-negotiable design restrictions for Socratic mode: traceable observations, forward-looking questions, no imperative clinical language, no repeated same-session prompts and full clinician control.
+- Added canonical Socratic architecture: ClinicalContextLedger, threshold evaluation, candidate generation, interaction logging and memory update.
+- Established data provenance boundaries: documented facts, AI observations and clinician decisions must not be conflated.
+- Added temporal validity as a canonical Socratic constraint: only active, non-superseded and non-expired documented facts can feed threshold evaluation.
+- Declared active longitudinal memory as the technical prerequisite for Socratic reasoning.
+
 ## 2026-05-07 — v1.3
 
 - Added product north star: AiduxCare as a clinical operating system with auditable AI agents, not an isolated AI note generator.
