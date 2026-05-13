@@ -109,10 +109,11 @@ function pickBestConsultation(
   encounterSessionId?: string
 ): SavedNote | null {
   const dateMatchedNotes = notes.filter((note) => {
-    const matchesClinicalDate = note.clinicalDate === dateKey;
-    const matchesCreatedDate = toDateKeyFromIsoString(note.createdAt) === dateKey;
+    if (note.clinicalDate) {
+      return note.clinicalDate === dateKey;
+    }
 
-    return matchesClinicalDate || matchesCreatedDate;
+    return toDateKeyFromIsoString(note.createdAt) === dateKey;
   });
 
   const matchingEncounterNotes = encounterSessionId
