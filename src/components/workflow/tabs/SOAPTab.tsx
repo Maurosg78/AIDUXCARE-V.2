@@ -111,6 +111,8 @@ export interface SOAPTabProps {
   patientFirstName?: string;
   professionalName?: string;
   professionalTitle?: string;
+  inClinicItemsOverride?: string[];
+  hepItemsOverride?: string[];
   /** Patient full name — threaded to SOAPEditor for referral report. */
   patientName?: string;
   /** Red flag decisions — threaded to SOAPEditor to gate referral button. */
@@ -176,6 +178,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   patientFirstName,
   professionalName,
   professionalTitle,
+  inClinicItemsOverride,
+  hepItemsOverride,
   patientName,
   redFlagDecisions,
   isTreatmentDecisionConfirmed,
@@ -184,6 +188,12 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   const { t } = useTranslation();
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
   const [summarySent, setSummarySent] = useState(false);
+  const emailSummaryPlanText = localSoapNote?.plan?.trim() || localSoapNote?.followUp?.trim() || '';
+  const hasPatientSummaryEmailContent = Boolean(
+    emailSummaryPlanText ||
+    (inClinicItemsOverride && inClinicItemsOverride.length > 0) ||
+    (hepItemsOverride && hepItemsOverride.length > 0)
+  );
   const handleSoapFieldEdited = (fieldEdited: EditableSOAPField) => {
     void trackSOAPEdited({ fieldEdited, field_name: fieldEdited });
   };
@@ -352,7 +362,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
           />
 
           {/* Spain pilot: Enviar resumen al paciente */}
-          {isSpainPilot() && patientEmail && localSoapNote?.plan && (
+          {isSpainPilot() && patientEmail && hasPatientSummaryEmailContent && (
             <div className="mt-4 flex justify-end">
               {summarySent ? (
                 <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 px-4 py-2.5 rounded-xl">
@@ -395,7 +405,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
       )}
 
       {/* Spain pilot: patient summary email modal */}
-      {summaryModalOpen && patientEmail && localSoapNote?.plan && (
+      {summaryModalOpen && patientEmail && hasPatientSummaryEmailContent && (
         <PatientSummaryEmailModal
           isOpen={summaryModalOpen}
           onClose={() => setSummaryModalOpen(false)}
@@ -404,7 +414,9 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
           patientFirstName={patientFirstName || 'Paciente'}
           professionalName={professionalName || ''}
           professionalTitle={professionalTitle || 'Fisioterapeuta'}
-          planText={localSoapNote.plan}
+          planText={emailSummaryPlanText}
+          inClinicItemsOverride={inClinicItemsOverride}
+          hepItemsOverride={hepItemsOverride}
         />
       )}
     </div>

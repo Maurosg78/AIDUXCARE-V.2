@@ -23,6 +23,8 @@ export interface PatientSummaryEmailModalProps {
   professionalTitle: string;
   /** Raw SOAP plan text — HEP and in-clinic items are derived from this. */
   planText: string;
+  inClinicItemsOverride?: string[];
+  hepItemsOverride?: string[];
 }
 
 export const PatientSummaryEmailModal: React.FC<PatientSummaryEmailModalProps> = ({
@@ -34,6 +36,8 @@ export const PatientSummaryEmailModal: React.FC<PatientSummaryEmailModalProps> =
   professionalName,
   professionalTitle,
   planText,
+  inClinicItemsOverride,
+  hepItemsOverride,
 }) => {
   const [customMessage, setCustomMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -41,6 +45,18 @@ export const PatientSummaryEmailModal: React.FC<PatientSummaryEmailModalProps> =
   const [sendError, setSendError] = useState<string | null>(null);
 
   const derived = derivePlanFromText(planText);
+  const normalizeItems = (items?: string[]) =>
+    (items ?? [])
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  const normalizedInClinicOverride = normalizeItems(inClinicItemsOverride);
+  const normalizedHepOverride = normalizeItems(hepItemsOverride);
+  const inClinicItems = normalizedInClinicOverride.length > 0
+    ? normalizedInClinicOverride
+    : derived.inClinic;
+  const hepItems = normalizedHepOverride.length > 0
+    ? normalizedHepOverride
+    : derived.homeProgram;
   const visitDate = new Date().toLocaleDateString('es-ES', {
     day: 'numeric',
     month: 'long',
@@ -67,8 +83,8 @@ export const PatientSummaryEmailModal: React.FC<PatientSummaryEmailModalProps> =
         professionalName,
         professionalTitle,
         visitDate,
-        inClinicItems: derived.inClinic,
-        hepItems: derived.homeProgram,
+        inClinicItems,
+        hepItems,
         customMessage: customMessage.trim() || undefined,
       });
       setIsSent(true);
@@ -82,7 +98,7 @@ export const PatientSummaryEmailModal: React.FC<PatientSummaryEmailModalProps> =
 
   if (!isOpen) return null;
 
-  const hasContent = derived.inClinic.length > 0 || derived.homeProgram.length > 0;
+  const hasContent = inClinicItems.length > 0 || hepItems.length > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -146,13 +162,13 @@ export const PatientSummaryEmailModal: React.FC<PatientSummaryEmailModalProps> =
                   <strong className="text-gray-700">{professionalName}</strong>.
                 </p>
 
-                {derived.inClinic.length > 0 && (
+                {inClinicItems.length > 0 && (
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">
                       Hoy trabajamos en
                     </p>
                     <ul className="space-y-1">
-                      {derived.inClinic.map((item, i) => (
+                      {inClinicItems.map((item, i) => (
                         <li key={i} className="flex items-start gap-1.5 text-gray-700">
                           <span className="text-gray-400 mt-0.5 select-none">•</span>
                           {item}
@@ -162,13 +178,13 @@ export const PatientSummaryEmailModal: React.FC<PatientSummaryEmailModalProps> =
                   </div>
                 )}
 
-                {derived.homeProgram.length > 0 && (
+                {hepItems.length > 0 && (
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">
                       Para casa 🏠
                     </p>
                     <ul className="space-y-1">
-                      {derived.homeProgram.map((item, i) => (
+                      {hepItems.map((item, i) => (
                         <li key={i} className="flex items-start gap-1.5 text-gray-700">
                           <span className="text-gray-400 mt-0.5 select-none">•</span>
                           {item}

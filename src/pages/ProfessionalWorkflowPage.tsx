@@ -7426,6 +7426,8 @@ const ProfessionalWorkflowPage = () => {
                     patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
                     professionalName={clinicianDisplayName || ''}
                     professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
+                    inClinicItemsOverride={inClinicItems.map((item) => item.label)}
+                    hepItemsOverride={homeProgramItems.map((item) => item.label)}
                     patientName={currentPatient?.fullName ?? `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
                     redFlagDecisions={redFlagDecisions}
                   />
@@ -7703,6 +7705,8 @@ const ProfessionalWorkflowPage = () => {
                     patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
                     professionalName={clinicianDisplayName || ''}
                     professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
+                    inClinicItemsOverride={inClinicItems.map((item) => item.label)}
+                    hepItemsOverride={homeProgramItems.map((item) => item.label)}
                     patientName={currentPatient?.fullName ?? `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
                     redFlagDecisions={redFlagDecisions}
                   />
