@@ -22,6 +22,49 @@ export interface PDFExtractionResult {
     error?: string;
 }
 
+export const SCANNED_PDF_ERROR = "No text could be extracted. PDF may be scanned (image-based) or password-protected.";
+
+/**
+ * Renders PDF pages as base64 PNG strings for OCR fallback.
+ * Only available in browser context (requires document/canvas).
+ */
+export async function renderPDFPagesAsBase64(file: File, maxPages = 5): Promise<string[]> {
+    if (typeof document === 'undefined') return [];
+
+    const pdfjsModule = await import('pdfjs-dist');
+    const pdfjsLib: any = pdfjsModule;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
+
+    const fileBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: fileBuffer });
+    const pdf = await loadingTask.promise;
+
+    const pagesToProcess = Math.min(pdf.numPages, maxPages);
+    const pages: string[] = [];
+
+    for (let pageNum = 1; pageNum <= pagesToProcess; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2.0 }); // 2x scale for better OCR quality
+
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const context = canvas.getContext('2d')!;
+
+        await page.render({ canvasContext: context, viewport }).promise;
+
+        const base64 = canvas.toDataURL('image/png').split(',')[1];
+        pages.push(base64);
+
+        // Release pdfjs page resources after rendering
+        page.cleanup();
+        canvas.width = 0;
+        canvas.height = 0;
+    }
+
+    return pages;
+}
+
 /**
  * Validates if a file is a PDF
  */
@@ -90,7 +133,7 @@ export async function extractTextFromPDF(file: File): Promise<PDFExtractionResul
             return {
                 text: "",
                 pageCount: totalPages,
-                error: "No text could be extracted. PDF may be scanned (image-based) or password-protected.",
+                error: SCANNED_PDF_ERROR,
             };
         }
 

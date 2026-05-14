@@ -1,4 +1,4 @@
-import { extractTextFromPDF, isValidPDF } from './pdfTextExtractor';
+import { extractTextFromPDF, isValidPDF, renderPDFPagesAsBase64, SCANNED_PDF_ERROR } from './pdfTextExtractor';
 import { buildAuthenticatedJsonHeaders } from './firebaseAuthHeaders';
 
 export interface ProcessedFile {
@@ -223,6 +223,28 @@ export class FileProcessorService {
         console.log("[FileProcessor] PDF extraction resolved");
         
         if (pdfResult.error) {
+          if (pdfResult.error === SCANNED_PDF_ERROR) {
+            console.log(`[FileProcessor] 🔍 Scanned PDF detected — falling back to Gemini Vision OCR: ${file.name}`);
+            try {
+              const ocrText = await FileProcessorService.extractScannedPDFWithGemini(file);
+              const MAX_TEXT_LENGTH = 15000;
+              const processedOcrText = ocrText.length > MAX_TEXT_LENGTH
+                ? ocrText.substring(0, MAX_TEXT_LENGTH) + `\n\n[NOTE: OCR text truncated. Original length: ${ocrText.length} characters]`
+                : ocrText;
+              console.log(`[FileProcessor] ✅ Scanned PDF OCR extracted ${processedOcrText.length} characters`);
+              return {
+                ...baseResult,
+                extractedText: processedOcrText,
+                pageCount: pdfResult.pageCount,
+              };
+            } catch (ocrError) {
+              console.error(`[FileProcessor] Scanned PDF OCR fallback failed:`, ocrError);
+              return {
+                ...baseResult,
+                error: ocrError instanceof Error ? ocrError.message : 'Scanned PDF OCR failed',
+              };
+            }
+          }
           console.error(`[FileProcessor] PDF extraction error:`, pdfResult.error);
           return {
             ...baseResult,
@@ -371,6 +393,35 @@ export class FileProcessorService {
     return mergedExtraction;
   }
 
+  /**
+   * WO-IMAGE-OCR-002: OCR fallback for scanned PDFs.
+   * Renders each page via pdfjs canvas and sends to Gemini Vision OCR.
+   * Max 3 pages to limit API cost; results are concatenated.
+   */
+  private static async extractScannedPDFWithGemini(file: File): Promise<string> {
+    const MAX_OCR_PAGES = 5;
+    const pages = await renderPDFPagesAsBase64(file, MAX_OCR_PAGES);
+    if (pages.length === 0) {
+      throw new Error('Could not render PDF pages for OCR');
+    }
+
+    const pageTexts: string[] = [];
+    for (let i = 0; i < pages.length; i++) {
+      try {
+        const text = await FileProcessorService.callVertexPromptFromBase64('image/png', pages[i], IMAGE_OCR_PROMPT);
+        if (text.trim()) pageTexts.push(text.trim());
+      } catch (err) {
+        console.warn(`[FileProcessor] Scanned PDF OCR failed on page ${i + 1}:`, err);
+      }
+    }
+
+    if (pageTexts.length === 0) throw new Error('Gemini OCR returned no text from scanned PDF pages');
+
+    // Traceability marker: OCR output may contain misreads — the clinician must verify
+    const ocrBody = pageTexts.join('\n\n');
+    return `[DOCUMENTO ESCANEADO — texto extraído por OCR automático. Verificar exactitud antes de finalizar la nota.]\n\n${ocrBody}`;
+  }
+
   private static async callVertexImagePrompt(file: File, prompt: string): Promise<string> {
     // Convert image file to base64 for transport
     const buffer = await file.arrayBuffer();
@@ -380,13 +431,16 @@ export class FileProcessorService {
       binary += String.fromCharCode(bytes[i]);
     }
     const base64Data = typeof btoa !== 'undefined' ? btoa(binary) : Buffer.from(binary, 'binary').toString('base64');
+    return FileProcessorService.callVertexPromptFromBase64(file.type || 'image/*', base64Data, prompt);
+  }
 
+  private static async callVertexPromptFromBase64(mimeType: string, base64Data: string, prompt: string): Promise<string> {
     const payload = {
       action: 'image-ocr' as const,
       model: GEMINI_OCR_MODEL,
       prompt,
       image: {
-        mimeType: file.type || 'image/*',
+        mimeType,
         data: base64Data,
       },
     };
