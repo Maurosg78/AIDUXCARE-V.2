@@ -1,8 +1,8 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.4
-**Fecha:** 2026-05-13
+**Versión:** 1.5
+**Fecha:** 2026-05-14
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
@@ -116,7 +116,40 @@ Restricciones de diseño no negociables para el Modo 2:
 
 Riesgo mitigado:
 
-La IA que reduce carga cognitiva puede, si no se diseña con cuidado, atrofiar el razonamiento clínico con el tiempo. AiduxCare lo previene haciendo que Sócrates exija participación activa del fisioterapeuta. El sistema no piensa por el profesional. Le muestra lo que vio, con trazabilidad, y le pregunta qué quiere hacer con eso.
+La IA que reduce carga cognitiva puede, si no se diseña con cuidado, atrofiar el razonamiento clínico con el tiempo.
+
+**1.7 Límite de alcance diagnóstico — Imágenes y documentos escaneados**
+
+AiduxCare puede recibir adjuntos clínicos en tres niveles de origen distintos:
+
+| Nivel | Origen | Confiabilidad | Regla |
+|---|---|---|---|
+| `transcript` | Transcripción de audio directo | Alta — palabras del profesional o paciente | Puede alimentar red flags y notas SOAP |
+| `text_layer_pdf` | PDF con capa de texto nativa | Alta — texto escrito por autor del documento | Puede alimentar red flags con trazabilidad |
+| `ocr_text` | PDF escaneado — texto extraído por OCR | Media — fidelidad dependiente de calidad de escaneo | Puede alimentar extracción de medicación y datos escritos; no genera red flags autónomas |
+| `image_visual` | Descripción automática de imagen por IA | Baja — observación visual probabilística | Solo puede alimentar señal de derivación, nunca hallazgo clínico autónomo |
+
+Regla canónica:
+
+```
+Un sistema de IA no está autorizado a interpretar imágenes diagnósticas.
+Una descripción visual generada por IA sobre una radiografía, RM o TAC
+no es un hallazgo clínico. Es una observación que requiere revisión por
+profesional competente.
+```
+
+Restricciones de diseño no negociables para adjuntos de imagen/OCR:
+- El prompt de análisis clínico (Niágara/Vertex) **no puede instruir al modelo a generar red flags a partir de descripciones visuales**.
+- El prompt **no puede instruir al modelo a interpretar imágenes diagnósticas**.
+- El prompt **no puede instruir al modelo a contradecir un informe médico o radiológico escrito**.
+- Si el contenido visual parece clínicamente relevante, la única instrucción permitida es: "requiere revisión por profesional competente".
+- La extracción de medicación, diagnósticos escritos y conclusiones de informe escrito sí está permitida desde OCR, ya que son texto explícito del autor del documento.
+
+Implementación vigente: `buildAttachmentsSection()` en `src/core/ai/markets/buildAnalysisPrompt.shared.ts` detecta adjuntos de imagen o PDF escaneado (por `fileType` o por marcador `[DOCUMENTO ESCANEADO`) y aplica el bloque de instrucción restringido en lugar del bloque estándar de análisis diagnóstico.
+
+Tipos de política: `src/core/clinical-safety/types.ts` — `ClinicalSourceLevel`, `CanonicalityStatus`, `ImagingInputPolicy`, `ScopeBoundarySignalCategory`.
+
+AiduxCare lo previene haciendo que Sócrates exija participación activa del fisioterapeuta. El sistema no piensa por el profesional. Le muestra lo que vio, con trazabilidad, y le pregunta qué quiere hacer con eso.
 
 Prerrequisito técnico:
 

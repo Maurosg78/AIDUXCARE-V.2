@@ -1,5 +1,13 @@
 # ENGINEERING.md Changelog
 
+## 2026-05-14 — v1.5
+
+- Added §1.7 Diagnostic Imaging Scope Boundary: defines four clinical source levels (transcript, text_layer_pdf, ocr_text, image_visual) with distinct trust levels and prompt rules.
+- Established canonical rule: AI is not authorized to interpret diagnostic images; an AI visual description of a radiograph or MRI is not a clinical finding — it is an observation requiring review by a competent professional.
+- Added non-negotiable design restrictions for image/OCR attachments in analysis prompts: no AI-generated red flags from visual descriptions, no diagnostic image interpretation, no overruling written radiology reports.
+- Documented implementation anchor: `buildAttachmentsSection()` imaging-derived detection and restricted instruction block.
+- Added policy type anchor: `ClinicalSourceLevel`, `CanonicalityStatus`, `ImagingInputPolicy`, `ScopeBoundarySignalCategory` in `src/core/clinical-safety/types.ts`.
+
 ## 2026-05-13 — v1.4
 
 - Added Principio Sócrates: AiduxCare amplifies clinical reasoning instead of replacing clinician judgment.

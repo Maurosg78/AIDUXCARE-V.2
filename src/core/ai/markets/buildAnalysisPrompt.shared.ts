@@ -223,6 +223,26 @@ export const validatePatientContext = (
   return contextoPaciente;
 };
 
+// ENGINEERING.md §1.7 — Diagnostic Imaging Scope Boundary
+// Marker written by extractScannedPDFWithGemini() in FileProcessorService.ts
+const IMAGING_SOURCE_MARKER = '[DOCUMENTO ESCANEADO';
+
+// Canonical safety guard applied when attachment content is imaging-derived or OCR-derived.
+// Per §1.7: AI is not authorized to interpret diagnostic images or generate red flags from visual descriptions.
+const IMAGING_SCOPE_BOUNDARY_INSTRUCTIONS = `[LÍMITE DE ALCANCE — IMAGEN CLÍNICA O DOCUMENTO ESCANEADO]
+Este contenido proviene de una imagen diagnóstica o PDF escaneado procesado por OCR. Restricciones obligatorias:
+- Extrae ÚNICAMENTE información explícitamente escrita en el texto: nombres de medicamentos con dosis y vía si están escritos, diagnósticos médicos si están escritos, conclusiones de informe si están escritas, recomendaciones médicas si están escritas.
+- NO generes red flags a partir de descripciones visuales o inferencias visuales automáticas.
+- NO interpretes imágenes diagnósticas.
+- NO contradigas ni anules el informe médico o radiológico escrito.
+- Si el contenido visual parece clínicamente relevante, formula únicamente como "requiere revisión por profesional competente", nunca como hallazgo clínico.`;
+
+function isImagingDerivedAttachment(attachment: ClinicalAttachment): boolean {
+  const byMimeType = attachment.fileType.startsWith('image/');
+  const byOcrMarker = attachment.extractedText?.includes(IMAGING_SOURCE_MARKER) ?? false;
+  return byMimeType || byOcrMarker;
+}
+
 const buildAttachmentsSection = (attachments: ClinicalAttachment[] | undefined, copy: AttachmentCopy): string => {
   if (!attachments || attachments.length === 0) {
     return '';
@@ -242,16 +262,28 @@ const buildAttachmentsSection = (attachments: ClinicalAttachment[] | undefined, 
 
     if (attachment.extractedText) {
       section += `\n${copy.extractedLabel}\n\`\`\`\n${attachment.extractedText}\n\`\`\`\n\n`;
-      section += `${copy.analysisLabel}\n`;
-      section += `${copy.referralLine}\n`;
-      section += `${copy.findingsLine}\n`;
-      section += `${copy.contraindicationsLine}\n`;
-      section += `${copy.correlationLine}\n`;
-      section += `${copy.discrepancyLine}\n`;
-      section += `\n${copy.medicationLabel}\n`;
-      section += `${copy.medicationLineOne}\n`;
-      section += `${copy.medicationLineTwo}\n`;
-      section += `${copy.medicationLineThree}\n\n`;
+
+      if (isImagingDerivedAttachment(attachment)) {
+        // §1.7: apply restricted instruction block — no red flag generation from visual content
+        section += `${IMAGING_SCOPE_BOUNDARY_INSTRUCTIONS}\n`;
+        // Medication extraction is still permitted: explicit written text from scanned documents
+        section += `\n${copy.medicationLabel}\n`;
+        section += `${copy.medicationLineOne}\n`;
+        section += `${copy.medicationLineTwo}\n`;
+        section += `${copy.medicationLineThree}\n\n`;
+      } else {
+        // Standard instruction block for text-layer PDFs and transcript-derived content
+        section += `${copy.analysisLabel}\n`;
+        section += `${copy.referralLine}\n`;
+        section += `${copy.findingsLine}\n`;
+        section += `${copy.contraindicationsLine}\n`;
+        section += `${copy.correlationLine}\n`;
+        section += `${copy.discrepancyLine}\n`;
+        section += `\n${copy.medicationLabel}\n`;
+        section += `${copy.medicationLineOne}\n`;
+        section += `${copy.medicationLineTwo}\n`;
+        section += `${copy.medicationLineThree}\n\n`;
+      }
       return;
     }
 
