@@ -227,20 +227,40 @@ export const validatePatientContext = (
 // Marker written by extractScannedPDFWithGemini() in FileProcessorService.ts
 const IMAGING_SOURCE_MARKER = '[DOCUMENTO ESCANEADO';
 
-// Canonical safety guard applied when attachment content is imaging-derived or OCR-derived.
-// Per §1.7: AI is not authorized to interpret diagnostic images or generate red flags from visual descriptions.
-const IMAGING_SCOPE_BOUNDARY_INSTRUCTIONS = `[LÍMITE DE ALCANCE — IMAGEN CLÍNICA O DOCUMENTO ESCANEADO]
-Este contenido proviene de una imagen diagnóstica o PDF escaneado procesado por OCR. Restricciones obligatorias:
-- Extrae ÚNICAMENTE información explícitamente escrita en el texto: nombres de medicamentos con dosis y vía si están escritos, diagnósticos médicos si están escritos, conclusiones de informe si están escritas, recomendaciones médicas si están escritas.
+// §1.7 Branch A — Scanned written medical report (application/pdf + OCR marker)
+// extractedText is pure OCR of text written by the report author. Explicit fact extraction is required.
+const SCANNED_REPORT_OCR_INSTRUCTIONS = `[INFORME ESCANEADO — TEXTO EXTRAÍDO POR OCR]
+Este contenido es texto extraído automáticamente de un documento médico escaneado. El texto fue escrito por el profesional autor del informe, no generado por visión automática.
+Instrucciones obligatorias:
+- Extrae todos los hechos clínicos explícitamente escritos: medicación con dosis, vía y pauta si están escritas; diagnósticos escritos; duración de síntomas; síntomas urgentes explícitamente escritos; hallazgos de exploración escritos; conclusión del informe; recomendaciones escritas.
+- Atribuye los datos al informe adjunto usando "según informe adjunto" al citar cualquier hallazgo, medicación o recomendación extraída del documento.
+- Si el reconocimiento OCR es incierto o el texto es ilegible, incluye el elemento con requires_review: true en lugar de omitirlo.
+- Correlaciona los hechos escritos del informe con la narrativa verbal del paciente en la transcripción.
+- NO infieras hallazgos a partir del diseño visual, la maquetación o imágenes incrustadas en el documento.
+- Si el informe contiene imágenes diagnósticas incrustadas (RX, RM, ECG), trata únicamente el texto escrito del informe; no interpretes dichas imágenes.`;
+
+// §1.7 Branch B — Diagnostic image file (image/*): AI visual description + OCR merged
+// Content may contain AI visual interpretations. Red flags, key findings, and clinical findings are prohibited.
+const IMAGING_SCOPE_BOUNDARY_INSTRUCTIONS = `[LÍMITE DE ALCANCE — IMAGEN DIAGNÓSTICA]
+Este contenido proviene de una imagen procesada con visión automática. Restricciones obligatorias:
 - NO generes red flags a partir de descripciones visuales o inferencias visuales automáticas.
 - NO interpretes imágenes diagnósticas.
-- NO contradigas ni anules el informe médico o radiológico escrito.
-- Si el contenido visual parece clínicamente relevante, formula únicamente como "requiere revisión por profesional competente", nunca como hallazgo clínico.`;
+- NO incluyas observaciones visuales en key_findings, alert_notes ni recommended_physical_tests como hallazgos clínicos.
+- NO generes recomendaciones educativas ni de tratamiento basadas en interpretación visual.
+- Si el contenido visual parece clínicamente relevante, formula únicamente como "requiere revisión por profesional competente", nunca como hallazgo clínico.
+- Si hay texto explícitamente escrito y legible visible en la imagen, extrae únicamente ese texto escrito.`;
 
-function isImagingDerivedAttachment(attachment: ClinicalAttachment): boolean {
-  const byMimeType = attachment.fileType.startsWith('image/');
-  const byOcrMarker = attachment.extractedText?.includes(IMAGING_SOURCE_MARKER) ?? false;
-  return byMimeType || byOcrMarker;
+// Scanned PDF: application/pdf with OCR marker written by extractScannedPDFWithGemini()
+// extractedText is pure OCR of written text — explicit medical facts must be extracted
+function isScannedReportAttachment(attachment: ClinicalAttachment): boolean {
+  return attachment.fileType === 'application/pdf' &&
+    (attachment.extractedText?.includes(IMAGING_SOURCE_MARKER) ?? false);
+}
+
+// Image file: fileType is image/* — content includes AI visual description + OCR merge
+// Must remain restricted per §1.7: visual descriptions must not become clinical findings
+function isVisualImageAttachment(attachment: ClinicalAttachment): boolean {
+  return attachment.fileType.startsWith('image/');
 }
 
 const buildAttachmentsSection = (attachments: ClinicalAttachment[] | undefined, copy: AttachmentCopy): string => {
@@ -263,16 +283,22 @@ const buildAttachmentsSection = (attachments: ClinicalAttachment[] | undefined, 
     if (attachment.extractedText) {
       section += `\n${copy.extractedLabel}\n\`\`\`\n${attachment.extractedText}\n\`\`\`\n\n`;
 
-      if (isImagingDerivedAttachment(attachment)) {
-        // §1.7: apply restricted instruction block — no red flag generation from visual content
+      if (isScannedReportAttachment(attachment)) {
+        // §1.7 Branch A: scanned written report — full explicit fact extraction, OCR uncertainty handled
+        section += `${SCANNED_REPORT_OCR_INSTRUCTIONS}\n`;
+        section += `\n${copy.medicationLabel}\n`;
+        section += `${copy.medicationLineOne}\n`;
+        section += `${copy.medicationLineTwo}\n`;
+        section += `${copy.medicationLineThree}\n\n`;
+      } else if (isVisualImageAttachment(attachment)) {
+        // §1.7 Branch B: diagnostic image file — strict guard, no red flags or findings from visual content
         section += `${IMAGING_SCOPE_BOUNDARY_INSTRUCTIONS}\n`;
-        // Medication extraction is still permitted: explicit written text from scanned documents
         section += `\n${copy.medicationLabel}\n`;
         section += `${copy.medicationLineOne}\n`;
         section += `${copy.medicationLineTwo}\n`;
         section += `${copy.medicationLineThree}\n\n`;
       } else {
-        // Standard instruction block for text-layer PDFs and transcript-derived content
+        // Standard: text-layer PDF — full analysis with red flags permitted
         section += `${copy.analysisLabel}\n`;
         section += `${copy.referralLine}\n`;
         section += `${copy.findingsLine}\n`;
