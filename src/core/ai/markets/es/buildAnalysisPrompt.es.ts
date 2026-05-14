@@ -157,6 +157,18 @@ REGLAS DE DISTRIBUCIÓN:
 - key_findings: nuevos hallazgos o cambios de estado únicamente.
 - summary: síntesis de evolución, no repetición del caso basal.`;
 
+// §1.7 — Imaging Attribution Rule for Transcript Content
+// Governs how imaging-related content from the clinician's verbal discussion is phrased.
+// Supplements attachment-level guards (SCANNED_REPORT_OCR_INSTRUCTIONS, IMAGING_SCOPE_BOUNDARY_INSTRUCTIONS)
+// which only apply to extractedText. This rule applies to transcript content unconditionally.
+const globalClinicalRules = `[REGLA DE ATRIBUCIÓN — IMÁGENES CLÍNICAS EN TRANSCRIPCIÓN]
+Cuando la transcripción incluya comentarios del profesional sobre imágenes clínicas (radiografías, RM, TAC, ecografías):
+- Conserva la información, pero formula el hallazgo como "Comentado por el profesional durante la sesión: [hallazgo], pendiente de correlación clínica y sin sustituir informe radiológico."
+- NO uses frases como "la radiografía muestra…" o "hallazgos radiológicos…" a menos que provengan de un informe radiológico o médico escrito adjunto.
+- Para hechos procedentes de un informe escrito adjunto: usa "según informe adjunto — [hecho]".
+- Para observaciones generadas automáticamente desde adjuntos image/*: no incluirlas en key_findings, alert_notes, red_flags ni recomendaciones.
+- Medicación explícita presente en texto OCR o informe adjunto (incluyendo Enantyum, dexketoprofeno, intramuscular, IM): incluirla en medications aunque la confianza sea medium o low; marcar requires_review: true si el nombre OCR es incierto en lugar de omitirla.`;
+
 export const buildSpanishAnalysisPrompt = (params: AnalysisPromptParams): string => {
   return buildAnalysisPromptDocument(params, {
     promptHeader,
@@ -167,6 +179,7 @@ export const buildSpanishAnalysisPrompt = (params: AnalysisPromptParams): string
     patientContextLabel: 'Contexto del paciente',
     clinicalInstructionsLabel: 'Instrucciones clínicas',
     transcriptLabel: 'Transcripción',
+    globalClinicalRules,
     attachmentCopy: {
       sectionTitle: '\n## DOCUMENTOS CLÍNICOS ADJUNTOS\n\n',
       attachmentLabel: 'Adjunto',

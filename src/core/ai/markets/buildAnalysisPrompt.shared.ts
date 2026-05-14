@@ -50,6 +50,9 @@ type AnalysisPromptCopy = {
   clinicalInstructionsLabel: string;
   transcriptLabel: string;
   attachmentCopy: AttachmentCopy;
+  // §1.7: Optional global attribution rule for imaging content from transcript.
+  // Provided by markets that need imaging attribution (e.g. ES). Absent = no injection.
+  globalClinicalRules?: string;
 };
 
 const buildCapabilityContext = (profile?: ProfessionalProfile | null): string => {
@@ -358,6 +361,8 @@ export const buildAnalysisPromptDocument = (
   const rawTranscript = params.transcript.trim();
   const transcript = deduplicateTranscript(rawTranscript);
   const patientContext = validatedPatientContext.trim();
+  // §1.7: inject global imaging attribution rule when provided by the market copy
+  const globalRulesSection = copy.globalClinicalRules ? `\n${copy.globalClinicalRules}\n` : '';
 
   return `
 ${copy.promptHeader}${capabilityContext}${professionalContext}${practicePreferencesContext}${visitTypeContext}
@@ -366,7 +371,7 @@ ${patientContext}
 
 [${copy.clinicalInstructionsLabel}]
 ${effectiveInstructions}
-${attachmentsSection}
+${globalRulesSection}${attachmentsSection}
 [${copy.transcriptLabel}]
 ${transcript}
 `.trim();
