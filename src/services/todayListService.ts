@@ -30,6 +30,26 @@ function normalizeItems(raw: TodayQuickItem[]): TodayQuickItem[] {
   });
 }
 
+function sanitizeTodayQuickItems(items: TodayQuickItem[]): TodayQuickItem[] {
+  return items.map((item) => {
+    const sanitized: TodayQuickItem = {
+      patientId: item.patientId,
+      patientName: item.patientName,
+      sessionType: item.sessionType,
+    };
+
+    if (item.resumeSessionId !== undefined) {
+      sanitized.resumeSessionId = item.resumeSessionId;
+    }
+
+    if (item.status !== undefined) {
+      sanitized.status = item.status;
+    }
+
+    return sanitized;
+  });
+}
+
 export async function getTodayList(
   uid: string,
   dateKey: string
@@ -83,8 +103,9 @@ export async function saveTodayList(
   items: TodayQuickItem[]
 ): Promise<void> {
   try {
+    const sanitizedItems = sanitizeTodayQuickItems(items);
     await setDoc(todayListDoc(uid, dateKey), {
-      items,
+      items: sanitizedItems,
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
