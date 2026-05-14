@@ -550,7 +550,7 @@ class SessionService {
           sessionsRef,
           where('userId', '==', userId),
           where('status', '==', status),
-          limit(50)
+          limit(200)
         );
         const snapshot = await getDocs(q);
         snapshot.docs.forEach(d => {
