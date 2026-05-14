@@ -66,6 +66,7 @@ interface SessionData {
   patientName: string;
   patientId: string;
   transcript: string;
+  dateKey?: string;
   sessionDateKey?: string;
   soapNote?: SOAPNote | Record<string, unknown> | null;
   physicalTests?: Array<EvaluationTestEntry | PhysicalExamResult>;
@@ -148,6 +149,10 @@ class SessionService {
 
   private timestampToLocalDateKey(value: unknown): string | null {
     if (value == null) return null;
+    if (typeof value === 'string' && value.trim() !== '') {
+      const parsedTime = Date.parse(value);
+      return Number.isFinite(parsedTime) ? this.localDateKey(new Date(parsedTime)) : null;
+    }
     if (typeof value === 'object' && value !== null && 'toDate' in value) {
       const toDate = (value as Timestamp).toDate;
       if (typeof toDate === 'function') return this.localDateKey(toDate.call(value));
@@ -186,6 +191,10 @@ class SessionService {
     if (typeof explicitSessionDateKey === 'string' && explicitSessionDateKey.trim() !== '') {
       return explicitSessionDateKey;
     }
+    const explicitDateKey = data.dateKey;
+    if (typeof explicitDateKey === 'string' && explicitDateKey.trim() !== '') {
+      return explicitDateKey;
+    }
     const timestampDateKey = this.timestampToLocalDateKey(data.timestamp);
     if (timestampDateKey != null) {
       return timestampDateKey;
@@ -195,6 +204,21 @@ class SessionService {
       return createdAtDateKey;
     }
     return null;
+  }
+
+  private withSessionDateKeys<T extends Record<string, unknown>>(
+    data: T,
+    fallbackData?: Record<string, unknown>
+  ): T & { sessionDateKey: string; dateKey: string } {
+    const resolvedDateKey =
+      this.resolveSessionDateKey(data) ??
+      (fallbackData ? this.resolveSessionDateKey(fallbackData) : null) ??
+      this.localDateKey(new Date());
+    return {
+      ...data,
+      sessionDateKey: resolvedDateKey,
+      dateKey: resolvedDateKey,
+    };
   }
 
   private isTreatmentDecisionItem(value: unknown): value is TreatmentDecisionItem {
@@ -299,11 +323,9 @@ class SessionService {
       
       // ✅ FIX: Clean undefined values before saving to Firestore
       const cleanedSessionData = this.cleanUndefined(sessionData);
-      const sessionDateKey = cleanedSessionData.sessionDateKey;
       
       const newSession = {
-        ...cleanedSessionData,
-        ...(typeof sessionDateKey === 'string' && sessionDateKey.trim() !== '' ? {} : { sessionDateKey: this.localDateKey(new Date()) }),
+        ...this.withSessionDateKeys(cleanedSessionData),
         timestamp: serverTimestamp(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -334,7 +356,6 @@ class SessionService {
       const targetDocId = sessionId;
       const docRef = doc(db, this.COLLECTION_NAME, targetDocId);
       const cleanedSessionData = this.cleanUndefined(sessionData);
-      const requestedSessionDateKey = cleanedSessionData.sessionDateKey;
       const mergeRequested = options?.merge === true;
       const existingDocSnapshot = await getDoc(docRef);
       const targetDocExists = existingDocSnapshot.exists();
@@ -358,8 +379,7 @@ class SessionService {
         if (ownerMismatch || patientMismatch) {
           const sessionsRef = collection(db, this.COLLECTION_NAME);
           const collisionSafeSession = {
-            ...cleanedSessionData,
-            ...(typeof requestedSessionDateKey === 'string' && requestedSessionDateKey.trim() !== '' ? {} : { sessionDateKey: this.localDateKey(new Date()) }),
+            ...this.withSessionDateKeys(cleanedSessionData),
             timestamp: serverTimestamp(),
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
@@ -370,16 +390,16 @@ class SessionService {
         }
       }
       if (mergeRequested) {
+        const existingDocData = targetDocExists ? existingDocSnapshot.data() : undefined;
         const mergePayload = {
-          ...cleanedSessionData,
+          ...this.withSessionDateKeys(cleanedSessionData, existingDocData),
           updatedAt: serverTimestamp(),
         };
         await setDoc(docRef, mergePayload, { merge: true });
         return targetDocId;
       }
       const newSession = {
-        ...cleanedSessionData,
-        ...(typeof requestedSessionDateKey === 'string' && requestedSessionDateKey.trim() !== '' ? {} : { sessionDateKey: this.localDateKey(new Date()) }),
+        ...this.withSessionDateKeys(cleanedSessionData),
         timestamp: serverTimestamp(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -418,7 +438,13 @@ class SessionService {
     try {
       const docRef = doc(db, this.COLLECTION_NAME, sessionId);
       const cleaned = this.cleanUndefined(data);
-      await setDoc(docRef, { ...cleaned, updatedAt: serverTimestamp() }, { merge: true });
+      const existingDocSnapshot = await getDoc(docRef);
+      const existingDocData = existingDocSnapshot.exists() ? existingDocSnapshot.data() : undefined;
+      await setDoc(
+        docRef,
+        { ...this.withSessionDateKeys(cleaned, existingDocData), updatedAt: serverTimestamp() },
+        { merge: true }
+      );
     } catch (error) {
       console.error('Error updating session:', error);
       throw new Error('Failed to update session');
@@ -529,12 +555,14 @@ class SessionService {
         const snapshot = await getDocs(q);
         snapshot.docs.forEach(d => {
           const data = d.data();
+          const normalizedSessionType = this.normalizeSessionKind(data.sessionType);
+          if (normalizedSessionType == null) return;
           const sessionDateKey = this.resolveSessionDateKey(data);
           results.push({
             id: d.id,
             patientId: data.patientId || '',
             patientName: data.patientName || 'Unknown patient',
-            sessionType: data.sessionType || 'followup',
+            sessionType: normalizedSessionType,
             transcript: data.transcript || '',
             status,
             soapStatus: data.soapStatus || undefined,

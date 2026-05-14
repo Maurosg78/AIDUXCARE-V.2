@@ -86,6 +86,25 @@ function getTodayQuickItemScopedKey(dateKey: string, item: TodayQuickItem): stri
   return `${dateKey}::${getTodayQuickItemKey(item)}`;
 }
 
+function getTodayQuickItemSignature(item: TodayQuickItem): string {
+  return [
+    getTodayQuickItemKey(item),
+    item.patientName ?? '',
+    item.resumeSessionId ?? '',
+    item.status ?? '',
+  ].join('::');
+}
+
+function areTodayQuickListsEqual(
+  leftItems: TodayQuickItem[],
+  rightItems: TodayQuickItem[]
+): boolean {
+  if (leftItems.length !== rightItems.length) return false;
+  const leftSignatures = [...leftItems].map(getTodayQuickItemSignature).sort();
+  const rightSignatures = [...rightItems].map(getTodayQuickItemSignature).sort();
+  return leftSignatures.every((signature, index) => signature === rightSignatures[index]);
+}
+
 function mergeTodayQuickItems(
   localItems: TodayQuickItem[],
   incomingItems: TodayQuickItem[]
@@ -211,6 +230,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const removedTodayQuickItemKeysRef = React.useRef(new Set<string>());
   const pendingTodayQuickItemsRef = React.useRef(new Map<string, TodayQuickItem>());
   const hasLocalTodayQuickChangesRef = React.useRef(false);
+  const shouldPersistTodayQuickListRef = React.useRef(false);
   // hasLoadedRef: true once the first onSnapshot for the current dateKey has fired.
   // Prevents the save effect from writing an empty list to Firestore before the load completes.
   const hasLoadedRef = React.useRef(false);
@@ -230,9 +250,14 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const inProgressSessions = useInProgressSessions();
   const { patients, refresh: refreshPatients } = usePatientsList();
 
+  const markTodayQuickListForSave = useCallback(() => {
+    shouldPersistTodayQuickListRef.current = true;
+  }, []);
+
   const trackPendingTodayQuickItem = useCallback((dateKey: string, item: TodayQuickItem) => {
     if (dateKey !== currentDateKeyRef.current) return;
     hasLocalTodayQuickChangesRef.current = true;
+    shouldPersistTodayQuickListRef.current = true;
     if (hasLoadedRef.current) return;
     pendingTodayQuickItemsRef.current.set(getTodayQuickItemKey(item), item);
   }, []);
@@ -271,6 +296,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
     currentDateKeyRef.current = toLocalDateKey(selectedDate);
     pendingTodayQuickItemsRef.current.clear();
     hasLocalTodayQuickChangesRef.current = false;
+    shouldPersistTodayQuickListRef.current = false;
     setTodayQuickList([]);
   }, [selectedDate]);
 
@@ -296,6 +322,9 @@ export const CommandCenterPageSprint3: React.FC = () => {
           hasLocalTodayQuickChangesRef.current || pendingItems.length > 0
             ? mergeTodayQuickItems(filteredItems, pendingItems)
             : filteredItems;
+        if (pendingItems.length > 0) {
+          shouldPersistTodayQuickListRef.current = true;
+        }
         setTodayQuickList(nextItems);
         pendingTodayQuickItemsRef.current.clear();
         hasLocalTodayQuickChangesRef.current = false;
@@ -319,6 +348,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
     if (matchingSessions.length === 0) return;
     setTodayQuickList((prev) => {
       const merged = [...prev];
+      let changed = false;
       for (const session of matchingSessions) {
         const sessionType =
           (session.sessionType as TodayQuickItem['sessionType']) || 'followup';
@@ -332,14 +362,21 @@ export const CommandCenterPageSprint3: React.FC = () => {
             sessionType,
             resumeSessionId: session.id,
           });
+          changed = true;
         } else {
           const currentItem = merged[existingIndex];
           const nextItem = {
             ...currentItem,
             resumeSessionId: session.id,
           };
+          if (getTodayQuickItemSignature(currentItem) !== getTodayQuickItemSignature(nextItem)) {
+            changed = true;
+          }
           merged[existingIndex] = nextItem;
         }
+      }
+      if (changed) {
+        shouldPersistTodayQuickListRef.current = true;
       }
       return merged;
     });
@@ -352,8 +389,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
   useEffect(() => {
     if (!user?.uid) return;
     if (!hasLoadedRef.current) return;
+    if (!shouldPersistTodayQuickListRef.current) return;
     const dateKey = toLocalDateKey(selectedDate);
     if (dateKey !== currentDateKeyRef.current) return;
+    shouldPersistTodayQuickListRef.current = false;
     saveTodayList(user.uid, dateKey, todayQuickList);
   }, [user?.uid, selectedDate, todayQuickList]);
 
@@ -390,6 +429,34 @@ export const CommandCenterPageSprint3: React.FC = () => {
       cancelled = true;
     };
   }, [user?.uid, selectedDate, patients, appointments, inProgressSessions.data, todayQuickList]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    if (!hasLoadedRef.current) return;
+    const dateKey = toLocalDateKey(selectedDate);
+    if (dateKey !== currentDateKeyRef.current) return;
+    const clinicalItems = clinicalDayRows
+      .filter((row) => row.hasSession || row.hasConsultation || row.hasEncounter)
+      .map((row): TodayQuickItem => ({
+        patientId: row.patientId,
+        patientName: row.patientName,
+        sessionType: row.sessionType ?? 'followup',
+        resumeSessionId: row.resumeSessionId,
+      }))
+      .filter((item) => {
+        const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
+        return !removedTodayQuickItemKeysRef.current.has(scopedKey);
+      });
+    if (clinicalItems.length === 0) return;
+    setTodayQuickList((prev) => {
+      const merged = mergeTodayQuickItems(prev, clinicalItems);
+      if (areTodayQuickListsEqual(prev, merged)) {
+        return prev;
+      }
+      shouldPersistTodayQuickListRef.current = true;
+      return merged;
+    });
+  }, [user?.uid, selectedDate, clinicalDayRows]);
 
   useEffect(() => {
     const nextStatusByPatientId = new Map<string, PatientWorkflowStatus>();
@@ -845,7 +912,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
               }
               selectedDate={selectedDate}
               onDateChange={setSelectedDate}
-              onClearList={() => setTodayQuickList([])}
+              onClearList={() => {
+                markTodayQuickListForSave();
+                setTodayQuickList([]);
+              }}
               onDismissIncomplete={handleDismissIncomplete}
               onOpenClinicalRow={handleOpenClinicalDayRow}
               onAddToToday={() => {
@@ -889,6 +959,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
                 const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
                 const targetKey = getTodayQuickItemKey(item);
                 removedTodayQuickItemKeysRef.current.add(scopedKey);
+                markTodayQuickListForSave();
                 setTodayQuickList((prev) => {
                   const updatedList = prev.filter((currentItem) => {
                     const currentKey = getTodayQuickItemKey(currentItem);
