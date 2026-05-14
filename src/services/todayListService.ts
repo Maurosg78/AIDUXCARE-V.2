@@ -87,7 +87,11 @@ export async function saveTodayList(
       items,
       updatedAt: serverTimestamp(),
     });
-  } catch {
-    // silent — list still works from memory
+  } catch (error) {
+    console.warn('[todayListService] saveTodayList failed', {
+      dateKey,
+      itemCount: items.length,
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
 }

@@ -209,6 +209,8 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [, setClinicalDayLoading] = useState(false);
   const previousStatusByPatientIdRef = React.useRef(new Map<string, PatientWorkflowStatus>());
   const removedTodayQuickItemKeysRef = React.useRef(new Set<string>());
+  const pendingTodayQuickItemsRef = React.useRef(new Map<string, TodayQuickItem>());
+  const hasLocalTodayQuickChangesRef = React.useRef(false);
   // hasLoadedRef: true once the first onSnapshot for the current dateKey has fired.
   // Prevents the save effect from writing an empty list to Firestore before the load completes.
   const hasLoadedRef = React.useRef(false);
@@ -227,6 +229,13 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const { appointments, loading: appointmentsLoading, getAppointments } = useAppointmentSchedule();
   const inProgressSessions = useInProgressSessions();
   const { patients, refresh: refreshPatients } = usePatientsList();
+
+  const trackPendingTodayQuickItem = useCallback((dateKey: string, item: TodayQuickItem) => {
+    if (dateKey !== currentDateKeyRef.current) return;
+    hasLocalTodayQuickChangesRef.current = true;
+    if (hasLoadedRef.current) return;
+    pendingTodayQuickItemsRef.current.set(getTodayQuickItemKey(item), item);
+  }, []);
 
   // WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: when arriving from the history view with "New ongoing/assessment" → open Ongoing modal
   useEffect(() => {
@@ -260,6 +269,8 @@ export const CommandCenterPageSprint3: React.FC = () => {
   useEffect(() => {
     hasLoadedRef.current = false;
     currentDateKeyRef.current = toLocalDateKey(selectedDate);
+    pendingTodayQuickItemsRef.current.clear();
+    hasLocalTodayQuickChangesRef.current = false;
     setTodayQuickList([]);
   }, [selectedDate]);
 
@@ -277,8 +288,17 @@ export const CommandCenterPageSprint3: React.FC = () => {
         return !removedTodayQuickItemKeysRef.current.has(scopedKey);
       });
       if (!hasLoadedRef.current) {
-        // First load for this date — replace to avoid carrying items from the previous date.
-        setTodayQuickList(filteredItems);
+        const pendingItems = Array.from(pendingTodayQuickItemsRef.current.values()).filter((item) => {
+          const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
+          return !removedTodayQuickItemKeysRef.current.has(scopedKey);
+        });
+        const nextItems =
+          hasLocalTodayQuickChangesRef.current || pendingItems.length > 0
+            ? mergeTodayQuickItems(filteredItems, pendingItems)
+            : filteredItems;
+        setTodayQuickList(nextItems);
+        pendingTodayQuickItemsRef.current.clear();
+        hasLocalTodayQuickChangesRef.current = false;
       } else {
         // Subsequent updates (remote changes) — merge to preserve transient UI state.
         setTodayQuickList((prev) => mergeTodayQuickItems(prev, filteredItems));
@@ -530,12 +550,15 @@ export const CommandCenterPageSprint3: React.FC = () => {
         if (newPatient) {
           setSelectedPatient(newPatient);
           if (isViewingToday) {
+            const dateKey = toLocalDateKey(selectedDate);
+            const nextItem = {
+              patientId: newPatient.id,
+              patientName: newPatient.fullName || newPatient.firstName || 'Patient',
+              sessionType: 'ongoing' as const,
+            };
+            trackPendingTodayQuickItem(dateKey, nextItem);
             setTodayQuickList((prev) =>
-              addToListSafe(prev, {
-                patientId: newPatient.id,
-                patientName: newPatient.fullName || newPatient.firstName || 'Patient',
-                sessionType: 'ongoing' as const,
-              }),
+              addToListSafe(prev, nextItem),
             );
           }
           setShowOngoingIntake(true);
@@ -547,12 +570,15 @@ export const CommandCenterPageSprint3: React.FC = () => {
         const newPatient = await PatientService.getPatientById(patientId);
         const patientName = newPatient?.fullName || newPatient?.firstName || 'Patient';
         if (isViewingToday) {
+          const dateKey = toLocalDateKey(selectedDate);
+          const nextItem = {
+            patientId,
+            patientName,
+            sessionType: sessionType === 'initial' ? 'initial' as const : 'followup' as const,
+          };
+          trackPendingTodayQuickItem(dateKey, nextItem);
           setTodayQuickList((prev) =>
-            addToListSafe(prev, {
-              patientId,
-              patientName,
-              sessionType: sessionType === 'initial' ? 'initial' : 'followup',
-            }),
+            addToListSafe(prev, nextItem),
           );
         }
         navigate(workflowPath(sessionType, patientId, toLocalDateKey(selectedDate)));
@@ -651,12 +677,15 @@ export const CommandCenterPageSprint3: React.FC = () => {
         selectedDate.getMonth() === new Date().getMonth() &&
         selectedDate.getFullYear() === new Date().getFullYear();
       if (isViewingToday) {
+        const dateKey = toLocalDateKey(selectedDate);
+        const nextItem = {
+          patientId,
+          patientName: patientName || 'Patient',
+          sessionType: 'ongoing' as const,
+        };
+        trackPendingTodayQuickItem(dateKey, nextItem);
         setTodayQuickList((prev) =>
-          addToListSafe(prev, {
-            patientId,
-            patientName: patientName || 'Patient',
-            sessionType: 'ongoing' as const,
-          }),
+          addToListSafe(prev, nextItem),
         );
       }
       navigate(`/workflow?type=followup&patientId=${patientId}`, {
@@ -1023,9 +1052,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
                 patientName: patient.fullName || patient.firstName || 'Patient',
                 sessionType: type,
               };
+              trackPendingTodayQuickItem(dateKey, nextItem);
               setTodayQuickList((prev) => {
                 const updatedList = addToListSafe(prev, nextItem);
-                if (user?.uid) {
+                if (user?.uid && hasLoadedRef.current && dateKey === currentDateKeyRef.current) {
                   void saveTodayList(user.uid, dateKey, updatedList);
                 }
                 return updatedList;
