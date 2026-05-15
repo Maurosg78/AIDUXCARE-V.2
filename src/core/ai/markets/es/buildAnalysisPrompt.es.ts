@@ -124,6 +124,15 @@ REQUISITOS DE PRUEBAS FÍSICAS:
 - Ordénalas por prioridad clínica.
 - Intenta incluir sensibilidad/especificidad sólo si existe fuente fiable.
 - Si no hay fuente fiable, devuelve "unknown".
+- COHERENCIA ANATÓMICA OBLIGATORIA: Los tests recomendados deben ser
+  coherentes con la región anatómica del motivo de consulta principal.
+  Si el motivo de consulta es de miembro inferior (pie, tobillo, rodilla,
+  cadera) no incluyas tests de columna cervical, hombro ni miembro superior
+  salvo que la transcripción mencione explícitamente síntomas en esa región.
+  Si el motivo de consulta es de columna lumbar no incluyas tests cervicales
+  salvo que haya síntomas cervicales documentados. La región del test debe
+  coincidir con la región del problema — no añadas tests de otras regiones
+  por completitud académica.
 - Si la transcripción menciona diagnóstico confirmado por imagen (RMN, ecografía, TAC, radiografía con diagnóstico explícito), prioriza tests funcionales de baseline (movilidad activa/pasiva, fuerza isométrica, goniometría, perimetría) sobre tests diagnósticos de provocación. Incluye los tests de provocación como opcionales con rationale: "Baseline funcional para monitorizar evolución — diagnóstico ya confirmado por imagen."
 `;
 
