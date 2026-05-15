@@ -6906,9 +6906,17 @@ const ProfessionalWorkflowPage = () => {
                             >
                               View last SOAP note →
                             </button>
-                          ) : null}
-                        </span>
-                        {workflowConsentStatus?.hasValidConsent ? (
+	                          ) : null}
+	                        </span>
+	                        {visitType === 'follow-up' && (followUpPatternInsight || followUpContext?.longitudinalSummary) && (
+	                          <div className="w-full mt-1 px-0 py-1.5 rounded-md bg-sky-50 border border-sky-100 flex items-start gap-2">
+	                            <span className="text-sky-400 text-xs mt-0.5 select-none">◈</span>
+	                            <p className="text-xs text-slate-600 leading-snug">
+	                              {followUpPatternInsight?.description || followUpContext?.longitudinalSummary}
+	                            </p>
+	                          </div>
+	                        )}
+	                        {workflowConsentStatus?.hasValidConsent ? (
                           <span className="inline-flex items-center gap-1.5 text-sm text-slate-600 font-apple font-light">
                             <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
                             Consentimiento válido (activo)
