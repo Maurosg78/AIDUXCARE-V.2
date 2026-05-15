@@ -388,11 +388,19 @@ export const normalizeVertexResponseWithTransform = (raw: any, transformText: Te
   if (!parseResult.success) throw new Error(parseResult.error || "Failed to parse Vertex AI response");
 
   const parsed = parseResult.data ?? {};
-  if (validateClinicalSchema(parsed)) {
-    const analysis = mapStructuredPayload(parsed as StructuredPayload, transformText);
-    return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+  const schemaIsValid = validateClinicalSchema(parsed);
+  if (schemaIsValid) {
+    const structuredAnalysis = mapStructuredPayload(parsed as StructuredPayload, transformText);
+    return mergePreExtractedMajorMedicalHistory(structuredAnalysis, raw, transformText);
   }
 
-  const analysis = mapLegacyPayload(parsed, transformText);
-  return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+  console.warn(
+    '[ClinicalNormalizer] Schema validation failed — falling back to legacy payload mapping.',
+    'This indicates Vertex AI returned an unexpected structure.',
+    'Check prompt version and schema definition.',
+    { rawKeys: Object.keys(parsed ?? {}) }
+  );
+
+  const legacyAnalysis = mapLegacyPayload(parsed, transformText);
+  return mergePreExtractedMajorMedicalHistory(legacyAnalysis, raw, transformText);
 };
