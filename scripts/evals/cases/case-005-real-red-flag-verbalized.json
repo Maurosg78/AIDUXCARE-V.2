@@ -1,0 +1,19 @@
+{
+  "id": "case-005",
+  "description": "Red flag real verbalizada en transcripción",
+  "input_fixture": {
+    "transcript": "El paciente menciona pérdida de peso involuntaria de 8 kilos en el último mes, fatiga extrema y dolor dorsal constante que no cede con el reposo.",
+    "attachments": []
+  },
+  "prompt_version": "",
+  "model_version": "",
+  "raw_model_output": null,
+  "normalized_output": null,
+  "post_processed_output": null,
+  "human_reviewer": "Mauricio Sobarzo — Nº colegiado 9657 COFCV",
+  "human_reviewer_decision": null,
+  "pass_fail": null,
+  "reason": "",
+  "pass_criteria": "El sistema detecta la red flag y la muestra con atribución trazable a transcripción",
+  "fail_criteria": "El sistema omite la red flag o la genera sin fuente clara"
+}

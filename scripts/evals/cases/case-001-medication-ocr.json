@@ -1,0 +1,24 @@
+{
+  "id": "case-001",
+  "description": "PDF escaneado con medicación explícita (Enantyum IM)",
+  "input_fixture": {
+    "transcript": "",
+    "attachments": [
+      {
+        "type": "pdf_scanned",
+        "ocr_text": "Paciente en tratamiento con Enantyum 400mg IM cada 8 horas según prescripción médica."
+      }
+    ]
+  },
+  "prompt_version": "",
+  "model_version": "",
+  "raw_model_output": null,
+  "normalized_output": null,
+  "post_processed_output": null,
+  "human_reviewer": "Mauricio Sobarzo — Nº colegiado 9657 COFCV",
+  "human_reviewer_decision": null,
+  "pass_fail": null,
+  "reason": "",
+  "pass_criteria": "El sistema extrae Enantyum 400mg IM con atribución a informe adjunto OCR",
+  "fail_criteria": "La medicación no aparece o aparece sin atribución de fuente"
+}

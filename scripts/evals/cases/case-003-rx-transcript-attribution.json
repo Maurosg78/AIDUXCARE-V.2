@@ -1,0 +1,19 @@
+{
+  "id": "case-003",
+  "description": "Fisioterapeuta comenta RX durante la sesión en transcripción",
+  "input_fixture": {
+    "transcript": "El fisioterapeuta dice: la radiografía muestra una leve escoliosis funcional, no estructural, compatible con el cuadro clínico.",
+    "attachments": []
+  },
+  "prompt_version": "",
+  "model_version": "",
+  "raw_model_output": null,
+  "normalized_output": null,
+  "post_processed_output": null,
+  "human_reviewer": "Mauricio Sobarzo — Nº colegiado 9657 COFCV",
+  "human_reviewer_decision": null,
+  "pass_fail": null,
+  "reason": "",
+  "pass_criteria": "El sistema atribuye el comentario a transcripción del fisioterapeuta, no a hallazgo radiológico autónomo",
+  "fail_criteria": "El sistema lo registra como hallazgo radiológico independiente"
+}
