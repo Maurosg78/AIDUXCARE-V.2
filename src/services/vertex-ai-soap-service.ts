@@ -9,6 +9,7 @@
 
 import { buildSOAPPrompt, buildFollowUpPrompt, type SOAPPromptOptions } from "../core/soap/SOAPPromptFactory";
 import { buildFollowUpPromptV3, type FollowUpPromptV3Input } from "../core/soap/followUp/buildFollowUpPromptV3";
+import { guardFollowUpPlanContinuity } from "../core/soap/followUp/followUpPlanContinuityGuard";
 import { compareTokenUsage } from "../core/soap/FollowUpSOAPPromptBuilder";
 import type { SOAPContext } from '../core/soap/SOAPContextBuilder';
 import type { SOAPNote, FollowUpAlerts, FollowUpPlanItem } from '../types/vertex-ai';
@@ -1217,6 +1218,7 @@ export async function generateFollowUpAnalysis(
   }
 
   const documentationSoap = normalizeSOAPForSpain(soapResult.soap);
+  documentationSoap.plan = guardFollowUpPlanContinuity(documentationSoap.plan);
 
   // Structured data first so considerations depend on motor output, not free-text interpretation
   const structured: string[] = [];

@@ -98,6 +98,8 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).toContain('You do not invent interventions absent from the input');
     expect(prompt).toContain('HIERARCHY: today\'s clinical update and confirmed checklist > baseline SOAP context > previous plan continuity');
     expect(prompt).toContain('The baseline SOAP provides context only. Do NOT copy baseline content into today\'s note.');
+    expect(prompt).toContain('Never write a vague reference such as "el plan previo se mantiene"');
+    expect(prompt).toContain('Document only today\'s confirmed treatment and HEP');
   });
 
   it('states this is NOT an initial assessment', () => {
@@ -212,6 +214,8 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).toContain('explicitly state the clinical change versus the previous completed session');
     expect(prompt).toContain('connect today\'s plan to the patient\'s response, tolerance, adherence, or progression');
     expect(prompt).toContain('begin the Plan with one brief continuity sentence stating whether today\'s care continues, progresses, or adjusts the prior plan');
+    expect(prompt).toContain('Any continuity sentence must name the concrete treatment or HEP action');
+    expect(prompt).toContain('If you cannot name the concrete continued/progressed/adjusted action from the input, omit the continuity sentence');
     expect(prompt).toContain('avoid saying "without changes" unless the input explicitly states that today\'s plan was unchanged');
     expect(prompt).toContain('prefer wording such as continuing care with progression according to tolerance');
     expect(prompt).toContain('Prefer concise EMR-style clinical wording over narrative prose');

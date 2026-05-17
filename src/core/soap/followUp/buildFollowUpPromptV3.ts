@@ -259,6 +259,8 @@ SOURCE OF TRUTH CONSTRAINT:
 - Today's clinical update and confirmed in-clinic checklist govern this note.
 - The baseline SOAP provides context only. Do NOT copy baseline content into today's note.
 - The previous plan provides continuity only. Do NOT copy it unless today's input explicitly changes, continues, progresses, or stops it.
+- Never write a vague reference such as "el plan previo se mantiene", "plan anterior se mantiene", "previous plan is maintained", or "continue previous plan" unless the same Plan section explicitly states the concrete in-clinic actions and HEP items being continued, progressed, adjusted, or stopped.
+- If prior plan details are absent, generic, or not clinically actionable, do not refer to a previous plan. Document only today's confirmed treatment and HEP, or state that the item was not documented today.
 - Do NOT introduce new tests, findings, diagnoses, treatments, or recommendations that are not present in the input data.
 - Longitudinal memory may be used to document change over time, response to prior care, and continuity of the plan.
 - Longitudinal memory must NOT be used to invent undocumented interventions or new diagnoses.
@@ -408,6 +410,8 @@ Update the Plan:
 Reflect progressions or adjustments ONLY if they are clearly documented in the baseline and today's inputs
 When supported by the input, connect today's plan to the patient's response, tolerance, adherence, or progression since the prior session
 If previous plan or longitudinal data is provided, begin the Plan with one brief continuity sentence stating whether today's care continues, progresses, or adjusts the prior plan, and why, using only documented input
+Any continuity sentence must name the concrete treatment or HEP action. Do NOT use standalone references like "El plan previo se mantiene" or "The previous plan is maintained."
+If you cannot name the concrete continued/progressed/adjusted action from the input, omit the continuity sentence.
 If the documented input shows improved pain, function, tolerance, or adherence, avoid saying "without changes" unless the input explicitly states that today's plan was unchanged
 When improvement is documented but no new intervention is listed, prefer wording such as continuing care with progression according to tolerance, rather than implying a static plan
 If current structured HEP adherence is provided, prefer integrating that adherence fact into the continuity sentence rather than appending it as an isolated line
