@@ -18,6 +18,11 @@ import {
 import type { TrajectoryConfidence } from '../core/longitudinal/trajectoryClassifier';
 import type { EncounterLongitudinalSnapshot } from '../core/longitudinal/encounterLongitudinalSnapshot';
 import { getAuth } from 'firebase/auth';
+import type { ClinicalAnalysis } from '@/utils/cleanVertexResponse';
+import {
+  extractLongitudinalSignalsFromClinicalAnalysis,
+  extractLongitudinalSignalsFromTextCandidates,
+} from './longitudinalMemory/extractLongitudinalSignals';
 
 const COLLECTION = 'patient_trajectory_events';
 const MIN_EVENTS_FOR_PATTERN = 5;
@@ -43,6 +48,25 @@ function joinLongitudinalTexts(subjectiveText: string, objectiveText?: string, a
   const definedTextParts = textParts.filter((textPart): textPart is string => typeof textPart === 'string' && textPart.trim().length > 0);
   const joinedText = definedTextParts.join(' ');
   return joinedText;
+}
+
+function mergeLongitudinalSignals(
+  primarySignals: EncounterLongitudinalSnapshot['signals'] = [],
+  secondarySignals: EncounterLongitudinalSnapshot['signals'] = []
+): EncounterLongitudinalSnapshot['signals'] {
+  const mergedSignals = [...primarySignals];
+
+  for (const signal of secondarySignals) {
+    const duplicateExists = mergedSignals.some((existingSignal) => {
+      return existingSignal.signalType === signal.signalType && existingSignal.value === signal.value;
+    });
+
+    if (!duplicateExists) {
+      mergedSignals.push(signal);
+    }
+  }
+
+  return mergedSignals.slice(0, 12);
 }
 
 export function extractRomStatus(text: string): 'improved' | 'stable' | 'decreased' | null {
@@ -318,7 +342,14 @@ export class PatientTrajectoryMemoryService {
   async buildEncounterLongitudinalSnapshot(
     patientId: string,
     subjectiveText: string,
-    options?: { hepAdherenceRate?: number; objectiveText?: string; assessmentText?: string; planText?: string }
+    options?: {
+      hepAdherenceRate?: number;
+      objectiveText?: string;
+      assessmentText?: string;
+      planText?: string;
+      analysisSource?: ClinicalAnalysis | null;
+      sessionId?: string;
+    }
   ): Promise<EncounterLongitudinalSnapshot> {
     const extractedPainScore = extractPainFromSubjective(subjectiveText);
     const painScore = extractedPainScore ?? null;
@@ -341,6 +372,19 @@ export class PatientTrajectoryMemoryService {
         ? ((classification.label === 'stable' ? 'plateau' : classification.label) as TrajectoryLabel)
         : null;
     const trajectoryConfidence = classification?.confidence ?? null;
+    const snapshotTimestamp = Timestamp.now();
+    const vertexSignals =
+      options?.analysisSource && options?.sessionId
+        ? extractLongitudinalSignalsFromClinicalAnalysis(options.analysisSource, options.sessionId, snapshotTimestamp)
+        : [];
+    const soapTextSignals = options?.sessionId
+      ? extractLongitudinalSignalsFromTextCandidates(
+        [subjectiveText, objectiveText ?? '', assessmentText ?? '', planText ?? ''],
+        options.sessionId,
+        snapshotTimestamp
+      )
+      : [];
+    const compactSignals = mergeLongitudinalSignals(vertexSignals, soapTextSignals);
     const snapshot: EncounterLongitudinalSnapshot = {
       painScore,
       hepAdherenceRate,
@@ -351,6 +395,7 @@ export class PatientTrajectoryMemoryService {
       adherenceLevel,
       keyLimitations: undefined,
       alerts: undefined,
+      ...(compactSignals.length > 0 ? { signals: compactSignals } : {}),
     };
     return snapshot;
   }

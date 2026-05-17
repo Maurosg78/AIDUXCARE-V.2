@@ -744,9 +744,9 @@ const ProfessionalWorkflowPage = () => {
 
   const resolveFollowUpClinicalContext = useCallback(async (resolvedPatientId: string, currentAttachments: ClinicalAttachment[] = []) => {
     const service = new FollowUpClinicalContextService();
-    const resolvedContext = await service.resolve(resolvedPatientId, currentAttachments);
+    const resolvedContext = await service.resolve(resolvedPatientId, currentAttachments, sessionIdFromUrl ?? '');
     return resolvedContext;
-  }, []);
+  }, [sessionIdFromUrl]);
 
   // Get patient ID for hooks
   const patientId = patientIdFromUrl || demoPatient.id;
@@ -5974,6 +5974,7 @@ const ProfessionalWorkflowPage = () => {
               objectiveText: o,
               assessmentText: a,
               planText: p,
+              sessionId: activeSessionId,
             });
             const encounterId = await encountersRepo.createEncounterCompleted({
               patientId,
@@ -6051,6 +6052,8 @@ const ProfessionalWorkflowPage = () => {
                 objectiveText: o,
                 assessmentText: a,
                 planText: p,
+                analysisSource: editedAnalysisResults ?? niagaraResults,
+                sessionId: activeSessionId,
               });
               const encounterId = await encountersRepo.createEncounterCompleted({
                 patientId,

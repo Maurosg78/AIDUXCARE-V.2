@@ -3,6 +3,10 @@ import { ensureSpanishClinicalText } from '@/utils/normalizers/es/ensureSpanishC
 import { PatientTrajectoryMemoryService } from './patientTrajectoryMemoryService';
 import { SessionComparisonService, type EncountersComparisonState } from './sessionComparisonService';
 import type { ClinicalAttachment } from './clinicalAttachmentService';
+import {
+  formatLongitudinalSignalsForPrompt,
+  retrievePreviousLongitudinalContext,
+} from './longitudinalMemory';
 
 interface TrajectorySummary {
   label: 'improved' | 'regressed' | 'stable';
@@ -77,7 +81,7 @@ function buildReviewedAttachmentsSummary(attachments: ClinicalAttachment[]): str
 }
 
 export class FollowUpClinicalContextService {
-  async resolve(patientId: string, attachments: ClinicalAttachment[] = []): Promise<FollowUpClinicalContext> {
+  async resolve(patientId: string, attachments: ClinicalAttachment[] = [], currentSessionId = ''): Promise<FollowUpClinicalContext> {
     const comparisonService = new SessionComparisonService();
     const comparisonState = await comparisonService.getEncountersComparisonState(patientId);
     const hasPreviousHistory = comparisonState.isFirstSession === false;
@@ -131,6 +135,21 @@ export class FollowUpClinicalContextService {
       console.warn('[FollowUpClinicalContext] Pattern insight unavailable, continuing without it.', error);
     }
 
+    let preservedSignalsSummary: string | undefined;
+
+    try {
+      const preservedSignals = await retrievePreviousLongitudinalContext(patientId, currentSessionId);
+      preservedSignalsSummary = formatLongitudinalSignalsForPrompt(preservedSignals);
+    } catch (error) {
+      console.warn('[FollowUpClinicalContext] Preserved longitudinal signals unavailable, continuing without them.', error);
+    }
+
+    if (preservedSignalsSummary) {
+      longitudinalSummary = [longitudinalSummary, preservedSignalsSummary]
+        .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        .join('\n\n');
+    }
+
     const reviewedAttachmentsSummary = buildReviewedAttachmentsSummary(attachments);
     const currentSessionCount = comparisonState.currentSessionNumber ?? 0;
     const nextSessionNumber = hasPreviousHistory ? currentSessionCount + 1 : 1;
@@ -152,6 +171,7 @@ export class FollowUpClinicalContextService {
         longitudinalSummary,
         painSeriesSummary,
         patternInsightSummary,
+        preservedSignalsSummary,
       ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0),
     };
 

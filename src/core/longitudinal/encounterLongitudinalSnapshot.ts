@@ -8,6 +8,7 @@ import type {
   UpToThreeItems,
   UpToTwoItems,
 } from './longitudinalExtraction';
+import type { LongitudinalSignal } from '@/types/longitudinal';
 
 /**
  * Minimal structured longitudinal facts persisted per encounter.
@@ -87,4 +88,9 @@ export interface EncounterLongitudinalSnapshot {
   // Persistence rule: safe to auto-persist when facts are persisted.
   // Evidence requirement: primary evidence for guarded facts whenever possible.
   evidence?: LongitudinalEvidenceSet;
+
+  // Purpose: preserve compact clinical continuity signals that may be lost in SOAP compression.
+  // Persistence rule: compact facts only; never raw transcript.
+  // Evidence requirement: extracted from post-processed Vertex analysis or structured clinician input.
+  signals?: LongitudinalSignal[];
 }
