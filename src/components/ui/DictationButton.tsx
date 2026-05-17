@@ -39,8 +39,9 @@ export const DictationButton: React.FC<DictationButtonProps> = ({
 }) => {
   const { i18n, t } = useTranslation();
   const speechLang = getSpeechLang(i18n.language, propLang);
-  const { isAvailable, isDictating, start, stop } = useDictation({ lang: speechLang });
+  const { isAvailable, isDictating, start, stop, error } = useDictation({ lang: speechLang });
   const listeningLabel = t('dictation.listening');
+  const errorLabel = error || title;
   const accumulatedRef = useRef<string>('');
 
   const handleClick = () => {
@@ -66,12 +67,14 @@ export const DictationButton: React.FC<DictationButtonProps> = ({
       type="button"
       onClick={handleClick}
       disabled={disabled}
-      title={isDictating ? listeningLabel : title}
-      aria-label={isDictating ? listeningLabel : title}
+      title={isDictating ? listeningLabel : errorLabel}
+      aria-label={isDictating ? listeningLabel : errorLabel}
       aria-live="polite"
       className={`rounded-lg border transition-colors flex items-center justify-center gap-1.5 min-w-[2.25rem] ${className} ${
         isDictating
           ? 'bg-red-100 border-red-300 text-red-700 px-2.5 py-2'
+          : error
+            ? 'p-2 border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
           : 'p-2 border-slate-300 text-slate-600 hover:bg-slate-50 hover:border-slate-400'
       } disabled:opacity-50 disabled:cursor-not-allowed`}
     >

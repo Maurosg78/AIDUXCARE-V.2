@@ -30,15 +30,25 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
   const recognitionRef = useRef<DictationRecognitionInstance | null>(null);
   const resultCallbackRef = useRef<((text: string) => void) | null>(null);
   const lastInterimRef = useRef<string>('');
+  const keepAliveRef = useRef(false);
+  const restartTimerRef = useRef<number | null>(null);
 
   const isAvailable = !!SpeechRecognitionAPI;
 
+  const clearRestartTimer = useCallback(() => {
+    if (restartTimerRef.current != null) {
+      window.clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
+  }, []);
+
   const stop = useCallback(() => {
+    keepAliveRef.current = false;
+    clearRestartTimer();
     const rec = recognitionRef.current;
     if (rec) {
       try {
         rec.stop();
-        rec.abort();
       } catch {
         // ignore
       }
@@ -47,7 +57,7 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
     resultCallbackRef.current = null;
     lastInterimRef.current = '';
     setIsDictating(false);
-  }, []);
+  }, [clearRestartTimer]);
 
   const start = useCallback(
     (onResult?: (text: string) => void) => {
@@ -62,53 +72,72 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
       resultCallbackRef.current = callback;
       lastInterimRef.current = '';
 
-      const rec = new SpeechRecognitionAPI();
-      recognitionRef.current = rec;
-      rec.continuous = true;
-      rec.interimResults = true;
-      rec.lang = options?.lang ?? 'en-CA';
+      keepAliveRef.current = true;
 
-      rec.onresult = (event: SpeechRecognitionEvent) => {
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          const text = (result[0]?.transcript ?? '').trim();
-          if (!text) continue;
-          if (result.isFinal) {
-            callback?.(text);
-            lastInterimRef.current = '';
-          } else {
-            lastInterimRef.current = text;
+      const startRecognition = () => {
+        if (!SpeechRecognitionAPI || !keepAliveRef.current) return;
+
+        clearRestartTimer();
+        const rec = new SpeechRecognitionAPI();
+        recognitionRef.current = rec;
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.lang = options?.lang ?? 'en-CA';
+
+        rec.onresult = (event: SpeechRecognitionEvent) => {
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const result = event.results[i];
+            const text = (result[0]?.transcript ?? '').trim();
+            if (!text) continue;
+            if (result.isFinal) {
+              resultCallbackRef.current?.(text);
+              lastInterimRef.current = '';
+            } else {
+              lastInterimRef.current = text;
+            }
           }
+        };
+
+        rec.onend = () => {
+          const pending = lastInterimRef.current.trim();
+          if (pending) {
+            resultCallbackRef.current?.(pending);
+            lastInterimRef.current = '';
+          }
+          recognitionRef.current = null;
+
+          if (keepAliveRef.current) {
+            restartTimerRef.current = window.setTimeout(startRecognition, 250);
+            setIsDictating(true);
+            return;
+          }
+
+          resultCallbackRef.current = null;
+          setIsDictating(false);
+        };
+
+        rec.onerror = (e: SpeechRecognitionErrorEvent) => {
+          if (e.error === 'aborted' || e.error === 'no-speech') return;
+          keepAliveRef.current = false;
+          clearRestartTimer();
+          setError(e.error === 'not-allowed' ? 'Microphone access denied.' : `Recognition error: ${e.error}`);
+          recognitionRef.current = null;
+          setIsDictating(false);
+        };
+
+        try {
+          rec.start();
+          setIsDictating(true);
+        } catch (err) {
+          keepAliveRef.current = false;
+          setError(err instanceof Error ? err.message : 'Failed to start dictation.');
+          setIsDictating(false);
         }
       };
 
-      rec.onend = () => {
-        const pending = lastInterimRef.current.trim();
-        if (pending) {
-          resultCallbackRef.current?.(pending);
-          lastInterimRef.current = '';
-        }
-        recognitionRef.current = null;
-        resultCallbackRef.current = null;
-        setIsDictating(false);
-      };
-
-      rec.onerror = (e: SpeechRecognitionErrorEvent) => {
-        if (e.error === 'aborted' || e.error === 'no-speech') return;
-        setError(e.error === 'not-allowed' ? 'Microphone access denied.' : `Recognition error: ${e.error}`);
-        recognitionRef.current = null;
-        setIsDictating(false);
-      };
-
-      try {
-        rec.start();
-        setIsDictating(true);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to start dictation.');
-        setIsDictating(false);
-      }
+      startRecognition();
     },
-    [options?.lang, options?.onResult, stop]
+    [clearRestartTimer, options?.lang, options?.onResult, stop]
   );
 
   useEffect(() => () => stop(), [stop]);
