@@ -8,6 +8,7 @@ import { ensureSpanishClinicalAnalysis } from '../utils/normalizers/es/ensureSpa
 import { lookupEvidence } from '@/core/clinical-evidence/evidenceService';
 import { matchDiagnosis } from '@/core/clinical-evidence/diagnosisMatcher';
 import { prioritizeEvidence } from '@/core/clinical-reasoning/prioritizeEvidence';
+import { applyImagingScopeGuard } from '@/core/clinical-safety/imagingScopeGuard';
 
 type NiagaraProxyPayload = {
   text: string;
@@ -77,21 +78,28 @@ export const useNiagaraProcessor = () => {
       console.log("Response from Vertex:", response);
       console.log("Response text:", response?.text);
       const normalized = normalizeVertexResponse(response, { market: resolvedMarket.market });
+      const guarded = applyImagingScopeGuard(normalized, attachments);
+      if (import.meta.env.DEV && (guarded.removedImagingItems > 0 || guarded.rescuedMedications > 0)) {
+        console.debug('[NiagaraProcessor] Imaging safety post-processing applied', {
+          removedImagingItems: guarded.removedImagingItems,
+          rescuedMedications: guarded.rescuedMedications,
+        });
+      }
       const diagnosisText = orientativeDiagnosis ?? '';
       const diagnosisId = matchDiagnosis(diagnosisText);
       const evidence = diagnosisId ? await lookupEvidence(diagnosisId) : null;
       const evidenceRecommendations = evidence
         ? prioritizeEvidence({
           diagnosisEvidence: evidence,
-          clinicalAnalysis: normalized,
+          clinicalAnalysis: guarded.analysis,
           professionalProfile,
         })
         : null;
 
-      normalized.evidence_recommendations = evidenceRecommendations;
+      guarded.analysis.evidence_recommendations = evidenceRecommendations;
 
       const shouldForceSpanish = resolvedMarket.market === 'ES';
-      const cleaned = shouldForceSpanish ? ensureSpanishClinicalAnalysis(normalized) : normalized;
+      const cleaned = shouldForceSpanish ? ensureSpanishClinicalAnalysis(guarded.analysis) : guarded.analysis;
       console.log("Cleaned response:", cleaned);
       setNiagaraResults(cleaned);
       return cleaned;
