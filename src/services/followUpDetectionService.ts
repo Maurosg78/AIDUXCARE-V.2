@@ -107,35 +107,42 @@ async function checkRecentEpisodes(patientId: string): Promise<{
   try {
     // 1. Check sessions collection (most reliable for visit tracking)
     try {
-      const sessionsRef = collection(db, 'sessions');
-      const sessionsQuery = query(
-        sessionsRef,
-        where('patientId', '==', patientId),
-        orderBy('timestamp', 'desc'),
-        limit(5) // Get last 5 sessions to find most recent
-      );
-      const sessionsSnapshot = await getDocs(sessionsQuery);
-      
-      sessionsSnapshot.docs.forEach(doc => {
-        const data = doc.data();
-        if (data.timestamp) {
-          const visitDate = data.timestamp instanceof Timestamp 
-            ? data.timestamp.toDate() 
-            : data.timestamp?.toDate?.() || new Date(data.timestamp);
-          if (visitDate && !isNaN(visitDate.getTime())) {
-            visitDates.push(visitDate);
+      // WO-FS-QUERY-01: Add ownership filter to align with Firestore rules
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.warn('[FollowUpDetection] User not authenticated, skipping sessions check');
+      } else {
+        const sessionsRef = collection(db, 'sessions');
+        const sessionsQuery = query(
+          sessionsRef,
+          where('patientId', '==', patientId),
+          where('userId', '==', currentUser.uid),
+          orderBy('timestamp', 'desc'),
+          limit(5) // Get last 5 sessions to find most recent
+        );
+        const sessionsSnapshot = await getDocs(sessionsQuery);
+
+        sessionsSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.timestamp) {
+            const visitDate = data.timestamp instanceof Timestamp
+              ? data.timestamp.toDate()
+              : data.timestamp?.toDate?.() || new Date(data.timestamp);
+            if (visitDate && !isNaN(visitDate.getTime())) {
+              visitDates.push(visitDate);
+            }
           }
-        }
-        // Also check createdAt if timestamp not available
-        if (data.createdAt) {
-          const visitDate = data.createdAt instanceof Timestamp 
-            ? data.createdAt.toDate() 
-            : data.createdAt?.toDate?.() || new Date(data.createdAt);
-          if (visitDate && !isNaN(visitDate.getTime())) {
-            visitDates.push(visitDate);
+          // Also check createdAt if timestamp not available
+          if (data.createdAt) {
+            const visitDate = data.createdAt instanceof Timestamp
+              ? data.createdAt.toDate()
+              : data.createdAt?.toDate?.() || new Date(data.createdAt);
+            if (visitDate && !isNaN(visitDate.getTime())) {
+              visitDates.push(visitDate);
+            }
           }
-        }
-      });
+        });
+      }
     } catch (error: any) {
       console.warn('[FollowUpDetection] Error checking sessions:', error?.message);
     }
