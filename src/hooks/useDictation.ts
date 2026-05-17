@@ -24,6 +24,13 @@ const SpeechRecognitionAPI: (new () => DictationRecognitionInstance) | null =
     || (window as unknown as { webkitSpeechRecognition?: new () => DictationRecognitionInstance }).webkitSpeechRecognition
     : null;
 
+const DICTATION_LOG_PREFIX = '[Dictation]';
+
+function logDictation(event: string, metadata?: Record<string, unknown>) {
+  if (typeof console === 'undefined') return;
+  console.info(`${DICTATION_LOG_PREFIX} ${event}`, metadata ?? {});
+}
+
 export function useDictation(options?: { lang?: string; onResult?: (text: string) => void }) {
   const [isDictating, setIsDictating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +39,9 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
   const lastInterimRef = useRef<string>('');
   const keepAliveRef = useRef(false);
   const restartTimerRef = useRef<number | null>(null);
+  const manualStopRef = useRef(false);
+  const sessionIdRef = useRef(0);
+  const restartCountRef = useRef(0);
 
   const isAvailable = !!SpeechRecognitionAPI;
 
@@ -43,6 +53,8 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
   }, []);
 
   const stop = useCallback(() => {
+    const sessionId = sessionIdRef.current;
+    manualStopRef.current = true;
     keepAliveRef.current = false;
     clearRestartTimer();
     const rec = recognitionRef.current;
@@ -57,6 +69,7 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
     resultCallbackRef.current = null;
     lastInterimRef.current = '';
     setIsDictating(false);
+    logDictation('stop', { sessionId });
   }, [clearRestartTimer]);
 
   const start = useCallback(
@@ -72,7 +85,12 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
       resultCallbackRef.current = callback;
       lastInterimRef.current = '';
 
+      sessionIdRef.current += 1;
+      const sessionId = sessionIdRef.current;
+      manualStopRef.current = false;
       keepAliveRef.current = true;
+      restartCountRef.current = 0;
+      logDictation('start-requested', { sessionId, lang: options?.lang ?? 'en-CA' });
 
       const startRecognition = () => {
         if (!SpeechRecognitionAPI || !keepAliveRef.current) return;
@@ -83,6 +101,8 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
         rec.continuous = true;
         rec.interimResults = true;
         rec.lang = options?.lang ?? 'en-CA';
+        const restartCount = restartCountRef.current;
+        logDictation('recognition-starting', { sessionId, restartCount, lang: rec.lang });
 
         rec.onresult = (event: SpeechRecognitionEvent) => {
           for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -90,9 +110,11 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
             const text = (result[0]?.transcript ?? '').trim();
             if (!text) continue;
             if (result.isFinal) {
+              logDictation('result-final', { sessionId, length: text.length });
               resultCallbackRef.current?.(text);
               lastInterimRef.current = '';
             } else {
+              logDictation('result-interim', { sessionId, length: text.length });
               lastInterimRef.current = text;
             }
           }
@@ -100,13 +122,21 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
 
         rec.onend = () => {
           const pending = lastInterimRef.current.trim();
+          const shouldRestart = keepAliveRef.current && !manualStopRef.current;
+          logDictation('end', {
+            sessionId,
+            restartCount: restartCountRef.current,
+            shouldRestart,
+            pendingLength: pending.length,
+          });
           if (pending) {
             resultCallbackRef.current?.(pending);
             lastInterimRef.current = '';
           }
           recognitionRef.current = null;
 
-          if (keepAliveRef.current) {
+          if (shouldRestart) {
+            restartCountRef.current += 1;
             restartTimerRef.current = window.setTimeout(startRecognition, 250);
             setIsDictating(true);
             return;
@@ -117,7 +147,11 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
         };
 
         rec.onerror = (e: SpeechRecognitionErrorEvent) => {
-          if (e.error === 'aborted' || e.error === 'no-speech') return;
+          logDictation('error', { sessionId, error: e.error, restartCount: restartCountRef.current });
+          if (e.error === 'aborted') return;
+          if (e.error === 'no-speech') {
+            return;
+          }
           keepAliveRef.current = false;
           clearRestartTimer();
           setError(e.error === 'not-allowed' ? 'Microphone access denied.' : `Recognition error: ${e.error}`);
@@ -128,10 +162,13 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
         try {
           rec.start();
           setIsDictating(true);
+          logDictation('started', { sessionId, restartCount });
         } catch (err) {
           keepAliveRef.current = false;
-          setError(err instanceof Error ? err.message : 'Failed to start dictation.');
+          const message = err instanceof Error ? err.message : 'Failed to start dictation.';
+          setError(message);
           setIsDictating(false);
+          logDictation('start-failed', { sessionId, message });
         }
       };
 
