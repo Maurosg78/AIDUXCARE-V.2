@@ -1,5 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 
+type MedicationDecisionInput = {
+  id: string;
+  name: string;
+  dose?: string;
+  frequency?: string;
+  state?: string;
+  note?: string;
+};
+
 export const useEditableResults = (initialResults: any) => {
   const [editedResults, setEditedResults] = useState(initialResults);
 
@@ -196,10 +205,70 @@ export const useEditableResults = (initialResults: any) => {
     });
   }, []);
 
+  const addMedicationDecisionToResults = useCallback((medication: MedicationDecisionInput) => {
+    setEditedResults((prev: any) => {
+      if (!prev) return prev;
+
+      const medicationParts = [
+        medication.name,
+        medication.dose,
+        medication.frequency,
+        medication.state ? `estado: ${medication.state}` : undefined,
+        medication.note,
+        'confirmado por fisioterapeuta',
+      ];
+      const medicationText = medicationParts
+        .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+        .join(' · ');
+      const medicationEntry = {
+        medication_data: {
+          original_text: medicationText,
+          normalized_name: medication.name,
+          confidence: 'high',
+          requires_review: false,
+          ...(medication.dose ? { dose: medication.dose } : {}),
+          ...(medication.frequency ? { frequency: medication.frequency } : {}),
+        },
+        source: 'clinician_confirmed',
+        text: medicationText,
+      };
+      const entityEntry = {
+        id: `physio-medication-${medication.id}`,
+        medication_data: medicationEntry.medication_data,
+        source: 'clinician_confirmed',
+        text: medicationText,
+        type: 'medication',
+        custom: true,
+        edited: true,
+      };
+      const existingMedications = Array.isArray(prev.medicacion_actual)
+        ? prev.medicacion_actual
+        : [];
+      const existingEntities = Array.isArray(prev.entities)
+        ? prev.entities
+        : [];
+      const medicationEntityId = `physio-medication-${medication.id}`;
+      const alreadyMerged = existingEntities.some((entity: any) => entity?.id === medicationEntityId);
+
+      if (alreadyMerged) {
+        return prev;
+      }
+
+      const updated = {
+        ...prev,
+        medicacion_actual: [...existingMedications, medicationEntry],
+        entities: [...existingEntities, { ...entityEntry, id: medicationEntityId }],
+      };
+
+      return updated;
+    });
+  }, []);
+
   return {
     editedResults: editedResults || initialResults,
     handleTextChange,
-    addCustomItem
+    addCustomItem,
+    addMedicationDecisionToResults,
   };
 };
 

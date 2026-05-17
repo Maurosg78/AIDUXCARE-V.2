@@ -112,7 +112,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         testsTitle: 'Recommended Physical Tests',
         testsBody: 'Select the assessments you plan to run in the evaluation tab.',
       };
-  const { editedResults, handleTextChange, addCustomItem } = useEditableResults(results);
+  const {
+    editedResults,
+    handleTextChange,
+    addCustomItem,
+    addMedicationDecisionToResults,
+  } = useEditableResults(results);
 
   useEffect(() => {
     onEditedResultsChange?.(editedResults);
@@ -130,7 +135,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     : [];
 
   useEffect(() => {
-    if (visitType !== 'follow-up' || !currentPatientId) return;
+    if (!currentPatientId) return;
 
     let cancelled = false;
 
@@ -144,6 +149,16 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             decision.status === 'active'
         );
         setPhysioAddedMedications(medications);
+        medications.forEach((medication) => {
+          addMedicationDecisionToResults({
+            id: medication.id,
+            name: medication.text,
+            dose: medication.medicationDose,
+            frequency: medication.medicationFrequency,
+            state: medication.medicationState,
+            note: medication.note,
+          });
+        });
       })
       .catch(() => {
         if (cancelled) return;
@@ -153,7 +168,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     return () => {
       cancelled = true;
     };
-  }, [visitType, currentPatientId]);
+  }, [addMedicationDecisionToResults, currentPatientId]);
 
   const handleToggle = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -268,6 +283,14 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         ...(medication.note ? { note: medication.note } : {}),
       });
       setPhysioAddedMedications((prev) => [...prev, saved]);
+      addMedicationDecisionToResults({
+        id: saved.id,
+        name: saved.text,
+        dose: saved.medicationDose,
+        frequency: saved.medicationFrequency,
+        state: saved.medicationState,
+        note: saved.note,
+      });
       setMedicationError(null);
       setIsAddMedicationModalOpen(false);
     } catch (error) {
@@ -599,6 +622,31 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               </div>
             )}
             <div className="space-y-1">
+              {physioAddedMedications.length > 0 && (
+                <div className="mb-3">
+                  <h5 className="mb-2 text-xs font-medium text-slate-500">Confirmada por fisioterapeuta</h5>
+                  <div className="space-y-1">
+                    {physioAddedMedications.map((medication) => (
+                      <div
+                        key={medication.id}
+                        className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-sm font-medium text-slate-800">{medication.text}</span>
+                          <span className="rounded-full bg-white px-2 py-0.5 text-xs text-emerald-700">
+                            Confirmado
+                          </span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+                          {medication.medicationState && <span>{medication.medicationState}</span>}
+                          {medication.medicationDose && <span>{medication.medicationDose}</span>}
+                          {medication.medicationFrequency && <span>{medication.medicationFrequency}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               {identifiedMeds.length > 0 && (
                 <div className="mb-3">
                   <h5 className="mb-2 text-xs font-medium text-slate-500">Medicación identificada</h5>
@@ -645,10 +693,31 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                   </div>
                 </div>
               )}
+              <button
+                type="button"
+                onClick={() => {
+                  setMedicationError(null);
+                  setIsAddMedicationModalOpen(true);
+                }}
+                className="mt-3 inline-flex items-center rounded-lg bg-slate-800 px-3 py-2 text-xs font-medium text-white hover:bg-slate-900"
+              >
+                + Añadir medicamento
+              </button>
+              {medicationError && (
+                <p className="mt-2 text-xs font-medium text-red-700">{medicationError}</p>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      <AddMedicationModal
+        isOpen={isAddMedicationModalOpen}
+        onConfirm={(medication) => {
+          void handleAddMedication(medication);
+        }}
+        onCancel={() => setIsAddMedicationModalOpen(false)}
+      />
 
       {/* Recommended Physical Tests */}
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
