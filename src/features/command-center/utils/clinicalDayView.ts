@@ -242,7 +242,10 @@ export async function buildClinicalDayView(
       const sessionStatus = normalizeSessionStatus(session?.status);
       const consultationSoapStatus = normalizeSoapStatus(consultation?.status ?? null);
       const sessionSoapStatus = normalizeSoapStatus(session?.soapStatus ?? null);
-      const soapStatus = consultationSoapStatus ?? sessionSoapStatus;
+      const quickItemSoapStatus = quickItem?.status === 'documented' || quickItem?.status === 'done'
+        ? 'finalized'
+        : null;
+      const soapStatus = consultationSoapStatus ?? sessionSoapStatus ?? quickItemSoapStatus;
       const encounterStatus = encounter?.status;
       const encounterClosed =
         encounterStatus === 'completed' ||

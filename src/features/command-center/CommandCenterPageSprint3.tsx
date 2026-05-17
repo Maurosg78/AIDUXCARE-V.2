@@ -739,27 +739,32 @@ export const CommandCenterPageSprint3: React.FC = () => {
     (patientId: string, baselineSOAP?: { subjective: string; objective: string; assessment: string; plan: string }, patientName?: string) => {
       setShowOngoingIntake(false);
       setSelectedPatient(null);
-      const isViewingToday =
-        selectedDate.getDate() === new Date().getDate() &&
-        selectedDate.getMonth() === new Date().getMonth() &&
-        selectedDate.getFullYear() === new Date().getFullYear();
-      if (isViewingToday) {
-        const dateKey = toLocalDateKey(selectedDate);
-        const nextItem = {
-          patientId,
-          patientName: patientName || 'Patient',
-          sessionType: 'ongoing' as const,
-        };
-        trackPendingTodayQuickItem(dateKey, nextItem);
-        setTodayQuickList((prev) =>
-          addToListSafe(prev, nextItem),
+      const dateKey = toLocalDateKey(selectedDate);
+      const completedItem = {
+        patientId,
+        patientName: patientName || 'Patient',
+        sessionType: 'ongoing' as const,
+        status: 'documented' as const,
+      };
+      trackPendingTodayQuickItem(dateKey, completedItem);
+      setTodayQuickList((prev) => {
+        const existingIndex = prev.findIndex(
+          (item) => item.patientId === patientId && item.sessionType === 'ongoing'
         );
-      }
+        const updatedList =
+          existingIndex >= 0
+            ? prev.map((item, index) => index === existingIndex ? { ...item, ...completedItem } : item)
+            : addToListSafe(prev, completedItem);
+        if (user?.uid && hasLoadedRef.current && dateKey === currentDateKeyRef.current) {
+          void saveTodayList(user.uid, dateKey, updatedList);
+        }
+        return updatedList;
+      });
       navigate(`/workflow?type=followup&patientId=${patientId}`, {
         state: baselineSOAP ? { baselineFromOngoing: baselineSOAP } : undefined,
       });
     },
-    [selectedDate, navigate]
+    [addToListSafe, navigate, selectedDate, trackPendingTodayQuickItem, user?.uid]
   );
 
   const summaryAwaitingDocumentationRows = clinicalDayRows.filter(
