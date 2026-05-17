@@ -153,6 +153,32 @@ describe('ClinicalStateService', () => {
       expect(state.baselineSOAP?.plan).toBe('P');
       expect(state.baselineSOAP?.encounterId).toBe('session-1');
     });
+
+    it('falls back to notes when activeBaselineId points to a missing baseline', async () => {
+      mockGetPatientById.mockResolvedValue({ id: 'p-broken-pointer', activeBaselineId: 'missing-bl' });
+      mockGetBaselineById.mockResolvedValue(null);
+      mockGetNotesByPatient.mockResolvedValue([
+        {
+          id: 'note-broken-pointer',
+          sessionId: 'session-broken-pointer',
+          soapData: {
+            subjective: 'Fallback S',
+            objective: 'Fallback O',
+            assessment: 'Fallback A',
+            plan: 'Fallback P',
+          },
+          createdAt: new Date().toISOString(),
+        },
+      ]);
+
+      const state = await getClinicalState('p-broken-pointer', 'user-1');
+
+      expect(state.hasBaseline).toBe(true);
+      expect(mockGetBaselineById).toHaveBeenCalledWith('missing-bl');
+      expect(mockGetNotesByPatient).toHaveBeenCalledWith('p-broken-pointer');
+      expect(state.baselineSOAP?.subjective).toBe('Fallback S');
+      expect(state.baselineSOAP?.encounterId).toBe('session-broken-pointer');
+    });
   });
 
   describe('consentimiento válido rehidratado', () => {

@@ -93,8 +93,8 @@ export async function getClinicalState(
 
 /**
  * WO-AUTO-BASELINE-01: Baseline from persisted clinical_baselines (priority) or fallback from last finalized initial SOAP.
- * Legacy: if patient.activeBaselineId exists, use getBaselineById only.
- * Fallback: if no activeBaselineId, use last note from consultations (finalized initial SOAP); optional lazy persist.
+ * Legacy: if patient.activeBaselineId exists, use getBaselineById first.
+ * Fallback: if no usable activeBaselineId, use last note from consultations (finalized initial SOAP); optional lazy persist.
  */
 async function getBaselineSafe(
   patientId: string,
@@ -108,27 +108,26 @@ async function getBaselineSafe(
   // A3: Legacy path — activeBaselineId has priority
   if (patient?.activeBaselineId) {
     const baseline = await getBaselineById(patient.activeBaselineId);
-    if (!baseline) {
-      return { hasBaseline: false };
+    if (baseline) {
+      const snap = baseline.snapshot;
+      const date =
+        baseline.createdAt && typeof (baseline.createdAt as { toDate?: () => Date }).toDate === 'function'
+          ? (baseline.createdAt as { toDate: () => Date }).toDate()
+          : baseline.createdAt instanceof Date
+            ? baseline.createdAt
+            : new Date();
+      return {
+        hasBaseline: true,
+        baselineSOAP: {
+          subjective: snap.keyFindings?.[0] ?? '',
+          objective: (snap.keyFindings?.slice(1) ?? []).join('\n') ?? '',
+          assessment: snap.primaryAssessment ?? '',
+          plan: snap.planSummary ?? '',
+          encounterId: baseline.sourceSoapId ?? baseline.id,
+          date,
+        },
+      };
     }
-    const snap = baseline.snapshot;
-    const date =
-      baseline.createdAt && typeof (baseline.createdAt as { toDate?: () => Date }).toDate === 'function'
-        ? (baseline.createdAt as { toDate: () => Date }).toDate()
-        : baseline.createdAt instanceof Date
-          ? baseline.createdAt
-          : new Date();
-    return {
-      hasBaseline: true,
-      baselineSOAP: {
-        subjective: snap.keyFindings?.[0] ?? '',
-        objective: (snap.keyFindings?.slice(1) ?? []).join('\n') ?? '',
-        assessment: snap.primaryAssessment ?? '',
-        plan: snap.planSummary ?? '',
-        encounterId: baseline.sourceSoapId ?? baseline.id,
-        date,
-      },
-    };
   }
 
   // A1: Fallback — last finalized initial SOAP from consultations
