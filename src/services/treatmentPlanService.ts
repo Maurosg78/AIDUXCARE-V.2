@@ -24,6 +24,7 @@ export interface TreatmentPlan {
   inClinicText?: string;
   homeProgramText?: string;
   acceptedAt: string; // ISO timestamp
+  clinicalDate?: string;
   visitType: 'initial' | 'follow-up';
   modalities?: string[]; // Extracted modalities: TENS, US, Tecar, Infrared, Shockwave
   frequency?: string; // e.g., "3 sessions per week"
@@ -44,6 +45,48 @@ export interface TreatmentReminder {
   visitNumber: number; // 2, 3, 4, etc.
   lastVisitDate?: string;
 }
+
+type TreatmentPlanLookupOptions = {
+  asOfDateKey?: string;
+};
+
+const normalizeDateKey = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+  const parsed = new Date(`${trimmed}T12:00:00`);
+  return Number.isFinite(parsed.getTime()) ? trimmed : null;
+};
+
+const localDateKey = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const dateKeyFromUnknown = (value: unknown): string | null => {
+  if (value == null) return null;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const normalized = normalizeDateKey(value);
+    if (normalized) return normalized;
+    const parsedTime = Date.parse(value);
+    return Number.isFinite(parsedTime) ? localDateKey(new Date(parsedTime)) : null;
+  }
+  if (value instanceof Date) return localDateKey(value);
+  if (typeof value === 'object' && value !== null && 'toDate' in value) {
+    const toDate = (value as { toDate?: () => Date }).toDate;
+    if (typeof toDate === 'function') return localDateKey(toDate.call(value));
+  }
+  return null;
+};
+
+const planDateKey = (plan: TreatmentPlan): string | null => (
+  dateKeyFromUnknown(plan.clinicalDate) ??
+  dateKeyFromUnknown(plan.acceptedAt) ??
+  dateKeyFromUnknown(plan.createdAt) ??
+  dateKeyFromUnknown(plan.updatedAt)
+);
 
 class TreatmentPlanService {
   private COLLECTION_NAME = 'treatment_plans';
@@ -176,7 +219,8 @@ class TreatmentPlanService {
     clinicianId: string,
     planText: string,
     visitType: 'initial' | 'follow-up',
-    soapNote?: any
+    soapNote?: any,
+    options: { clinicalDate?: string } = {}
   ): Promise<string> {
     try {
       const timestampMs = Date.now();
@@ -190,6 +234,7 @@ class TreatmentPlanService {
         : planTextForNormalization;
       const planTextToPersist = normalizedPlanText;
       const structuredPlanFields = this.buildStructuredPlanFields(planTextToPersist);
+      const clinicalDate = normalizeDateKey(options.clinicalDate);
 
       const modalities = this.extractModalities(planTextToPersist);
       const frequency = this.extractFrequency(planTextToPersist);
@@ -221,6 +266,7 @@ class TreatmentPlanService {
         planText: planTextToPersist,
         ...structuredPlanFields,
         acceptedAt: new Date().toISOString(),
+        ...(clinicalDate && { clinicalDate }),
         visitType,
         ...(modalities && modalities.length > 0 && { modalities }),
         ...(frequency && { frequency }),
@@ -255,7 +301,7 @@ class TreatmentPlanService {
    * ✅ PHIPA/PIPEDA Compliance: Only returns plans owned by authenticated user
    * ✅ Uses authorUid to match Firestore security rules
    */
-  async getTreatmentPlan(patientId: string): Promise<TreatmentPlan | null> {
+  async getTreatmentPlan(patientId: string, options: TreatmentPlanLookupOptions = {}): Promise<TreatmentPlan | null> {
     try {
       // ✅ CRITICAL: Get current user for security filter
       const currentUser = auth.currentUser;
@@ -265,13 +311,14 @@ class TreatmentPlanService {
       }
 
       const plansRef = collection(db, this.COLLECTION_NAME);
+      const asOfDateKey = normalizeDateKey(options.asOfDateKey);
       // ✅ CRITICAL FIX: Add authorUid filter to match Firestore rules
       const q = query(
         plansRef,
         where('patientId', '==', patientId),
         where('authorUid', '==', currentUser.uid),  // ✅ Security: Only user's own plans
         orderBy('acceptedAt', 'desc'),
-        limit(1)
+        limit(asOfDateKey ? 50 : 1)
       );
 
       const snapshot = await getDocs(q);
@@ -282,11 +329,24 @@ class TreatmentPlanService {
         return null;
       }
 
-      const doc = snapshot.docs[0];
-      const plan = {
+      const plans = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
-      } as TreatmentPlan;
+      })) as TreatmentPlan[];
+      const plan = asOfDateKey
+        ? plans.find((candidate) => {
+            const sourceDateKey = planDateKey(candidate);
+            return sourceDateKey != null && sourceDateKey <= asOfDateKey;
+          }) ?? null
+        : plans[0] ?? null;
+
+      if (!plan) {
+        console.info('[FOLLOWUP-ASOF] No treatment plan available on or before requested clinical date', {
+          patientId,
+          asOfDateKey,
+        });
+        return null;
+      }
       
       if (import.meta.env.DEV) {
         console.log('[TreatmentPlanService] Loaded treatment plan', {
@@ -322,10 +382,11 @@ class TreatmentPlanService {
    */
   async getTreatmentReminder(
     patientId: string,
-    visitNumber: number
+    visitNumber: number,
+    options: TreatmentPlanLookupOptions = {}
   ): Promise<TreatmentReminder | null> {
     try {
-      const plan = await this.getTreatmentPlan(patientId);
+      const plan = await this.getTreatmentPlan(patientId, options);
       if (!plan || plan.visitType !== 'initial') return null;
 
       // Build reminder text

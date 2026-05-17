@@ -186,6 +186,47 @@ export class SessionComparisonService {
   private readonly COLLECTION_NAME = 'sessions';
   private readonly REGRESSION_THRESHOLD = 0.20; // 20% threshold for regression alerts
 
+  private localDateKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private normalizeDateKey(raw: string | null | undefined): string | null {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+    const parsed = new Date(`${trimmed}T12:00:00`);
+    return Number.isFinite(parsed.getTime()) ? trimmed : null;
+  }
+
+  private dateKeyFromUnknown(value: unknown): string | null {
+    if (value == null) return null;
+    if (typeof value === 'string' && value.trim() !== '') {
+      const normalized = this.normalizeDateKey(value);
+      if (normalized) return normalized;
+      const parsedTime = Date.parse(value);
+      return Number.isFinite(parsedTime) ? this.localDateKey(new Date(parsedTime)) : null;
+    }
+    if (value instanceof Date) return this.localDateKey(value);
+    if (typeof value === 'object' && value !== null && 'toDate' in value) {
+      const toDate = (value as { toDate?: () => Date }).toDate;
+      if (typeof toDate === 'function') return this.localDateKey(toDate.call(value));
+    }
+    return null;
+  }
+
+  private encounterDateKey(encounter: Encounter): string | null {
+    return this.dateKeyFromUnknown(encounter.encounterDate);
+  }
+
+  private isOnOrBeforeDateKey(sourceDateKey: string | null, asOfDateKey?: string): boolean {
+    const normalizedAsOf = this.normalizeDateKey(asOfDateKey);
+    if (!normalizedAsOf) return true;
+    return sourceDateKey != null && sourceDateKey <= normalizedAsOf;
+  }
+
   private noteToSession(note: SavedNote): Session | null {
     const soapData = note.soapData;
     const hasSoapData = soapData && typeof soapData === 'object';
@@ -224,9 +265,14 @@ export class SessionComparisonService {
     };
   }
 
-  private async getConsultationFallbackSessions(patientId: string, limitCount = 100): Promise<Session[]> {
+  private async getConsultationFallbackSessions(patientId: string, limitCount = 100, asOfDateKey?: string): Promise<Session[]> {
     const notes = await PersistenceService.getNotesByPatient(patientId);
-    const limitedNotes = notes.slice(0, limitCount);
+    const limitedNotes = notes
+      .filter((note) => {
+        const sourceDateKey = this.dateKeyFromUnknown(note.clinicalDate) ?? this.dateKeyFromUnknown(note.createdAt);
+        return this.isOnOrBeforeDateKey(sourceDateKey, asOfDateKey);
+      })
+      .slice(0, limitCount);
     const sessions = limitedNotes
       .map((note) => this.noteToSession(note))
       .filter((session): session is Session => session !== null)
@@ -272,11 +318,13 @@ export class SessionComparisonService {
    * WO-SESSION-COMPARISON-HARDENING: Get comparison state from encounters (single source of truth).
    * Orders by encounterDate ascending; only compares when ≥2 encounters, both completed|signed.
    */
-  async getEncountersComparisonState(patientId: string): Promise<EncountersComparisonState> {
+  async getEncountersComparisonState(patientId: string, options: { asOfDateKey?: string } = {}): Promise<EncountersComparisonState> {
     try {
       const encounters = await encountersRepo.getEncountersByPatient(patientId, 100);
       const completed = encounters.filter(
-        (e) => e.status === 'completed' || e.status === 'signed'
+        (e) =>
+          (e.status === 'completed' || e.status === 'signed') &&
+          this.isOnOrBeforeDateKey(this.encounterDateKey(e), options.asOfDateKey)
       );
       const byDateAsc = [...completed].sort((a, b) => {
         const ta = a.encounterDate instanceof Timestamp ? a.encounterDate.toMillis() : (a.encounterDate as unknown as { toMillis?: () => number }).toMillis?.() ?? new Date(a.encounterDate as unknown as number).getTime();
@@ -285,7 +333,7 @@ export class SessionComparisonService {
       });
 
       if (byDateAsc.length < 2) {
-        const consultationSessions = await this.getConsultationFallbackSessions(patientId, 100);
+        const consultationSessions = await this.getConsultationFallbackSessions(patientId, 100, options.asOfDateKey);
         if (consultationSessions.length >= 2) {
           const previousSession = consultationSessions[consultationSessions.length - 2];
           const currentSession = consultationSessions[consultationSessions.length - 1];
@@ -347,12 +395,14 @@ export class SessionComparisonService {
    * Last N pain values from completed encounters (oldest → newest). Keeps prompt compact.
    * Use maxPoints = 3 for "Pain series: 6 → 5 → 4".
    */
-  async getLastNPainSeries(patientId: string, maxPoints: number): Promise<number[]> {
+  async getLastNPainSeries(patientId: string, maxPoints: number, options: { asOfDateKey?: string } = {}): Promise<number[]> {
     if (maxPoints < 1) return [];
     try {
       const encounters = await encountersRepo.getEncountersByPatient(patientId, 100);
       const completed = encounters.filter(
-        (e) => e.status === 'completed' || e.status === 'signed'
+        (e) =>
+          (e.status === 'completed' || e.status === 'signed') &&
+          this.isOnOrBeforeDateKey(this.encounterDateKey(e), options.asOfDateKey)
       );
       const byDateAsc = [...completed].sort((a, b) => {
         const ta = a.encounterDate instanceof Timestamp ? a.encounterDate.toMillis() : (a.encounterDate as unknown as { toMillis?: () => number }).toMillis?.() ?? new Date(a.encounterDate as unknown as number).getTime();
@@ -373,7 +423,7 @@ export class SessionComparisonService {
         return series;
       }
 
-      const consultationSessions = await this.getConsultationFallbackSessions(patientId, 100);
+      const consultationSessions = await this.getConsultationFallbackSessions(patientId, 100, options.asOfDateKey);
       const consultationSeries = consultationSessions
         .slice(-maxPoints)
         .map((session) => {

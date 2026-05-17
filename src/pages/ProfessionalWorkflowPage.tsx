@@ -744,9 +744,12 @@ const ProfessionalWorkflowPage = () => {
 
   const resolveFollowUpClinicalContext = useCallback(async (resolvedPatientId: string, currentAttachments: ClinicalAttachment[] = []) => {
     const service = new FollowUpClinicalContextService();
-    const resolvedContext = await service.resolve(resolvedPatientId, currentAttachments, sessionIdFromUrl ?? '');
+    const resolvedContext = await service.resolve(resolvedPatientId, currentAttachments, {
+      currentSessionId: sessionIdFromUrl ?? '',
+      asOfDateKey: clinicalSessionDateKey,
+    });
     return resolvedContext;
-  }, [sessionIdFromUrl]);
+  }, [sessionIdFromUrl, clinicalSessionDateKey]);
 
   // Get patient ID for hooks
   const patientId = patientIdFromUrl || demoPatient.id;
@@ -1499,7 +1502,7 @@ const ProfessionalWorkflowPage = () => {
     }
 
     let cancelled = false;
-    getClinicalState(patientId, user.uid)
+    getClinicalState(patientId, user.uid, { asOfDateKey: clinicalSessionDateKey })
       .then(async (state) => {
         if (cancelled) return;
         if (!state?.hasBaseline || !state.baselineSOAP) {
@@ -1532,7 +1535,7 @@ const ProfessionalWorkflowPage = () => {
         }
       });
     return () => { cancelled = true; };
-  }, [patientId, user?.uid, sessionTypeFromUrl, workflowRoute?.type, location.state]);
+  }, [patientId, user?.uid, sessionTypeFromUrl, workflowRoute?.type, location.state, clinicalSessionDateKey]);
 
   // ✅ CRITICAL FIX: Auto-navigate to SOAP tab after Niagara analysis for follow-up visits (legacy path only; follow-up now uses SOAP-only, no Niagara)
   useEffect(() => {
@@ -4560,15 +4563,18 @@ const ProfessionalWorkflowPage = () => {
         try {
           const patientId = patientIdFromUrl || demoPatient.id;
 
-          // Load the most recent treatment plan
-          const plan = await treatmentPlanService.getTreatmentPlan(patientId);
+          // Load the most recent treatment plan available as of this clinical date.
+          const plan = await treatmentPlanService.getTreatmentPlan(patientId, {
+            asOfDateKey: clinicalSessionDateKey,
+          });
           if (plan) {
             setPreviousTreatmentPlan(plan);
 
             // Also load reminder for backward compatibility
             const reminder = await treatmentPlanService.getTreatmentReminder(
               patientId,
-              visitCount.data ? visitCount.data + 1 : 2
+              visitCount.data ? visitCount.data + 1 : 2,
+              { asOfDateKey: clinicalSessionDateKey }
             );
             if (reminder) {
               setTreatmentReminder(reminder.reminderText);
@@ -4586,7 +4592,7 @@ const ProfessionalWorkflowPage = () => {
       setTreatmentReminder(null);
       setPreviousTreatmentPlan(null);
     }
-  }, [visitType, patientIdFromUrl, visitCount.data]);
+  }, [visitType, patientIdFromUrl, visitCount.data, clinicalSessionDateKey]);
 
   useEffect(() => {
     if (visitType !== 'follow-up') {
@@ -4603,7 +4609,7 @@ const ProfessionalWorkflowPage = () => {
 
     let cancelled = false;
     sessionService
-      .getLatestFinalizedTreatmentDecision(patientId, userId)
+      .getLatestFinalizedTreatmentDecision(patientId, userId, { asOfDateKey: clinicalSessionDateKey })
       .then((decision) => {
         if (cancelled) {
           return;
@@ -4620,7 +4626,7 @@ const ProfessionalWorkflowPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [visitType, patientIdFromUrl, user?.uid]);
+  }, [visitType, patientIdFromUrl, user?.uid, clinicalSessionDateKey]);
 
   /** Stable Firestore doc id for HEP compliance (same day + patient + baseline → survives full reload). */
   const hepSessionKey = useMemo(() => {
@@ -4779,7 +4785,9 @@ const ProfessionalWorkflowPage = () => {
   const handlePlanCreated = async () => {
     try {
       const patientId = patientIdFromUrl || demoPatient.id;
-      const plan = await treatmentPlanService.getTreatmentPlan(patientId);
+      const plan = await treatmentPlanService.getTreatmentPlan(patientId, {
+        asOfDateKey: clinicalSessionDateKey,
+      });
       if (plan) {
         setPreviousTreatmentPlan(plan);
       }
@@ -6290,7 +6298,9 @@ const ProfessionalWorkflowPage = () => {
             patientLabelForTreatmentPlan,
             authorUidForTreatmentPlan,
             finalizedPlanText,
-            visitTypeForTreatmentPlan
+            visitTypeForTreatmentPlan,
+            undefined,
+            { clinicalDate: clinicalSessionDateKey }
           );
           console.log('[Workflow] Treatment plan saved for reminders');
         }

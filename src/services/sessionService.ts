@@ -206,6 +206,21 @@ class SessionService {
     return null;
   }
 
+  private normalizeDateKey(raw: string | null | undefined): string | null {
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+    const parsed = new Date(`${trimmed}T12:00:00`);
+    return Number.isFinite(parsed.getTime()) ? trimmed : null;
+  }
+
+  private isSessionOnOrBeforeDate(data: Record<string, unknown>, asOfDateKey?: string): boolean {
+    const normalizedAsOf = this.normalizeDateKey(asOfDateKey);
+    if (!normalizedAsOf) return true;
+    const sourceDateKey = this.resolveSessionDateKey(data);
+    return sourceDateKey != null && sourceDateKey <= normalizedAsOf;
+  }
+
   private withSessionDateKeys<T extends Record<string, unknown>>(
     data: T,
     fallbackData?: Record<string, unknown>
@@ -478,7 +493,8 @@ class SessionService {
 
   async getLatestFinalizedTreatmentDecision(
     patientId: string,
-    userId: string
+    userId: string,
+    options: { asOfDateKey?: string } = {}
   ): Promise<TreatmentDecision | null> {
     try {
       const sessionsRef = collection(db, this.COLLECTION_NAME);
@@ -514,6 +530,7 @@ class SessionService {
           if (data.status !== 'completed') return false;
           if (data.soapStatus !== 'finalized') return false;
           if (this.normalizeSessionKind(data.sessionType) !== 'followup') return false;
+          if (!this.isSessionOnOrBeforeDate(data, options.asOfDateKey)) return false;
           return this.isTreatmentDecision(data.treatmentDecision);
         })
         .sort((a, b) => {

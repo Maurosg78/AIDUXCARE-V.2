@@ -35,6 +35,11 @@ export interface FollowUpClinicalContext {
   sourceBuckets: FollowUpSourceBuckets;
 }
 
+type FollowUpClinicalContextOptions = {
+  asOfDateKey?: string;
+  currentSessionId?: string;
+};
+
 function classifyTrajectoryFromTwoPoints(previousPain?: number, currentPain?: number): TrajectorySummary | undefined {
   if (previousPain == null || currentPain == null) {
     return undefined;
@@ -81,9 +86,20 @@ function buildReviewedAttachmentsSummary(attachments: ClinicalAttachment[]): str
 }
 
 export class FollowUpClinicalContextService {
-  async resolve(patientId: string, attachments: ClinicalAttachment[] = [], currentSessionId = ''): Promise<FollowUpClinicalContext> {
+  async resolve(
+    patientId: string,
+    attachments: ClinicalAttachment[] = [],
+    currentSessionIdOrOptions: string | FollowUpClinicalContextOptions = ''
+  ): Promise<FollowUpClinicalContext> {
+    const options: FollowUpClinicalContextOptions =
+      typeof currentSessionIdOrOptions === 'string'
+        ? { currentSessionId: currentSessionIdOrOptions }
+        : currentSessionIdOrOptions;
+    const currentSessionId = options.currentSessionId ?? '';
     const comparisonService = new SessionComparisonService();
-    const comparisonState = await comparisonService.getEncountersComparisonState(patientId);
+    const comparisonState = await comparisonService.getEncountersComparisonState(patientId, {
+      asOfDateKey: options.asOfDateKey,
+    });
     const hasPreviousHistory = comparisonState.isFirstSession === false;
 
     let longitudinalSummary: string | undefined;
@@ -110,7 +126,9 @@ export class FollowUpClinicalContextService {
       trajectoryConfidence = trajectoryFromComparison?.confidence ?? undefined;
     }
 
-    const painSeries = await comparisonService.getLastNPainSeries(patientId, 3);
+    const painSeries = await comparisonService.getLastNPainSeries(patientId, 3, {
+      asOfDateKey: options.asOfDateKey,
+    });
     const hasPainSeries = painSeries.length >= 2;
     const painSeriesSummary = hasPainSeries ? painSeries.join(' → ') : undefined;
 
@@ -138,7 +156,9 @@ export class FollowUpClinicalContextService {
     let preservedSignalsSummary: string | undefined;
 
     try {
-      const preservedSignals = await retrievePreviousLongitudinalContext(patientId, currentSessionId);
+      const preservedSignals = await retrievePreviousLongitudinalContext(patientId, currentSessionId, {
+        asOfDateKey: options.asOfDateKey,
+      });
       preservedSignalsSummary = formatLongitudinalSignalsForPrompt(preservedSignals);
     } catch (error) {
       console.warn('[FollowUpClinicalContext] Preserved longitudinal signals unavailable, continuing without them.', error);

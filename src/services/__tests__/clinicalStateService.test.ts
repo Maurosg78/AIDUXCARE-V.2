@@ -29,7 +29,9 @@ const mockGetNotesByPatient = vi.fn< (patientId: string) => Promise<Array<{
   sessionId: string;
   soapData: { subjective: string; objective: string; assessment: string; plan: string };
   createdAt: string;
+  clinicalDate?: string;
 }>> >();
+const mockGetNoteById = vi.fn();
 const mockCreateBaseline = vi.fn< () => Promise<string> >();
 
 vi.mock('../patientService', () => ({
@@ -47,6 +49,7 @@ vi.mock('../clinicalBaselineService', () => ({
 vi.mock('../PersistenceService', () => ({
   PersistenceService: {
     getNotesByPatient: (patientId: string) => mockGetNotesByPatient(patientId),
+    getNoteById: (noteId: string) => mockGetNoteById(noteId),
   },
 }));
 
@@ -95,6 +98,7 @@ describe('ClinicalStateService', () => {
     });
     mockIsFirstSession.mockResolvedValue(false);
     mockGetNotesByPatient.mockResolvedValue([]);
+    mockGetNoteById.mockResolvedValue(null);
     mockCreateBaseline.mockResolvedValue('auto-baseline-id');
   });
 
@@ -178,6 +182,62 @@ describe('ClinicalStateService', () => {
       expect(mockGetNotesByPatient).toHaveBeenCalledWith('p-broken-pointer');
       expect(state.baselineSOAP?.subjective).toBe('Fallback S');
       expect(state.baselineSOAP?.encounterId).toBe('session-broken-pointer');
+    });
+
+    it('does not hydrate a future active baseline for a historical follow-up', async () => {
+      mockGetPatientById.mockResolvedValue({ id: 'p-asof', activeBaselineId: 'future-bl' });
+      mockGetBaselineById.mockResolvedValue({
+        ...makePersistedBaseline('p-asof'),
+        id: 'future-bl',
+        sourceSoapId: 'future-note',
+        createdAt: new Date('2026-05-17T10:00:00'),
+      });
+      mockGetNoteById.mockResolvedValue({
+        id: 'future-note',
+        clinicalDate: '2026-05-17',
+        createdAt: '2026-05-17T10:00:00.000Z',
+      });
+      mockGetNotesByPatient.mockResolvedValue([]);
+
+      const state = await getClinicalState('p-asof', 'user-1', { asOfDateKey: '2026-05-13' });
+
+      expect(state.hasBaseline).toBe(false);
+    });
+
+    it('selects the latest consultation note available as of the historical follow-up date', async () => {
+      mockGetPatientById.mockResolvedValue({ id: 'p-asof-fallback' });
+      mockGetNotesByPatient.mockResolvedValue([
+        {
+          id: 'future-note',
+          sessionId: 'future-session',
+          clinicalDate: '2026-05-17',
+          soapData: {
+            subjective: 'Future S',
+            objective: 'Future O',
+            assessment: 'Future A',
+            plan: 'Future P',
+          },
+          createdAt: '2026-05-17T10:00:00.000Z',
+        },
+        {
+          id: 'valid-note',
+          sessionId: 'valid-session',
+          clinicalDate: '2026-05-13',
+          soapData: {
+            subjective: 'Valid S',
+            objective: 'Valid O',
+            assessment: 'Valid A',
+            plan: 'Valid P',
+          },
+          createdAt: '2026-05-17T09:00:00.000Z',
+        },
+      ]);
+
+      const state = await getClinicalState('p-asof-fallback', 'user-1', { asOfDateKey: '2026-05-13' });
+
+      expect(state.hasBaseline).toBe(true);
+      expect(state.baselineSOAP?.subjective).toBe('Valid S');
+      expect(state.baselineSOAP?.encounterId).toBe('valid-session');
     });
   });
 
