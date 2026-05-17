@@ -1,5 +1,14 @@
 # ENGINEERING.md Changelog
 
+## 2026-05-17 — v1.6
+
+- Added §1.12 Clinical Scope Policy — Imaging Analysis.
+- Established canonical physiotherapy rule: AiduxCare does not visually interpret diagnostic images for physiotherapy.
+- Distinguished permitted source types: written imaging reports/OCR, clinician transcript comments and objective lab values with mandatory attribution.
+- Distinguished prohibited source type: diagnostic image visual content cannot generate diagnosis, red flags, treatment, objective findings, key findings or recommended tests.
+- Documented deterministic enforcement requirement: prompts may describe the rule, but source classification, post-processing guards and attribution checks enforce it before output reaches SOAP, clinical decisions, memory or Socratic context.
+- Added official scope references: BOE RD 1001/2002, BOE Ley 44/2003 and CPO 11 May 2026 scope expansion communication.
+
 ## 2026-05-14 — v1.5
 
 - Added §1.7 Diagnostic Imaging Scope Boundary: defines four clinical source levels (transcript, text_layer_pdf, ocr_text, image_visual) with distinct trust levels and prompt rules.

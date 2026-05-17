@@ -1,8 +1,8 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.5
-**Fecha:** 2026-05-14
+**Versión:** 1.6
+**Fecha:** 2026-05-17
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
@@ -375,6 +375,82 @@ Restricciones de diseño no negociables para adjuntos de imagen/OCR:
 Implementación vigente: `buildAttachmentsSection()` en `src/core/ai/markets/buildAnalysisPrompt.shared.ts` detecta adjuntos de imagen o PDF escaneado (por `fileType` o por marcador `[DOCUMENTO ESCANEADO`) y aplica el bloque de instrucción restringido en lugar del bloque estándar de análisis diagnóstico.
 
 Tipos de política: `src/core/clinical-safety/types.ts` — `ClinicalSourceLevel`, `CanonicalityStatus`, `ImagingInputPolicy`, `ScopeBoundarySignalCategory`.
+
+**1.12 Clinical Scope Policy — Imaging Analysis**
+
+Canonical rule:
+
+For physiotherapy, AiduxCare does not visually interpret diagnostic images.
+
+This is not a temporary limitation. It is a permanent product rule for this profession unless a future jurisdiction, profession and credential-specific program explicitly authorizes a different scope.
+
+Rationale:
+- ES: BOE RD 1001/2002 and Ley 44/2003 define physiotherapy around assessment, physiotherapeutic diagnosis, treatment through physical means and diagnostic aids for monitoring evolution. They do not authorize autonomous medical interpretation of diagnostic images.
+- CA-ON: CPO scope expansion communication from 11 May 2026 describes a framework in development for qualified physiotherapists to order certain X-rays and diagnostic ultrasound. This reinforces that imaging authority is jurisdiction, credential and profession specific, not a general AiduxCare default.
+
+Source type distinctions:
+
+| Source type | Rule | Allowed use |
+|---|---|---|
+| `diagnostic_image_visual` | Deny for physiotherapy | Register presence only: "diagnostic image attached" |
+| `written_imaging_report` | Allow with attribution | Extract written report text/OCR; requires clinician review |
+| `clinician_transcript_comment` | Allow with attribution | Use what the professional discussed during the session |
+| `lab_report_values` | Allow with scope limits | Safety context, dosing tolerance, fatigue, risk and contraindications; never autonomous medical diagnosis |
+
+Forbidden outputs from diagnostic image visual content:
+- `diagnosis_from_image`
+- `red_flag_from_image`
+- `treatment_from_image`
+- `objective_finding_from_image`
+- `key_finding_from_image`
+- `recommended_test_from_image`
+
+Required attribution:
+- Written imaging report: "Según informe adjunto..." / "According to attached report..."
+- Clinician transcript comment: "Comentado por el profesional durante la sesión..." / "Commented by the professional during the session..."
+- Lab report values: "Según valores analíticos adjuntos..." / "According to attached lab values..."
+
+Architecture:
+
+```typescript
+type ClinicalScopePolicy = {
+  country: 'ES' | 'CA';
+  jurisdiction: 'ES-ES' | 'CA-ON';
+  profession: 'physiotherapist';
+
+  canInterpretDiagnosticImages: false;
+  canUseWrittenRadiologyReport: true;
+  canDocumentPatientProvidedImage: true;
+  canExtractLabValues: true;
+  requiresSourceAttribution: true;
+
+  forbiddenOutputs: [
+    'diagnosis_from_image',
+    'red_flag_from_image',
+    'treatment_from_image',
+    'objective_finding_from_image',
+    'key_finding_from_image',
+    'recommended_test_from_image'
+  ];
+
+  officialSources: OfficialScopeReference[];
+};
+
+type SourceType =
+  | 'diagnostic_image_visual'
+  | 'written_imaging_report'
+  | 'lab_report_values'
+  | 'clinician_transcript_comment';
+```
+
+Implementation rule:
+
+This policy is deterministic, not prompt-based. Prompt instructions may describe the rule, but enforcement must happen through source classification, post-processing guards and attribution checks before any output becomes SOAP, red flag, medication, clinical decision, memory input or Socratic context.
+
+Official sources:
+- ES: BOE RD 1001/2002 — https://www.boe.es/buscar/act.php?id=BOE-A-2002-19488
+- ES: BOE Ley 44/2003 — https://www.boe.es/buscar/doc.php?id=BOE-A-2003-21340
+- CA-ON: CPO Scope Expansion, 11 May 2026 — https://collegept.org/2026/05/11/government-announces-plans-to-expand-physiotherapy-scope-more-information-to-come/
 
 AiduxCare lo previene haciendo que Sócrates exija participación activa del fisioterapeuta. El sistema no piensa por el profesional. Le muestra lo que vio, con trazabilidad, y le pregunta qué quiere hacer con eso.
 
@@ -951,6 +1027,8 @@ Este documento está fundamentado en los siguientes estándares y publicaciones:
 | 1.2 | 2026-05-06 | Añadida postura regulatoria SaMD/MLMD, auditoría comercial, ISO 14971, IEC 62304, Health Canada MLMD 2026, GMLP, PCCP, SOC 2/ISO 27001/ISO 42001 y ciberseguridad medical-device. |
 | 1.3 | 2026-05-07 | Añadido norte de producto: agentes clínicos auditables, arquitectura agéntica y autoridad clínica explícita del fisioterapeuta. |
 | 1.4 | 2026-05-13 | Añadido Principio Sócrates: AiduxCare amplifica criterio clínico con razonamiento a demanda, trazable y no imperativo. |
+| 1.5 | 2026-05-14 | Añadido límite de alcance diagnóstico para imágenes y documentos escaneados: IA no interpreta imágenes diagnósticas; OCR/informes escritos requieren trazabilidad. |
+| 1.6 | 2026-05-17 | Añadida Clinical Scope Policy — Imaging Analysis: AiduxCare no interpreta visualmente imágenes diagnósticas para fisioterapia; permite informes escritos, comentarios del profesional y valores objetivos con atribución. |
 
 ---
 
