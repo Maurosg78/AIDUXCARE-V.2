@@ -2,6 +2,7 @@
 
 ## 2026-05-18 — v1.7
 
+- Added safety decision under §1.6: AI-generated physical-test suggestions are disabled by default; manual/library/custom tests remain enabled. Reactivation requires explicit feature flag, region/case guardrails, documented clinical evaluation and CTO approval.
 - Añadido §0 Definición de Producto: declaración fundacional de AiduxCare como plataforma documental asistida por IA con memoria longitudinal del paciente y del profesional, y companion thinking como capa de profundidad clínica a demanda.
 - Incorpora las tres capas de producto en orden de profundidad regulatoria y de adopción: documentación → memoria longitudinal → companion thinking.
 - Incluye nota regulatoria inline que distingue el lenguaje de producto del lenguaje de intended use para documentación MDR/Health Canada.

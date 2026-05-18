@@ -154,6 +154,17 @@ AiDux no reemplaza el juicio clínico. Construye la capa de contexto
 que ayuda al profesional a razonar mejor, documentar incertidumbre
 y actuar dentro de su ámbito competencial.
 
+Safety decision — AI-generated physical-test suggestions:
+
+Las sugerencias automáticas de pruebas físicas generadas por IA están
+desactivadas por defecto. Una sugerencia anatómicamente o clínicamente
+inadecuada es peor que no sugerir nada: erosiona la confianza del
+profesional y puede empujar exploraciones fuera de contexto. La entrada
+manual, la selección desde biblioteca por el profesional y los tests
+custom siguen habilitados. La reactivación de sugerencias automáticas
+requiere feature flag explícito, guardrails por región/caso clínico,
+evaluación clínica documentada y aprobación CTO.
+
 Referencias: Topol E. The Paradox of Medical AI Implementation (2026).
 AI agent in healthcare: applications, evaluations, and future (2026).
 DTx approved trends and product characteristics (2026).

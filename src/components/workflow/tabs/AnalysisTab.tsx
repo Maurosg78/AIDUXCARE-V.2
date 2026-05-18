@@ -30,10 +30,16 @@ import { filterTrivialRedFlagEntries, normalizeRedFlagsForDisplay } from '@/util
 import { trackRedFlagAccepted } from '../../../services/analytics/AnalyticsEvents';
 import type { AsyncState } from '../../../features/command-center/hooks/useUserProfile';
 import { RedFlagDismissModal } from '@/components/clinical-decisions/RedFlagDismissModal';
-import { saveClinicalDecision } from '@/core/clinical-decisions/clinicalDecisionService';
+import { AddMedicationModal } from '@/components/clinical-decisions/AddMedicationModal';
+import {
+  getPatientClinicalDecisions,
+  saveClinicalDecision,
+} from '@/core/clinical-decisions/clinicalDecisionService';
 import type {
+  ClinicalDecision,
   ClinicalDecisionReason,
   ClinicalDecisionStatus,
+  MedicationDecisionState,
 } from '@/core/clinical-decisions/types';
 
 /** Strings aligned with TranscriptArea follow-up Vertex CTA (pilot-aware). */
@@ -286,6 +292,9 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   );
   const [dismissedRedFlags, setDismissedRedFlags] = useState<Record<string, DismissedRedFlagEntry>>({});
   const [dismissTarget, setDismissTarget] = useState<{ id: string; text: string } | null>(null);
+  const [isAddMedicationModalOpen, setIsAddMedicationModalOpen] = useState(false);
+  const [physioAddedMedications, setPhysioAddedMedications] = useState<ClinicalDecision[]>([]);
+  const [medicationError, setMedicationError] = useState<string | null>(null);
   const getRedFlagId = (
     flag: string | { label?: string },
     idx: number
@@ -362,6 +371,69 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
     onRedFlagSelectionChange(nextSelectedRedFlagIds);
     onRedFlagDecisionChange?.(nextRedFlagDecisions);
     setDismissTarget(null);
+  };
+
+  useEffect(() => {
+    if (!currentPatientId) return;
+    let cancelled = false;
+
+    getPatientClinicalDecisions(currentPatientId)
+      .then((decisions) => {
+        if (cancelled) return;
+        setPhysioAddedMedications(
+          decisions.filter(
+            (decision) =>
+              decision.kind === 'medication' &&
+              decision.source === 'physio_added' &&
+              decision.status === 'active',
+          ),
+        );
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPhysioAddedMedications([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPatientId]);
+
+  const handleAddMedication = async (medication: {
+    name: string;
+    dose?: string;
+    frequency?: string;
+    state: MedicationDecisionState;
+    note?: string;
+  }) => {
+    if (!currentUserId || !currentSessionId || !currentPatientId) {
+      setMedicationError('No se pudo registrar el medicamento: faltan datos de sesion.');
+      return;
+    }
+
+    try {
+      const saved = await saveClinicalDecision({
+        kind: 'medication',
+        status: 'active',
+        source: 'physio_added',
+        text: medication.name,
+        decidedBy: currentUserId,
+        decidedAt: new Date().toISOString(),
+        sessionId: currentSessionId,
+        patientId: currentPatientId,
+        reason: null,
+        ...(medication.dose ? { medicationDose: medication.dose } : {}),
+        ...(medication.frequency ? { medicationFrequency: medication.frequency } : {}),
+        medicationState: medication.state,
+        ...(medication.note ? { note: medication.note } : {}),
+      });
+      setPhysioAddedMedications((prev) => [...prev, saved]);
+      setMedicationError(null);
+      setIsAddMedicationModalOpen(false);
+    } catch (error) {
+      console.error('[AnalysisTab] Failed to persist medication clinical decision', error);
+      setMedicationError('No se pudo registrar el medicamento. Intenta nuevamente.');
+    }
   };
 
   // WO-FLOW-005: Estado local para focos clínicos editables
@@ -541,6 +613,68 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
           </button>
         </div>
       )}
+
+      {visitType === 'initial' && !(niagaraResults && interactiveResults) && (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800">
+                {isSpainPilot() ? 'Medicación actual' : 'Current medication'}
+              </h3>
+              <p className="mt-1 text-xs text-slate-500">
+                {isSpainPilot()
+                  ? 'Registra medicación manualmente aunque no haya sido detectada por la entrevista.'
+                  : 'Manually record medication even when it was not detected from the interview.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMedicationError(null);
+                setIsAddMedicationModalOpen(true);
+              }}
+              className="inline-flex items-center justify-center rounded-lg bg-slate-800 px-3 py-2 text-xs font-medium text-white hover:bg-slate-900"
+            >
+              + {isSpainPilot() ? 'Añadir medicamento' : 'Add medication'}
+            </button>
+          </div>
+
+          {physioAddedMedications.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {physioAddedMedications.map((medication) => (
+                <div
+                  key={medication.id}
+                  className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-slate-800">{medication.text}</span>
+                    <span className="rounded-full bg-white px-2 py-0.5 text-xs text-emerald-700">
+                      {isSpainPilot() ? 'Confirmado por fisio' : 'Clinician confirmed'}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
+                    {medication.medicationState && <span>{medication.medicationState}</span>}
+                    {medication.medicationDose && <span>{medication.medicationDose}</span>}
+                    {medication.medicationFrequency && <span>{medication.medicationFrequency}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {medicationError && (
+            <p className="mt-2 text-xs font-medium text-red-700">{medicationError}</p>
+          )}
+        </div>
+      )}
+
+      <AddMedicationModal
+        isOpen={isAddMedicationModalOpen}
+        onConfirm={(medication) => {
+          void handleAddMedication(medication);
+        }}
+        onCancel={() => setIsAddMedicationModalOpen(false)}
+      />
 
       {analysisError && (
         <>

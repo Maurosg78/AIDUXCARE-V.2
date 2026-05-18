@@ -25,6 +25,7 @@ const SpeechRecognitionAPI: (new () => DictationRecognitionInstance) | null =
     : null;
 
 const DICTATION_LOG_PREFIX = '[Dictation]';
+let activeDictationStop: (() => void) | null = null;
 
 function logDictation(event: string, metadata?: Record<string, unknown>) {
   if (typeof console === 'undefined') return;
@@ -56,6 +57,9 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
     const sessionId = sessionIdRef.current;
     manualStopRef.current = true;
     keepAliveRef.current = false;
+    if (activeDictationStop === stop) {
+      activeDictationStop = null;
+    }
     clearRestartTimer();
     const rec = recognitionRef.current;
     if (rec) {
@@ -79,7 +83,11 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
         return;
       }
       setError(null);
+      if (activeDictationStop && activeDictationStop !== stop) {
+        activeDictationStop();
+      }
       stop();
+      activeDictationStop = stop;
 
       const callback = onResult ?? options?.onResult ?? null;
       resultCallbackRef.current = callback;
@@ -167,6 +175,10 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
           keepAliveRef.current = false;
           const message = err instanceof Error ? err.message : 'Failed to start dictation.';
           setError(message);
+          recognitionRef.current = null;
+          if (activeDictationStop === stop) {
+            activeDictationStop = null;
+          }
           setIsDictating(false);
           logDictation('start-failed', { sessionId, message });
         }

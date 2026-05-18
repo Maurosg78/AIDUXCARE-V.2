@@ -118,6 +118,7 @@ import {
   getWorkflowEfficiencySummary,
   type WorkflowMetrics
 } from "../services/workflowMetricsService";
+import { isAiPhysicalTestSuggestionsEnabled } from "@/flags";
 import {
   trackSessionStarted,
   trackSessionCompleted,
@@ -141,6 +142,7 @@ import {
 import { lazy, Suspense } from "react";
 import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
+import { HomeProgramBlock } from "../components/workflow/HomeProgramBlock";
 import TranscriptArea from "../components/workflow/TranscriptArea";
 import { derivePlanFromText } from "../utils/derivePlanFromText";
 import {
@@ -380,6 +382,7 @@ const ProfessionalWorkflowPage = () => {
 
   const isSpainPilotActive = isSpainPilot();
   const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
+  const aiPhysicalTestSuggestionsEnabled = isAiPhysicalTestSuggestionsEnabled();
 
   // WO-IA-RESUME-01: Resume Initial Assessment — load existing session, do not create new one
   const resumeFromUrl = searchParams.get('resume') === 'true';
@@ -610,6 +613,7 @@ const ProfessionalWorkflowPage = () => {
   const [homeProgramItems, setHomeProgramItems] = useState<TodayFocusItem[]>([]);
   const [treatmentDecisionConfirmation, setTreatmentDecisionConfirmation] =
     useState<TreatmentDecisionConfirmation | null>(null);
+  const treatmentDecisionConfirmationRef = useRef<TreatmentDecisionConfirmation | null>(null);
   // Follow-up path: baseline for SOAP (no Niagara). Single source of truth — loaded when visitType === 'follow-up'.
   const [followUpClinicalState, setFollowUpClinicalState] = useState<{ baselineSOAP: { subjective: string; objective: string; assessment: string; plan: string } } | null>(null);
   const [previousTreatmentDecision, setPreviousTreatmentDecision] = useState<TreatmentDecision | null>(null);
@@ -623,30 +627,46 @@ const ProfessionalWorkflowPage = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    treatmentDecisionConfirmationRef.current = treatmentDecisionConfirmation;
+  }, [treatmentDecisionConfirmation]);
+
+  useEffect(() => {
+    treatmentDecisionConfirmationRef.current = null;
+    setTreatmentDecisionConfirmation(null);
+  }, [patientIdFromUrl, visitType]);
+
   const markTreatmentDecisionEdited = useCallback(() => {
-    setTreatmentDecisionConfirmation((current) =>
-      current ?? {
+    const next =
+      treatmentDecisionConfirmationRef.current ?? {
         method: 'edited',
         confirmedAt: new Date().toISOString(),
-      }
-    );
+      };
+    treatmentDecisionConfirmationRef.current = next;
+    setTreatmentDecisionConfirmation(next);
+    return next;
   }, []);
 
   const confirmTreatmentDecisionExplicitly = useCallback(() => {
-    setTreatmentDecisionConfirmation({
+    const next: TreatmentDecisionConfirmation = {
       method: 'explicit_confirmed',
       confirmedAt: new Date().toISOString(),
-    });
+    };
+    treatmentDecisionConfirmationRef.current = next;
+    setTreatmentDecisionConfirmation(next);
   }, []);
 
   const handleTreatmentDecisionConfirmationChange = useCallback((confirmed: boolean) => {
     if (confirmed) {
-      setTreatmentDecisionConfirmation({
+      const next: TreatmentDecisionConfirmation = {
         method: 'explicit_confirmed',
         confirmedAt: new Date().toISOString(),
-      });
+      };
+      treatmentDecisionConfirmationRef.current = next;
+      setTreatmentDecisionConfirmation(next);
       return;
     }
+    treatmentDecisionConfirmationRef.current = null;
     setTreatmentDecisionConfirmation(null);
   }, []);
 
@@ -662,6 +682,14 @@ const ProfessionalWorkflowPage = () => {
     (next: TodayFocusItem[]) => {
       markTreatmentDecisionEdited();
       setTodayFocus(next);
+    },
+    [markTreatmentDecisionEdited]
+  );
+
+  const handleHomeProgramItemsChange = useCallback(
+    (next: TodayFocusItem[]) => {
+      markTreatmentDecisionEdited();
+      setHomeProgramItems(next);
     },
     [markTreatmentDecisionEdited]
   );
@@ -2558,9 +2586,12 @@ const ProfessionalWorkflowPage = () => {
     });
 
     if (sharedState.physicalEvaluation?.selectedTests) {
-      const sanitized = sharedState.physicalEvaluation.selectedTests.map(sanitizeEvaluationEntry);
+      const sanitized = sharedState.physicalEvaluation.selectedTests
+        .map(sanitizeEvaluationEntry)
+        .filter((test) => aiPhysicalTestSuggestionsEnabled || test.source !== 'ai');
       console.log(`[PHASE2] Sanitized tests from sharedState:`, {
         sanitizedCount: sanitized.length,
+        aiPhysicalTestSuggestionsEnabled,
       });
 
       // ✅ FIX: Update ref before setting state to prevent re-trigger
@@ -2588,15 +2619,13 @@ const ProfessionalWorkflowPage = () => {
           return currentTests;
         }
 
-        // ✅ PHASE 2 FIX: Don't filter AI-recommended tests by region - they're already validated
-        // Only filter manual tests from wrong region
+        // P0 safety gate: AI-generated physical-test suggestions are disabled by default.
+        // Manual/library/custom tests remain available and region-filtered.
         let testsToSet = sanitized;
         if (detectedCaseRegion) {
           testsToSet = sanitized.filter(test => {
-            // ✅ PHASE 2: Allow AI-recommended tests (source === "ai") regardless of region
-            // Only filter manual/custom tests from wrong region
             if (test.source === "ai") {
-              return true; // Always allow AI-recommended tests
+              return aiPhysicalTestSuggestionsEnabled;
             }
 
             // For manual/custom tests, check region match
@@ -2624,7 +2653,7 @@ const ProfessionalWorkflowPage = () => {
         console.log(`[PHASE2] No selectedTests in sharedState, skipping load`);
       }
     }
-  }, [sharedState.patient?.id, sharedState.physicalEvaluation?.selectedTests, detectedCaseRegion, patientId, resetSharedWorkflowState, sessionData?.patientId]); // ✅ FIX: Added patientId to detect patient changes
+  }, [sharedState.patient?.id, sharedState.physicalEvaluation?.selectedTests, detectedCaseRegion, patientId, resetSharedWorkflowState, sessionData?.patientId, aiPhysicalTestSuggestionsEnabled]); // ✅ FIX: Added patientId to detect patient changes
 
   // Check if this is the first session and handle patient consent via SMS
   // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Reset consent state when patient changes
@@ -3214,25 +3243,21 @@ const ProfessionalWorkflowPage = () => {
         currentTestsCount: evaluationTests.length
       });
 
-      // ✅ PHASE 1: Allow AI-recommended tests even if region doesn't match exactly
-      // The AI has full context and may recommend related tests (e.g., hand/ankle tests
-      // when patient reports pain in those areas during acute episodes)
       const isAIRecommended = entry.source === "ai";
+      if (isAIRecommended && !aiPhysicalTestSuggestionsEnabled) {
+        console.warn('[PHYSICAL-TEST-SUGGESTIONS] AI-generated physical-test suggestion blocked by safety gate', {
+          hasName: Boolean(entry.name),
+          region: entry.region,
+          detectedCaseRegion,
+        });
+        return;
+      }
 
       // ✅ P1.1: Validate region match before adding test, but allow AI recommendations
       if (detectedCaseRegion && entry.region && entry.region !== detectedCaseRegion && !isAIRecommended) {
         console.warn(`[PHASE2] Test "${entry.name}" region (${entry.region}) does not match case region (${detectedCaseRegion}). Skipping.`);
         setAnalysisError(`Test "${entry.name}" is for ${regionLabels[entry.region]}, but this case is for ${regionLabels[detectedCaseRegion]}. Please select tests appropriate for the current case.`);
         return; // Block adding test from different region (unless AI-recommended)
-      }
-
-      // Log when AI-recommended test from different region is allowed
-      if (isAIRecommended && detectedCaseRegion && entry.region && entry.region !== detectedCaseRegion) {
-        console.log(`[PHASE2] Allowing AI-recommended test from different region`, {
-          hasName: Boolean(entry.name),
-          entryRegion: entry.region,
-          detectedCaseRegion,
-        });
       }
 
       // ✅ PHASE 2 FIX: Use functional update to ensure we have latest state
@@ -3260,7 +3285,7 @@ const ProfessionalWorkflowPage = () => {
         return newTests;
       });
     },
-    [persistEvaluation, detectedCaseRegion, normalizeName]
+    [persistEvaluation, detectedCaseRegion, normalizeName, aiPhysicalTestSuggestionsEnabled]
   );
 
   const removeEvaluationTest = useCallback(
@@ -3494,6 +3519,10 @@ const ProfessionalWorkflowPage = () => {
     displayName: string;
     match: MskTestDefinition | null;
   }>>(() => {
+    if (!aiPhysicalTestSuggestionsEnabled) {
+      console.info('[PHYSICAL-TEST-SUGGESTIONS] Disabled by safety gate; AI suggestions hidden.');
+      return [];
+    }
     // ✅ CRITICAL FIX 3: Skip physical tests for follow-up visits
     const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
     const isFollowUpWorkflow = workflowRoute?.type === 'follow-up' || isExplicitFollowUp;
@@ -3537,7 +3566,7 @@ const ProfessionalWorkflowPage = () => {
         };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null); // Filter nulls but keep original indices
-  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion, followUpAlerts]); // ✅ FIX: Add detectedCaseRegion to dependencies
+  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion, followUpAlerts, aiPhysicalTestSuggestionsEnabled]); // ✅ FIX: Add detectedCaseRegion to dependencies
 
   const pendingAiSuggestions = useMemo(() => {
     const toKey = (value: string) => value?.toLowerCase().trim() ?? "";
@@ -3572,7 +3601,9 @@ const ProfessionalWorkflowPage = () => {
     }
     if (!niagaraResults) return null;
 
-    const rawTests = niagaraResults.evaluaciones_fisicas_sugeridas || [];
+    const rawTests = aiPhysicalTestSuggestionsEnabled
+      ? niagaraResults.evaluaciones_fisicas_sugeridas || []
+      : [];
     // ✅ PHASE 2 FIX: Keep original index in physicalTests to match aiSuggestions
     // ✅ FASE 1 FIX: Only show top 5 tests in Phase 1 (AnalysisTab)
     // Tests 6+ will be available in sidebar during Phase 2 (EvaluationTab)
@@ -3747,7 +3778,7 @@ const ProfessionalWorkflowPage = () => {
       biopsychosocial_functional_limitations,
       biopsychosocial_patient_strengths
     };
-  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion, followUpAlerts]); // ✅ FIX: Add detectedCaseRegion to dependencies for region filtering
+  }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion, followUpAlerts, aiPhysicalTestSuggestionsEnabled]); // ✅ FIX: Add detectedCaseRegion to dependencies for region filtering
 
   const physicalExamResults = useMemo(
     () =>
@@ -4048,7 +4079,9 @@ const ProfessionalWorkflowPage = () => {
     });
 
     // ✅ PHASE 2 FIX: Get physical test IDs and map them correctly
-    const physicalTestIds = selectedEntityIds.filter((id) => id.startsWith("physical-"));
+    const physicalTestIds = aiPhysicalTestSuggestionsEnabled
+      ? selectedEntityIds.filter((id) => id.startsWith("physical-"))
+      : [];
     console.log('[PHASE2] physicalTestIds found:', {
       physicalTestCount: physicalTestIds.length,
     });
@@ -4687,12 +4720,20 @@ const ProfessionalWorkflowPage = () => {
     if (visitType !== 'follow-up') {
       setInClinicItems([]);
       setHomeProgramItems([]);
+      treatmentDecisionConfirmationRef.current = null;
       setTreatmentDecisionConfirmation(null);
+      return;
+    }
+    // Once the clinician edits or confirms the treatment decision, it becomes the
+    // source of truth for this screen. Do not rehydrate from Vertex/baseline and
+    // overwrite the human decision while async plan sources settle.
+    if (treatmentDecisionConfirmationRef.current) {
       return;
     }
     if (previousTreatmentDecision) {
       setInClinicItems(hydrateTreatmentDecisionItems(previousTreatmentDecision.inClinicItems));
       setHomeProgramItems(hydrateTreatmentDecisionItems(previousTreatmentDecision.homeProgramItems));
+      treatmentDecisionConfirmationRef.current = null;
       setTreatmentDecisionConfirmation(null);
       return;
     }
@@ -4714,9 +4755,11 @@ const ProfessionalWorkflowPage = () => {
     if (!hasDerivedPlan) {
       setInClinicItems([]);
       setHomeProgramItems([]);
+      treatmentDecisionConfirmationRef.current = null;
       setTreatmentDecisionConfirmation(null);
       return;
     }
+    treatmentDecisionConfirmationRef.current = null;
     setTreatmentDecisionConfirmation(null);
     setInClinicItems(
       derived.inClinic.map((label, i) => ({
@@ -5651,11 +5694,13 @@ const ProfessionalWorkflowPage = () => {
           : inClinicItems;
       const decisionHomeProgramItems =
         visitType === 'initial' ? planDecisionItems.homeProgramItems : homeProgramItems;
+      const effectiveTreatmentDecisionConfirmation =
+        treatmentDecisionConfirmation ?? treatmentDecisionConfirmationRef.current;
       const treatmentDecision = buildTreatmentDecision(
         visitType,
         decisionInClinicItems,
         decisionHomeProgramItems,
-        status === 'finalized' ? treatmentDecisionConfirmation : null,
+        status === 'finalized' ? effectiveTreatmentDecisionConfirmation : null,
         sessionOwnerId,
         saveTargetId
       );
@@ -7151,8 +7196,8 @@ const ProfessionalWorkflowPage = () => {
                             <button
                               type="button"
                               onClick={() =>
-                                setInClinicItems((prev) =>
-                                  prev.map((i) => ({ ...i, completed: !allInClinicDone }))
+                                handleInClinicItemsChange(
+                                  inClinicItems.map((i) => ({ ...i, completed: !allInClinicDone }))
                                 )
                               }
                               className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors"
@@ -7195,6 +7240,28 @@ const ProfessionalWorkflowPage = () => {
                   })()}
                 </>
               )}
+
+              {visitType === 'follow-up' && (() => {
+                const allHomeProgramDone =
+                  homeProgramItems.length > 0 && homeProgramItems.every((item) => item.completed);
+                return (
+                  <HomeProgramBlock
+                    items={homeProgramItems}
+                    onChange={handleHomeProgramItemsChange}
+                    allowAdd={true}
+                    allDone={allHomeProgramDone}
+                    onSelectAllClick={() => {
+                      const nextCompleted = !allHomeProgramDone;
+                      handleHomeProgramItemsChange(
+                        homeProgramItems.map((item) => ({
+                          ...item,
+                          completed: nextCompleted,
+                        })),
+                      );
+                    }}
+                  />
+                );
+              })()}
 
               {/* Bloque 2: Clinical notes / Follow-up clinical update */}
               <div className="bg-white border border-blue-200 rounded-lg p-6">
