@@ -1,7 +1,7 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.7
+**Versión:** 1.8
 **Fecha:** 2026-05-18
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
@@ -492,6 +492,37 @@ Maojo V, Kulikowski CA. Inteligencia Artificial y medicina: diez lecciones apren
 
 ---
 
+**1.13 Principio de diseño clínico realista**
+
+AiduxCare no asume condiciones ideales de atención. El contexto real
+del fisioterapeuta en España incluye: modelo de falso autónomo,
+4 euros netos por sesión tras impuestos, 30 minutos por paciente,
+múltiples pacientes simultáneos, y diagnóstico médico como ancla
+cognitiva previa.
+
+El objetivo no es transformar la evaluación clínica. Es garantizar
+que la ficha que resulta de esa sesión — con el input disponible —
+sea clínicamente útil para tomar decisiones y legalmente defendible
+ante una auditoría o reclamación.
+
+Principio operativo: "Lo mejor que podemos con lo que tenemos."
+
+Lo que esto implica en el sistema:
+- AiduxCare captura lo que ocurre, no lo que debería ocurrir
+- Estructura el input según el framework de referencia (Magee)
+- Señala lo que falta sin bloquear ni penalizar
+- Genera la mejor ficha posible con el input disponible
+- No agrega carga cognitiva ni administrativa al profesional
+
+El mismo principio aplica a ambos perfiles de usuario: el fisio
+en modelo de alta rotación y el fisio en consulta privada. Lo que
+escala es la riqueza del input clínico, no la arquitectura del sistema.
+
+Referencia: contexto clínico validado con fisioterapeutas piloto
+España, mayo 2026.
+
+---
+
 ## 2. Stack Tecnológico y Decisiones de Arquitectura
 
 ### 2.1 Stack principal
@@ -651,6 +682,62 @@ Evidencia no aprobada por CTO clínico = no afecta razonamiento clínico.
 Vertex no puede promover evidencia al motor sin revisión humana.
 El runtime de Aidux solo razona con evidencia versionada en git y
 aprobada explícitamente con fecha y número de colegiado.
+
+**ADR-006: Magee como framework estructural de evaluación MSK**
+*Contexto:* AiduxCare necesita un estándar clínico de referencia para
+determinar qué componentes de evaluación están presentes y cuáles
+faltan en una sesión documentada.
+*Decisión:* Magee — Orthopedic Physical Assessment (8th Ed.) como
+framework de referencia para cobertura documental MSK. Componentes
+no negociables: historia del paciente, observación, movimientos activos,
+movimientos pasivos, movimientos resistidos isométricos, tests especiales,
+reflejos, palpación, imagen diagnóstica como complemento.
+*Consecuencia:* El sistema detecta cobertura documental por componente.
+No sugiere tests hasta tener Magee Coverage Engine validado y evidence
+library curada aprobada. El framework es referencia, no prescripción:
+el fisioterapeuta no está obligado a completar todos los componentes.
+
+**ADR-007: Zotero como inbox de evidencia candidata**
+*Contexto:* La evidence library clínica requiere trazabilidad
+bibliográfica desde el origen. Un LLM no puede ser fuente primaria
+de sensibilidad, especificidad ni likelihood ratios.
+*Decisión:* Zotero como bandeja de evidencia candidata controlada.
+Flujo obligatorio: búsqueda bibliográfica (PubMed, PEDro, Cochrane)
+→ paper entra a Zotero con estado pending_review → Vertex puede
+resumir/clasificar pero no decide validez → CTO clínico revisa
+full text → paper se marca approved o rejected → solo los approved
+se materializan como commit en src/core/clinical-evidence/ →
+runtime de AiduxCare solo razona con evidencia versionada en git.
+*Consecuencia:* Ninguna evidencia candidata alimenta el motor clínico
+sin aprobación humana explícita. Elimina riesgo de alucinación en
+métricas diagnósticas. El CTO clínico es la autoridad de validación,
+no el modelo.
+
+**ADR-008: Roadmap de inteligencia clínica — secuencia de construcción**
+*Contexto:* El sistema ideal (AiduxCare + Sócrates al 100%) requiere
+capas que deben construirse en orden para minimizar riesgo técnico
+y regulatorio.
+*Decisión:* Secuencia validada el 2026-05-18:
+1. Magee Coverage Engine — detección de cobertura documental sin
+   sugerencias. Prompt + schema + postproceso determinista. Riesgo bajo.
+2. Longitudinal Ledger — separación formal entre documented_fact,
+   ai_observation y clinician_decision. Arquitectura/data model.
+3. Clinician Decision Capture — captura de ediciones HEP, confirmaciones
+   de red flags, medicaciones manuales, cambios de plan como decisiones
+   trazables. Riesgo bajo/medio.
+4. Evidence Library v0.1 — 5 patologías frecuentes (dolor lumbar,
+   cervicalgia, hombro doloroso, fascitis plantar, esguince tobillo)
+   con tests, métricas, citas y límites. Revisión clínica humana.
+5. Sócrates Modo 0 — blind spots documentales únicamente. Sin
+   inferencia. Sin diagnóstico. Solo espejo documental.
+6. Sócrates Modo 1.5 — evidence cards bajo demanda explícita del
+   fisioterapeuta. Nunca automático.
+7. Sócrates Modo 2 restringido — chat con datos del paciente, ledger
+   longitudinal y evidence cards aprobadas. Sin inferencias no trazables.
+*Consecuencia:* Ningún modo de Sócrates se activa sin que los
+prerrequisitos anteriores estén validados en producción. La secuencia
+no es negociable por razones de seguridad clínica y trazabilidad
+regulatoria.
 
 ---
 
@@ -1044,6 +1131,18 @@ Este documento está fundamentado en los siguientes estándares y publicaciones:
 
 27. **European Commission — AI in healthcare / AI Act** — AI Act vigente desde 2024; high-risk AI para software médico exige risk mitigation, high-quality datasets, user information y human oversight. https://health.ec.europa.eu/ehealth-digital-health-and-care/artificial-intelligence-healthcare_en
 
+28. **Magee DJ, Manske RC — Orthopedic Physical Assessment, 8th Ed.**
+Elsevier, 2024. Framework de referencia para evaluación MSK en
+AiduxCare: historia, observación, movimientos activos/pasivos/resistidos,
+tests especiales, reflejos, palpación. Base del Magee Coverage Engine.
+
+29. **Consulta técnica estratégica — Vertex AI / Claude, mayo 2026** —
+Análisis de capacidades base de AiduxCare para construir sistema ideal
+(AiduxCare + Sócrates). Conclusión: la arquitectura actual alcanza para
+Magee Coverage Engine, Longitudinal Ledger y Sócrates Modo 0. Evidence
+library y Sócrates avanzado requieren curaduría clínica y validación.
+Sesión CEO/CTO, 2026-05-18.
+
 ---
 
 ## 10. Control de Versiones de este Documento
@@ -1058,6 +1157,7 @@ Este documento está fundamentado en los siguientes estándares y publicaciones:
 | 1.4 | 2026-05-13 | Añadido Principio Sócrates: AiduxCare amplifica criterio clínico con razonamiento a demanda, trazable y no imperativo. |
 | 1.5 | 2026-05-14 | Añadido límite de alcance diagnóstico para imágenes y documentos escaneados: IA no interpreta imágenes diagnósticas; OCR/informes escritos requieren trazabilidad. |
 | 1.6 | 2026-05-17 | Añadida Clinical Scope Policy — Imaging Analysis: AiduxCare no interpreta visualmente imágenes diagnósticas para fisioterapia; permite informes escritos, comentarios del profesional y valores objetivos con atribución. |
+| 1.8 | 2026-05-18 | Añadidos §1.13 (Principio de diseño clínico realista), ADR-006 (Magee como framework MSK), ADR-007 (Zotero como inbox de evidencia candidata), ADR-008 (roadmap de inteligencia clínica). Referencias 28 y 29. Sesión estratégica CEO/CTO. |
 
 ---
 

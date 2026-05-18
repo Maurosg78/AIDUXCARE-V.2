@@ -1,5 +1,12 @@
 # ENGINEERING.md Changelog
 
+## 2026-05-18 — v1.8
+
+- Añadido §1.13 Principio de diseño clínico realista: AiduxCare captura la realidad clínica disponible, estructura según Magee y genera la mejor ficha posible sin agregar carga cognitiva.
+- Añadidos ADR-006, ADR-007 y ADR-008: Magee como framework MSK, Zotero como inbox de evidencia candidata y roadmap secuencial de inteligencia clínica.
+- Añadidas referencias 28 y 29 para Magee 8th Ed. y la consulta técnica estratégica Vertex AI / Claude de mayo 2026.
+- Actualiza versión a 1.8 manteniendo intacta la numeración previa.
+
 ## 2026-05-18 — v1.7
 
 - Added safety decision under §1.6: AI-generated physical-test suggestions are disabled by default; manual/library/custom tests remain enabled. Reactivation requires explicit feature flag, region/case guardrails, documented clinical evaluation and CTO approval.
