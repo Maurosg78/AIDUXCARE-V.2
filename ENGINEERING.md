@@ -1,8 +1,8 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.6
-**Fecha:** 2026-05-17
+**Versión:** 1.7
+**Fecha:** 2026-05-18
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
@@ -13,6 +13,24 @@
 ---
 
 > Este documento es la única fuente de verdad sobre cómo se construye, gobierna y mantiene el software de AiduxCare. Está diseñado para ser legible por desarrolladores humanos, auditores externos, inversores técnicos, y agentes de IA. Evoluciona con el producto.
+
+---
+
+## 0. Definición de Producto
+
+AiduxCare es una plataforma documental para profesionales de salud, asistida por IA, para la creación de notas clínicas de alta calidad y utilidad.
+
+Lo logramos siendo el primer scribe que desarrolla memoria longitudinal del paciente y también del profesional de salud, de manera que podamos apoyar al profesional a dar la mejor alternativa de recuperación para un paciente en particular en un contexto particular.
+
+Para lograr ese objetivo, la plataforma está diseñada para ser un companion thinking cuando se necesita ampliar el criterio clínico: ayudar al profesional a entender si está dando o no la mejor alternativa de tratamiento para ese paciente de acuerdo a evidencia clínica aplicada a ese contexto.
+
+**Tres capas que escalan en profundidad — en ese orden:**
+
+1. **Documentación clínica de alta calidad y utilidad** — reducción de carga administrativa sin reemplazar el juicio clínico. Este es el producto de entrada y el claim regulatorio principal.
+2. **Memoria longitudinal** — del paciente y del profesional. El diferenciador de mercado que ningún scribe genérico puede construir retroactivamente.
+3. **Companion thinking** — disponible cuando el profesional lo decide, nunca autónomo. Apoya la expansión del criterio clínico con evidencia aplicada al contexto específico.
+
+> **Nota regulatoria:** Para documentos de intended use (MDR, Health Canada), la capa 3 se formula como: *"apoyar al profesional en la evaluación de alternativas de tratamiento según evidencia clínica aplicada al contexto del paciente."* El significado es idéntico; el lenguaje evita claims de outcome que afectan la clasificación regulatoria.
 
 ---
 

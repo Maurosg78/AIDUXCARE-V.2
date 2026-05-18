@@ -1,5 +1,12 @@
 # ENGINEERING.md Changelog
 
+## 2026-05-18 — v1.7
+
+- Añadido §0 Definición de Producto: declaración fundacional de AiduxCare como plataforma documental asistida por IA con memoria longitudinal del paciente y del profesional, y companion thinking como capa de profundidad clínica a demanda.
+- Incorpora las tres capas de producto en orden de profundidad regulatoria y de adopción: documentación → memoria longitudinal → companion thinking.
+- Incluye nota regulatoria inline que distingue el lenguaje de producto del lenguaje de intended use para documentación MDR/Health Canada.
+- Actualiza versión a 1.7 y fecha a 2026-05-18.
+
 ## 2026-05-17 — v1.6
 
 - Added §1.12 Clinical Scope Policy — Imaging Analysis.
