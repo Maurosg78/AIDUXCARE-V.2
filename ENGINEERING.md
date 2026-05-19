@@ -1,8 +1,8 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.8
-**Fecha:** 2026-05-18
+**Versión:** 1.9
+**Fecha:** 2026-05-19
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
@@ -739,6 +739,67 @@ prerrequisitos anteriores estén validados en producción. La secuencia
 no es negociable por razones de seguridad clínica y trazabilidad
 regulatoria.
 
+**ADR-009: Scope de imágenes diagnósticas — política jurisdiccional**
+*Contexto:* AiduxCare opera en España y Ontario. En ambas jurisdicciones,
+la interpretación de imágenes diagnósticas (RX, ecografía diagnóstica,
+RMN, TC) es competencia reservada al médico especialista en
+Radiodiagnóstico, no al fisioterapeuta. El uso del ecógrafo por el
+fisioterapeuta está limitado a evaluación funcional del movimiento,
+no a diagnóstico estructural radiológico.
+
+*Base legal — España:*
+- Ley 44/2003 de Ordenación de Profesiones Sanitarias (LOPS), Art. 7.2.b:
+  competencias del fisioterapeuta limitadas a "tratamientos con medios y
+  agentes físicos dirigidos a la recuperación y rehabilitación."
+- RD 1976/1999, Art. 13.5: "garantizar una lectura e interpretación
+  especializada de las imágenes" — competencia reservada al radiólogo.
+- RD 1001/2002 (Estatutos CGCFE): el ecógrafo es herramienta de
+  evaluación funcional fisioterapéutica, no de diagnóstico radiológico.
+- Orden CIN/2135/2008: competencias habilitantes del título de
+  fisioterapeuta no incluyen interpretación de imagen diagnóstica.
+
+*Base legal — Ontario:*
+- Physiotherapy Act, 1991: scope limitado a assessment, diagnosis of
+  physical dysfunction, y treatment. No incluye interpretación de imagen.
+- A mayo 2026, la autoridad para ordenar imágenes diagnósticas está
+  "awaiting implementation" — aprobada en legislación desde 2009 pero
+  sin regulaciones vigentes (CPO, mayo 2026).
+- El fisioterapeuta en Ontario no puede ordenar ni interpretar imágenes
+  diagnósticas de forma independiente hasta que se implementen las
+  regulaciones pendientes.
+
+*Decisión:* AiduxCare no procesa imágenes diagnósticas para razonamiento
+clínico. Tres casos definidos:
+
+Caso 1 — Documento con texto extraíble (ocrScore > 0):
+El texto extraído entra al prompt como hecho documentado con atribución
+explícita a la fuente. La imagen es referencia visual para el fisio.
+En el SOAP: "Informe adjunto: [texto extraído — fuente: documento
+adjunto por el profesional]."
+
+Caso 2 — Imagen con texto parcial (ocrScore > 0, cobertura limitada):
+El texto disponible entra como "antecedente imagenológico parcial —
+texto extraído sin informe completo." No genera conclusiones clínicas.
+El sistema advierte al fisio: "Texto parcial extraído. Para razonamiento
+clínico completo, adjunte el informe del radiólogo."
+
+Caso 3 — Imagen sin texto extraíble (ocrScore: 0):
+No se procesa para razonamiento clínico. El sistema informa al fisio:
+"Esta imagen no contiene informe escrito. Puede conservarla como
+referencia visual, pero no será incluida en el análisis clínico.
+Para incorporarla al razonamiento, adjunte el informe del radiólogo."
+
+*Consecuencia:* El sistema nunca genera ni valida conclusiones sobre
+patología estructural a partir de análisis visual de imágenes. Elimina
+riesgo de invasión de competencias del especialista en Radiodiagnóstico
+en ambas jurisdicciones. La fuente de verdad clínica sobre imagen es
+siempre el informe escrito del profesional competente.
+
+*Guardrail técnico:* El análisis visual de imágenes por Gemini
+(visualScore) no entra al prompt clínico bajo ninguna circunstancia.
+Solo el texto extraído por OCR (ocrScore > 0) puede alimentar el
+razonamiento clínico, con atribución explícita.
+
 ---
 
 ## 3. Convenciones de Código
@@ -1158,6 +1219,7 @@ Sesión CEO/CTO, 2026-05-18.
 | 1.5 | 2026-05-14 | Añadido límite de alcance diagnóstico para imágenes y documentos escaneados: IA no interpreta imágenes diagnósticas; OCR/informes escritos requieren trazabilidad. |
 | 1.6 | 2026-05-17 | Añadida Clinical Scope Policy — Imaging Analysis: AiduxCare no interpreta visualmente imágenes diagnósticas para fisioterapia; permite informes escritos, comentarios del profesional y valores objetivos con atribución. |
 | 1.8 | 2026-05-18 | Añadidos §1.13 (Principio de diseño clínico realista), ADR-006 (Magee como framework MSK), ADR-007 (Zotero como inbox de evidencia candidata), ADR-008 (roadmap de inteligencia clínica). Referencias 28 y 29. Sesión estratégica CEO/CTO. |
+| 1.9 | 2026-05-19 | ADR-009: scope de imágenes diagnósticas con base legal España y Ontario. Fix FileProcessor: solo ocrScore > 0 alimenta razonamiento clínico. |
 
 ---
 

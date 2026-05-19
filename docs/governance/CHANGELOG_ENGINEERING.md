@@ -1,5 +1,11 @@
 # ENGINEERING.md Changelog
 
+## 2026-05-19 — v1.9
+
+- ADR-009 — Política de scope de imágenes diagnósticas. Base legal España (LOPS, RD 1976/1999, RD 1001/2002, Orden CIN/2135/2008) y Ontario (Physiotherapy Act 1991, CPO mayo 2026).
+- Fix FileProcessor: visualScore eliminado del contexto clínico. ocrScore === 0 → rejected.
+- Actualiza versión a 1.9 y fecha a 2026-05-19.
+
 ## 2026-05-18 — v1.8
 
 - Añadido §1.13 Principio de diseño clínico realista: AiduxCare captura la realidad clínica disponible, estructura según Magee y genera la mejor ficha posible sin agregar carga cognitiva.

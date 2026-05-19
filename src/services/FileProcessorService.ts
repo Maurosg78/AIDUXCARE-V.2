@@ -6,6 +6,11 @@ export interface ProcessedFile {
   fileType: string;
   fileSize: number;
   extractedText?: string;
+  clinicalContextStatus?: 'accepted_ocr_text' | 'rejected_no_text';
+  clinicalContextMessage?: {
+    esES: string;
+    enCA: string;
+  };
   pageCount?: number;
   metadata?: {
     title?: string;
@@ -41,16 +46,14 @@ const IMAGE_OCR_PROMPT =
   'You are a medical document OCR system. Extract ALL text from this medical image exactly as written. ' +
   'Include all findings, measurements, diagnoses, and clinical data. Return only the extracted text, no commentary.';
 
-const IMAGE_CLINICAL_DESCRIPTION_PROMPT =
-  'You are reviewing a clinical attachment image for a physiotherapy follow-up workflow. ' +
-  'The image may be a radiograph, a photo of a report, or a screenshot shared by the patient. ' +
-  'Describe only directly visible clinically relevant features in cautious Spanish. ' +
-  'If readable text is visible, include only the clinically relevant text. ' +
-  'Do not diagnose. Do not invent findings. Explicitly state uncertainty when image quality limits interpretation. ' +
-  'End with this exact sentence on its own line: "Imagen sugerente de hallazgos visibles; no constituye diagnóstico."';
-
 const IMAGE_NON_DIAGNOSTIC_DISCLAIMER =
   'Imagen sugerente de hallazgos visibles; no constituye diagnóstico.';
+
+const NO_EXTRACTABLE_TEXT_MESSAGE_ES =
+  'Esta imagen no contiene texto extraíble. Puede conservarla como referencia visual, pero no se incluirá en el análisis clínico. Para incorporarla al razonamiento, adjunte el informe escrito del radiólogo.';
+
+const NO_EXTRACTABLE_TEXT_MESSAGE_EN =
+  'This image contains no extractable text. It has been saved as a visual reference only and will not be included in the clinical analysis. To incorporate imaging findings, please attach the written radiology report.';
 
 const CLINICAL_KEYWORDS = [
   'fractura',
@@ -152,43 +155,57 @@ export function mergeImageExtractionResults(
 ): string {
   const hasMissingOcrExtraction = !ocrExtraction || ocrExtraction.trim() === '';
   if (hasMissingOcrExtraction) {
-    const visualOnlyResult = ensureImageDisclaimer(stripImageDisclaimer(visualExtraction));
-    return visualOnlyResult;
+    return '';
   }
 
-  const visualScore = scoreImageExtractionUtility(visualExtraction);
   const ocrScore = scoreImageExtractionUtility(ocrExtraction);
-  const visualBody = stripImageDisclaimer(visualExtraction);
   const ocrBody = stripImageDisclaimer(ocrExtraction);
-  const hasUsefulVisual = visualScore >= 2;
-  const hasUsefulOcr = ocrScore >= 2;
-  const normalizedVisualBody = visualBody.replace(/\s+/g, ' ').trim().toLowerCase();
-  const normalizedOcrBody = ocrBody.replace(/\s+/g, ' ').trim().toLowerCase();
-  const bothBodiesAreEquivalent =
-    normalizedVisualBody.length > 0 &&
-    normalizedOcrBody.length > 0 &&
-    (normalizedVisualBody.includes(normalizedOcrBody) || normalizedOcrBody.includes(normalizedVisualBody));
-
-  if (hasUsefulVisual && hasUsefulOcr && !bothBodiesAreEquivalent) {
-    const combinedValue =
-      `Hallazgos visibles del adjunto:\n${visualBody}\n\nTexto clínico visible en el adjunto:\n${ocrBody}`;
-    const combinedWithDisclaimer = ensureImageDisclaimer(combinedValue);
-    return combinedWithDisclaimer;
+  if (ocrScore === 0) {
+    return '';
   }
 
-  if (hasUsefulVisual && visualScore >= ocrScore) {
-    const visualWithDisclaimer = ensureImageDisclaimer(visualBody);
-    return visualWithDisclaimer;
+  return buildOcrClinicalContextText(ocrBody);
+}
+
+function buildOcrClinicalContextText(value: string): string {
+  const rawValue = typeof value === 'string' ? value : '';
+  const trimmedValue = rawValue.trim();
+  const contextText =
+    '[DOCUMENTO ADJUNTO — texto extraído por OCR]\n' +
+    '[FUENTE: adjunto por el profesional, no interpretado por AiduxCare]\n' +
+    '[CONTENIDO:]\n' +
+    trimmedValue;
+  return contextText;
+}
+
+function getNoExtractableTextMessages(): { esES: string; enCA: string } {
+  return {
+    esES: NO_EXTRACTABLE_TEXT_MESSAGE_ES,
+    enCA: NO_EXTRACTABLE_TEXT_MESSAGE_EN,
+  };
+}
+
+function getNoExtractableTextMessage(): string {
+  const isSpanishPilot = env.VITE_ENABLE_ES_PILOT === 'true';
+  if (isSpanishPilot) {
+    return NO_EXTRACTABLE_TEXT_MESSAGE_ES;
+  }
+  return NO_EXTRACTABLE_TEXT_MESSAGE_EN;
+}
+
+function truncateClinicalContextText(value: string, label: string): string {
+  const MAX_TEXT_LENGTH = 15000;
+  const rawValue = typeof value === 'string' ? value : '';
+  if (rawValue.length <= MAX_TEXT_LENGTH) {
+    return rawValue;
   }
 
-  if (hasUsefulOcr) {
-    const ocrWithDisclaimer = ensureImageDisclaimer(ocrBody);
-    return ocrWithDisclaimer;
-  }
-
-  const fallbackBody = visualBody.length >= ocrBody.length ? visualBody : ocrBody;
-  const fallbackWithDisclaimer = ensureImageDisclaimer(fallbackBody);
-  return fallbackWithDisclaimer;
+  const originalLength = rawValue.length;
+  const truncatedValue = rawValue.substring(0, MAX_TEXT_LENGTH);
+  const truncationNotice = `\n\n[NOTE: ${label} text truncated. Original length: ${originalLength} characters]`;
+  const processedText = truncatedValue + truncationNotice;
+  console.warn(`[FileProcessor] ${label} text truncated: ${originalLength} → ${MAX_TEXT_LENGTH} chars`);
+  return processedText;
 }
 
 export class FileProcessorService {
@@ -226,15 +243,14 @@ export class FileProcessorService {
           if (pdfResult.error === SCANNED_PDF_ERROR) {
             console.log(`[FileProcessor] 🔍 Scanned PDF detected — falling back to Gemini Vision OCR: ${file.name}`);
             try {
-              const ocrText = await FileProcessorService.extractScannedPDFWithGemini(file);
-              const MAX_TEXT_LENGTH = 15000;
-              const processedOcrText = ocrText.length > MAX_TEXT_LENGTH
-                ? ocrText.substring(0, MAX_TEXT_LENGTH) + `\n\n[NOTE: OCR text truncated. Original length: ${ocrText.length} characters]`
-                : ocrText;
+              const ocrResult = await FileProcessorService.extractScannedPDFWithGemini(file);
+              const processedOcrText = truncateClinicalContextText(ocrResult.extractedText, 'Scanned PDF OCR');
               console.log(`[FileProcessor] ✅ Scanned PDF OCR extracted ${processedOcrText.length} characters`);
               return {
                 ...baseResult,
                 extractedText: processedOcrText,
+                clinicalContextStatus: ocrResult.clinicalContextStatus,
+                clinicalContextMessage: ocrResult.clinicalContextMessage,
                 pageCount: pdfResult.pageCount,
               };
             } catch (ocrError) {
@@ -286,24 +302,23 @@ export class FileProcessorService {
     if (file.type.startsWith('image/')) {
       console.log(`[FileProcessor] 📷 Image uploaded: ${file.name}`);
       try {
-        const extractedText = await FileProcessorService.extractImageTextWithGemini(file);
+        const imageResult = await FileProcessorService.extractImageTextWithGemini(file);
 
-        // Limitar texto extraído para prevenir prompts muy largos (mismo límite que PDFs)
-        const MAX_TEXT_LENGTH = 15000;
-        let processedText = extractedText;
-
-        if (processedText.length > MAX_TEXT_LENGTH) {
-          const originalLength = processedText.length;
-          processedText = processedText.substring(0, MAX_TEXT_LENGTH);
-          processedText += `\n\n[NOTE: Image OCR text truncated. Original length: ${originalLength} characters]`;
-          console.warn(
-            `[FileProcessor] Image OCR text truncated: ${originalLength} → ${MAX_TEXT_LENGTH} chars`,
-          );
+        if (imageResult.clinicalContextStatus === 'rejected_no_text') {
+          return {
+            ...baseResult,
+            clinicalContextStatus: imageResult.clinicalContextStatus,
+            clinicalContextMessage: imageResult.clinicalContextMessage,
+            error: getNoExtractableTextMessage(),
+          };
         }
 
+        const processedText = truncateClinicalContextText(imageResult.extractedText, 'Image OCR');
         return {
           ...baseResult,
           extractedText: processedText,
+          clinicalContextStatus: imageResult.clinicalContextStatus,
+          clinicalContextMessage: imageResult.clinicalContextMessage,
         };
       } catch (error) {
         console.error('[FileProcessor] Image OCR failed', error);
@@ -365,11 +380,14 @@ export class FileProcessorService {
    * WO-IMAGE-OCR-001: Call Vertex AI (Gemini) via vertexAIProxy to perform OCR on medical images.
    * Sends the image as base64 and uses a strict OCR prompt to obtain raw extracted text.
    */
-  private static async extractImageTextWithGemini(file: File): Promise<string> {
-    const visualExtraction = await FileProcessorService.callVertexImagePrompt(
-      file,
-      IMAGE_CLINICAL_DESCRIPTION_PROMPT,
-    );
+  private static async extractImageTextWithGemini(file: File): Promise<{
+    extractedText: string;
+    clinicalContextStatus: 'accepted_ocr_text' | 'rejected_no_text';
+    clinicalContextMessage: {
+      esES: string;
+      enCA: string;
+    };
+  }> {
     const ocrExtractionResult = await (async () => {
       try {
         const ocrResult = await FileProcessorService.callVertexImagePrompt(file, IMAGE_OCR_PROMPT);
@@ -379,18 +397,32 @@ export class FileProcessorService {
         return null;
       }
     })();
-    const mergedExtraction = mergeImageExtractionResults(visualExtraction, ocrExtractionResult);
-    const mergedScore = scoreImageExtractionUtility(mergedExtraction);
+    const visualScore = 0;
     const ocrScore = scoreImageExtractionUtility(ocrExtractionResult ?? '');
+    const clinicalContextStatus = ocrScore > 0 ? 'accepted_ocr_text' : 'rejected_no_text';
 
-    console.info('[FileProcessor] Image analysis completed', {
+    console.log('[FileProcessor] Clinical context decision:', {
       fileName: file.name,
-      visualScore: scoreImageExtractionUtility(visualExtraction),
       ocrScore,
-      mergedScore,
+      visualScore,
+      clinicalContextStatus,
     });
 
-    return mergedExtraction;
+    if (clinicalContextStatus === 'rejected_no_text') {
+      return {
+        extractedText: '',
+        clinicalContextStatus,
+        clinicalContextMessage: getNoExtractableTextMessages(),
+      };
+    }
+
+    const ocrBody = stripImageDisclaimer(ocrExtractionResult ?? '');
+    const extractedText = buildOcrClinicalContextText(ocrBody);
+    return {
+      extractedText,
+      clinicalContextStatus,
+      clinicalContextMessage: getNoExtractableTextMessages(),
+    };
   }
 
   /**
@@ -398,7 +430,14 @@ export class FileProcessorService {
    * Renders each page via pdfjs canvas and sends to Gemini Vision OCR.
    * Max 3 pages to limit API cost; results are concatenated.
    */
-  private static async extractScannedPDFWithGemini(file: File): Promise<string> {
+  private static async extractScannedPDFWithGemini(file: File): Promise<{
+    extractedText: string;
+    clinicalContextStatus: 'accepted_ocr_text';
+    clinicalContextMessage: {
+      esES: string;
+      enCA: string;
+    };
+  }> {
     const MAX_OCR_PAGES = 5;
     const pages = await renderPDFPagesAsBase64(file, MAX_OCR_PAGES);
     if (pages.length === 0) {
@@ -417,9 +456,13 @@ export class FileProcessorService {
 
     if (pageTexts.length === 0) throw new Error('Gemini OCR returned no text from scanned PDF pages');
 
-    // Traceability marker: OCR output may contain misreads — the clinician must verify
     const ocrBody = pageTexts.join('\n\n');
-    return `[DOCUMENTO ESCANEADO — texto extraído por OCR automático. Verificar exactitud antes de finalizar la nota.]\n\n${ocrBody}`;
+    const extractedText = buildOcrClinicalContextText(ocrBody);
+    return {
+      extractedText,
+      clinicalContextStatus: 'accepted_ocr_text',
+      clinicalContextMessage: getNoExtractableTextMessages(),
+    };
   }
 
   private static async callVertexImagePrompt(file: File, prompt: string): Promise<string> {
