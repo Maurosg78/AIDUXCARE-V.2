@@ -1,8 +1,8 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.9
-**Fecha:** 2026-05-19
+**Versión:** 1.10
+**Fecha:** 2026-05-20
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
@@ -1238,6 +1238,21 @@ Sesión CEO/CTO, 2026-05-18.
 
 ---
 
+## 11. Norte Estratégico de Producto
+
+La visión estratégica de AiduxCare está definida en
+`docs/governance/PRODUCT_VISION.md`.
+
+Toda decisión técnica debe ser compatible con el principio fundacional:
+
+> AiduxCare acompaña al profesional con contexto clínico completo
+> para documentar mejor, razonar con más claridad y decidir con mayor
+> tranquilidad, sin reemplazar nunca su juicio clínico.
+
+AiduxCare amplifica. Evidencia. Acompaña.
+
+---
+
 ## 10. Control de Versiones de este Documento
 
 | Versión | Fecha | Cambios |
@@ -1254,6 +1269,7 @@ Sesión CEO/CTO, 2026-05-18.
 | 1.9 | 2026-05-19 | ADR-009: scope de imágenes diagnósticas con base legal España y Ontario. Fix FileProcessor: solo ocrScore > 0 alimenta razonamiento clínico. |
 | 1.9.1 | 2026-05-19 | Aclaración P0 ADR-009: distinguir imágenes diagnósticas de fotos clínicas contextuales. Las fotos clínicas pueden conservarse como referencia visual sin interpretación diagnóstica ni razonamiento automático. |
 | 1.9.2 | 2026-05-19 | Taxonomía P0 de adjuntos visuales: diagnostic_image, diagnostic_study, physio_ultrasound_assessment, clinical_context_photo y restricted_body_surface_photo. |
+| 1.10 | 2026-05-20 | Añadido §11 — Norte Estratégico de Producto con referencia a docs/governance/PRODUCT_VISION.md v1.0. Visión del profesional, visión del paciente, app del paciente, interoperabilidad FHIR, límites del producto. Sesión estratégica CEO/CTO. |
 
 ---
 

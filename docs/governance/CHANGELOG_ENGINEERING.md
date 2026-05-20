@@ -1,5 +1,11 @@
 # ENGINEERING.md Changelog
 
+## 2026-05-20 — v1.10
+
+- Creado `PRODUCT_VISION.md` v1.0 en `docs/governance/`.
+- Añadido §11 en `ENGINEERING.md` como referencia al documento de visión.
+- Principio fundacional canonizado. Sesión estratégica CEO/CTO.
+
 ## 2026-05-19 — v1.9.2
 
 - Sintetiza guardrails de imagen en taxonomía P0: `diagnostic_image`, `diagnostic_study`, `physio_ultrasound_assessment`, `clinical_context_photo` y `restricted_body_surface_photo`.
