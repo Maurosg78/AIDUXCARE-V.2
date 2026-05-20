@@ -19,6 +19,30 @@ import { FirebaseWhisperService } from '../../../services/FirebaseWhisperService
 
 type EvaluationResult = "normal" | "positive" | "negative" | "inconclusive";
 type TestCategoryKey = 'rom' | 'neuro' | 'inspection' | 'strength' | 'functional' | 'orthopedic' | 'general';
+type MageePillarKey = 'observation' | 'palpation' | 'rom' | 'strength';
+
+type MageePillarDefinition = {
+  readonly key: MageePillarKey;
+  readonly labelEs: string;
+  readonly labelEn: string;
+};
+
+const MAGEE_BASE_PILLARS: readonly MageePillarDefinition[] = [
+  { key: 'observation', labelEs: 'Observación', labelEn: 'Observation' },
+  { key: 'palpation', labelEs: 'Palpación', labelEn: 'Palpation' },
+  { key: 'rom', labelEs: 'Rango de movimiento', labelEn: 'Range of Motion' },
+  { key: 'strength', labelEs: 'Fuerza muscular', labelEn: 'Muscle Strength' },
+];
+
+type MageePillarNotes = Record<MageePillarKey, string>;
+
+const EMPTY_PILLAR_NOTES: MageePillarNotes = {
+  observation: '',
+  palpation: '',
+  rom: '',
+  strength: '',
+};
+
 type PhysicalTest = {
   id?: string;
   name?: string;
@@ -410,7 +434,20 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const isSpanishLocale = i18n.language.toLowerCase().startsWith('es');
+  const [pillarNotes, setPillarNotes] = useState<MageePillarNotes>(EMPTY_PILLAR_NOTES);
   const visibleRegionLabels = isSpanishLocale ? regionLabelsEs : regionLabels;
+  const updatePillarNote = (
+    pillarKey: MageePillarKey,
+    noteValue: string
+  ) => {
+    setPillarNotes((currentNotes) => {
+      const updatedNotes = {
+        ...currentNotes,
+        [pillarKey]: noteValue,
+      };
+      return updatedNotes;
+    });
+  };
   const localizeTestForDisplay = (test: any) => {
     if (!isSpanishLocale) {
       return test;
@@ -448,6 +485,16 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   };
   const totalTests = filteredEvaluationTests.length;
   const progressPercent = totalTests === 0 ? 0 : Math.round((completedCount / totalTests) * 100);
+  const isInitialEvaluation = visitType === 'initial' && !(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up');
+  const pillarSectionTitle = isSpanishLocale
+    ? 'Evaluación física base'
+    : 'Base Physical Assessment';
+  const pillarSectionDescription = isSpanishLocale
+    ? 'Cuatro pilares documentales siempre disponibles para evaluación inicial. No son sugerencias ni pruebas obligatorias.'
+    : 'Four documentary pillars always available for initial assessment. These are not suggestions or required tests.';
+  const pillarPlaceholder = isSpanishLocale
+    ? 'Hallazgos del fisioterapeuta...'
+    : 'Clinician findings...';
 
   // ✅ FIX: Separate ALL AI suggestions into top 5 (phase 1) and additional tests (sidebar)
   // IMPORTANT: Calculate top 5 based on ALL suggestions (not filtered), then filter only top 5 for display
@@ -630,6 +677,44 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
             <li>{t('workflow.evaluationBannerBullet3')}</li>
           </ul>
         </div>
+      )}
+
+      {isInitialEvaluation && (
+        <section className="rounded-3xl border border-emerald-100 bg-emerald-50/40 px-5 py-5 shadow-sm">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">
+              {pillarSectionTitle}
+            </h3>
+            <p className="mt-1 text-xs text-slate-600">
+              {pillarSectionDescription}
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {MAGEE_BASE_PILLARS.map((pillar) => {
+              const pillarLabel = isSpanishLocale ? pillar.labelEs : pillar.labelEn;
+              const pillarNoteValue = pillarNotes[pillar.key];
+
+              return (
+                <div key={pillar.key} className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-700">
+                    {pillarLabel}
+                  </label>
+                  <textarea
+                    value={pillarNoteValue}
+                    onChange={(event) => {
+                      const newValue = event.target.value;
+                      updatePillarNote(pillar.key, newValue);
+                    }}
+                    placeholder={pillarPlaceholder}
+                    rows={2}
+                    className="w-full rounded-xl border border-emerald-100 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
