@@ -6974,11 +6974,11 @@ const ProfessionalWorkflowPage = () => {
                             </button>
 	                          ) : null}
 	                        </span>
-	                        {visitType === 'follow-up' && (followUpPatternInsight || followUpContext?.longitudinalSummary) && (
+	                        {visitType === 'follow-up' && followUpPatternInsight?.description && (
 	                          <div className="w-full mt-1 px-0 py-1.5 rounded-md bg-sky-50 border border-sky-100 flex items-start gap-2">
 	                            <span className="text-sky-400 text-xs mt-0.5 select-none">◈</span>
 	                            <p className="text-xs text-slate-600 leading-snug">
-	                              {followUpPatternInsight?.description || followUpContext?.longitudinalSummary}
+	                              {followUpPatternInsight?.description}
 	                            </p>
 	                          </div>
 	                        )}
