@@ -800,6 +800,38 @@ siempre el informe escrito del profesional competente.
 Solo el texto extraído por OCR (ocrScore > 0) puede alimentar el
 razonamiento clínico, con atribución explícita.
 
+*Aclaración P0 — fotos clínicas contextuales:*
+ADR-009 aplica a imágenes diagnósticas estructurales. No convierte toda
+imagen adjunta en radiología. Una fotografía clínica contextual
+(postura, vendaje, ejercicio, ergonomía, material de tratamiento o setup
+funcional) puede conservarse como referencia visual en la ficha,
+pero no debe ser interpretada diagnósticamente por AiduxCare ni alimentar
+razonamiento clínico automático salvo que el profesional describa su
+contenido en la transcripción o adjunte un informe escrito. El sistema
+debe distinguir `diagnostic_image` de `clinical_context_photo` para
+evitar mensajes clínicamente incorrectos y preservar el valor documental
+sin invadir competencias diagnósticas.
+
+*Taxonomía P0 de adjuntos visuales:*
+- `diagnostic_image`: RX, RM/RMN, TAC/CT, mamografía, densitometría,
+  gammagrafía, PET/SPECT, fluoroscopia u otra imagen diagnóstica
+  estructural. No se interpreta visualmente.
+- `diagnostic_study`: ecocardiograma, ECG, EEG, EMG, Holter,
+  espirometría, audiometría u otro estudio diagnóstico/trazado externo.
+  No se interpreta desde captura, gráfico o imagen.
+- `physio_ultrasound_assessment`: ecografía musculoesquelética usada
+  por el fisioterapeuta como evaluación instrumental o guía terapéutica.
+  AiduxCare no interpreta la imagen; solo documenta lo descrito por el
+  profesional o texto escrito adjunto.
+- `clinical_context_photo`: ejercicio terapéutico, postura, ergonomía,
+  vendaje, órtesis, material o setup de tratamiento. Puede conservarse
+  como referencia documental contextual; no genera hallazgos clínicos
+  autónomos.
+- `restricted_body_surface_photo`: piel, heridas, cicatrices, edema,
+  hematomas, coloración, lesiones cutáneas o signos vasculares. Puede
+  conservarse como referencia visual; AiduxCare no interpreta signos
+  dermatológicos, vasculares ni de cicatrización.
+
 ---
 
 ## 3. Convenciones de Código
@@ -1220,6 +1252,8 @@ Sesión CEO/CTO, 2026-05-18.
 | 1.6 | 2026-05-17 | Añadida Clinical Scope Policy — Imaging Analysis: AiduxCare no interpreta visualmente imágenes diagnósticas para fisioterapia; permite informes escritos, comentarios del profesional y valores objetivos con atribución. |
 | 1.8 | 2026-05-18 | Añadidos §1.13 (Principio de diseño clínico realista), ADR-006 (Magee como framework MSK), ADR-007 (Zotero como inbox de evidencia candidata), ADR-008 (roadmap de inteligencia clínica). Referencias 28 y 29. Sesión estratégica CEO/CTO. |
 | 1.9 | 2026-05-19 | ADR-009: scope de imágenes diagnósticas con base legal España y Ontario. Fix FileProcessor: solo ocrScore > 0 alimenta razonamiento clínico. |
+| 1.9.1 | 2026-05-19 | Aclaración P0 ADR-009: distinguir imágenes diagnósticas de fotos clínicas contextuales. Las fotos clínicas pueden conservarse como referencia visual sin interpretación diagnóstica ni razonamiento automático. |
+| 1.9.2 | 2026-05-19 | Taxonomía P0 de adjuntos visuales: diagnostic_image, diagnostic_study, physio_ultrasound_assessment, clinical_context_photo y restricted_body_surface_photo. |
 
 ---
 

@@ -44,7 +44,7 @@ describe('scoreImageExtractionUtility', () => {
 });
 
 describe('mergeImageExtractionResults', () => {
-  it('combines visual and OCR signals when both add useful information', () => {
+  it('uses OCR text only when both visual and OCR signals exist', () => {
     const visualExtraction =
       'Se aprecia alineación conservada de la muñeca izquierda y material de osteosíntesis visible.\nImagen sugerente de hallazgos visibles; no constituye diagnóstico.';
     const ocrExtraction =
@@ -52,19 +52,21 @@ describe('mergeImageExtractionResults', () => {
 
     const mergedValue = mergeImageExtractionResults(visualExtraction, ocrExtraction);
 
-    expect(mergedValue).toContain('Hallazgos visibles del adjunto:');
-    expect(mergedValue).toContain('Texto clínico visible en el adjunto:');
-    expect(mergedValue).toContain('Imagen sugerente de hallazgos visibles; no constituye diagnóstico.');
+    expect(mergedValue).toContain('[DOCUMENTO ADJUNTO — texto extraído por OCR]');
+    expect(mergedValue).toContain('[FUENTE: adjunto por el profesional, no interpretado por AiduxCare]');
+    expect(mergedValue).toContain('Radiografía AP/LAT de muñeca izquierda.');
+    expect(mergedValue).not.toContain('Hallazgos visibles del adjunto:');
+    expect(mergedValue).not.toContain('Se aprecia alineación conservada');
   });
 
-  it('keeps the stronger signal when OCR is trivial', () => {
+  it('rejects visual-only clinical context when OCR is trivial', () => {
     const visualExtraction =
       'Se aprecia material de osteosíntesis en radio distal sin desplazamiento grosero.\nImagen sugerente de hallazgos visibles; no constituye diagnóstico.';
     const ocrExtraction = 'RX';
 
     const mergedValue = mergeImageExtractionResults(visualExtraction, ocrExtraction);
 
-    expect(mergedValue).toContain('Se aprecia material de osteosíntesis');
+    expect(mergedValue).toBe('');
     expect(mergedValue).not.toContain('Texto clínico visible en el adjunto:');
   });
 });

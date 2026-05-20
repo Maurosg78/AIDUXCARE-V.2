@@ -6,7 +6,8 @@ export interface ProcessedFile {
   fileType: string;
   fileSize: number;
   extractedText?: string;
-  clinicalContextStatus?: 'accepted_ocr_text' | 'rejected_no_text';
+  clinicalContextStatus?: 'accepted_ocr_text' | 'rejected_no_text' | 'visual_reference_only';
+  clinicalAttachmentKind?: ClinicalAttachmentKind;
   clinicalContextMessage?: {
     esES: string;
     enCA: string;
@@ -54,6 +55,150 @@ const NO_EXTRACTABLE_TEXT_MESSAGE_ES =
 
 const NO_EXTRACTABLE_TEXT_MESSAGE_EN =
   'This image contains no extractable text. It has been saved as a visual reference only and will not be included in the clinical analysis. To incorporate imaging findings, please attach the written radiology report.';
+
+const VISUAL_REFERENCE_ONLY_MESSAGE_ES =
+  'Imagen guardada como referencia visual contextual. No será interpretada diagnósticamente ni incluida en el análisis clínico automático. Si quieres que su contenido influya en la nota, descríbelo durante la sesión o adjunta un informe escrito.';
+
+const VISUAL_REFERENCE_ONLY_MESSAGE_EN =
+  'Image saved as a contextual visual reference. It will not be diagnostically interpreted or included in the automatic clinical analysis. If you want its content to inform the note, describe it during the session or attach a written report.';
+
+const RESTRICTED_SURFACE_MESSAGE_ES =
+  'Imagen guardada como referencia visual de superficie corporal. AiduxCare no interpreta piel, heridas, cicatrices, coloración, hematomas, edema ni signos dermatológicos o vasculares. Se usará solo lo descrito por el profesional.';
+
+const RESTRICTED_SURFACE_MESSAGE_EN =
+  'Image saved as a body-surface visual reference. AiduxCare does not interpret skin, wounds, scars, coloration, bruising, edema, or dermatologic/vascular signs. Only clinician-described content will be used.';
+
+const PHYSIO_ULTRASOUND_MESSAGE_ES =
+  'Ecografía musculoesquelética guardada como evaluación instrumental del fisioterapeuta. AiduxCare no interpreta la imagen; solo usará la descripción clínica aportada por el profesional o texto escrito adjunto.';
+
+const PHYSIO_ULTRASOUND_MESSAGE_EN =
+  'Musculoskeletal ultrasound saved as a physiotherapist instrumental assessment. AiduxCare does not interpret the image; only clinician-provided description or attached written text will be used.';
+
+type ClinicalAttachmentKind =
+  | 'written_report'
+  | 'diagnostic_image'
+  | 'diagnostic_study'
+  | 'physio_ultrasound_assessment'
+  | 'clinical_context_photo'
+  | 'restricted_body_surface_photo'
+  | 'unknown_image';
+
+const DIAGNOSTIC_IMAGE_NAME_KEYWORDS = [
+  'rx',
+  'radiografia',
+  'radiografía',
+  'xray',
+  'x-ray',
+  'rayos',
+  'radiology',
+  'radiologia',
+  'radiología',
+  'mri',
+  'rmn',
+  'resonancia',
+  'ct',
+  'tac',
+  'scanner',
+  'scan',
+  'mamografia',
+  'mamografía',
+  'mammography',
+  'densitometria',
+  'densitometría',
+  'dexa',
+  'gammagrafia',
+  'gammagrafía',
+  'pet',
+  'spect',
+];
+
+const DIAGNOSTIC_STUDY_NAME_KEYWORDS = [
+  'ecocardiograma',
+  'echocardiogram',
+  'ecodoppler',
+  'doppler',
+  'eeg',
+  'electroencefalograma',
+  'ecg',
+  'ekg',
+  'electrocardiograma',
+  'emg',
+  'electromiografia',
+  'electromiografía',
+  'holter',
+  'espirometria',
+  'espirometría',
+  'spirometry',
+  'audiometria',
+  'audiometría',
+];
+
+const PHYSIO_ULTRASOUND_NAME_KEYWORDS = [
+  'ecografia_msk',
+  'ecografía_msk',
+  'eco_msk',
+  'msk_ultrasound',
+  'musculoskeletal_ultrasound',
+  'ecografia_musculoesqueletica',
+  'ecografía_musculoesquelética',
+  'ecografia_musculoesquelética',
+  'ecografía_musculoesqueletica',
+  'ecografia_fisio',
+  'ecografía_fisio',
+  'ecoguiada',
+  'epi',
+  'electrolisis',
+  'electrólisis',
+];
+
+const RESTRICTED_SURFACE_NAME_KEYWORDS = [
+  'piel',
+  'skin',
+  'herida',
+  'wound',
+  'ulcera',
+  'úlcera',
+  'ulcer',
+  'cicatriz',
+  'scar',
+  'edema',
+  'hematoma',
+  'bruise',
+  'eritema',
+  'erythema',
+  'rash',
+  'dermat',
+  'vascular',
+  'coloracion',
+  'coloración',
+  'lesion_cutanea',
+  'lesión_cutánea',
+];
+
+const CLINICAL_CONTEXT_PHOTO_NAME_KEYWORDS = [
+  'ejercicio',
+  'exercise',
+  'rehab',
+  'rehabilitacion',
+  'rehabilitación',
+  'postura',
+  'posture',
+  'ergonomia',
+  'ergonomía',
+  'ergonomic',
+  'vendaje',
+  'bandage',
+  'taping',
+  'kinesiotape',
+  'ortesis',
+  'órtesis',
+  'brace',
+  'setup',
+  'tratamiento',
+  'treatment',
+  'bird-dog',
+  'birddog',
+];
 
 const CLINICAL_KEYWORDS = [
   'fractura',
@@ -185,12 +330,74 @@ function getNoExtractableTextMessages(): { esES: string; enCA: string } {
   };
 }
 
-function getNoExtractableTextMessage(): string {
+function getVisualReferenceOnlyMessages(): { esES: string; enCA: string } {
+  return {
+    esES: VISUAL_REFERENCE_ONLY_MESSAGE_ES,
+    enCA: VISUAL_REFERENCE_ONLY_MESSAGE_EN,
+  };
+}
+
+function getRestrictedSurfaceMessages(): { esES: string; enCA: string } {
+  return {
+    esES: RESTRICTED_SURFACE_MESSAGE_ES,
+    enCA: RESTRICTED_SURFACE_MESSAGE_EN,
+  };
+}
+
+function getPhysioUltrasoundMessages(): { esES: string; enCA: string } {
+  return {
+    esES: PHYSIO_ULTRASOUND_MESSAGE_ES,
+    enCA: PHYSIO_ULTRASOUND_MESSAGE_EN,
+  };
+}
+
+function getLocalizedMessage(messages: { esES: string; enCA: string }): string {
   const isSpanishPilot = env.VITE_ENABLE_ES_PILOT === 'true';
   if (isSpanishPilot) {
-    return NO_EXTRACTABLE_TEXT_MESSAGE_ES;
+    return messages.esES;
   }
-  return NO_EXTRACTABLE_TEXT_MESSAGE_EN;
+  return messages.enCA;
+}
+
+function fileNameIncludesAny(file: File, keywords: string[]): boolean {
+  const fileName = file.name.toLowerCase();
+  const hasKeyword = keywords.some((keyword) => fileName.includes(keyword));
+  return hasKeyword;
+}
+
+function classifyImageAttachmentKind(file: File, ocrScore: number): ClinicalAttachmentKind {
+  if (ocrScore > 0) {
+    return 'written_report';
+  }
+  if (fileNameIncludesAny(file, PHYSIO_ULTRASOUND_NAME_KEYWORDS)) {
+    return 'physio_ultrasound_assessment';
+  }
+  if (fileNameIncludesAny(file, DIAGNOSTIC_IMAGE_NAME_KEYWORDS)) {
+    return 'diagnostic_image';
+  }
+  if (fileNameIncludesAny(file, DIAGNOSTIC_STUDY_NAME_KEYWORDS)) {
+    return 'diagnostic_study';
+  }
+  if (fileNameIncludesAny(file, RESTRICTED_SURFACE_NAME_KEYWORDS)) {
+    return 'restricted_body_surface_photo';
+  }
+  if (fileNameIncludesAny(file, CLINICAL_CONTEXT_PHOTO_NAME_KEYWORDS)) {
+    return 'clinical_context_photo';
+  }
+  return 'clinical_context_photo';
+}
+
+function getMessageForAttachmentKind(kind: ClinicalAttachmentKind): { esES: string; enCA: string } {
+  if (kind === 'restricted_body_surface_photo') {
+    return getRestrictedSurfaceMessages();
+  }
+  if (kind === 'physio_ultrasound_assessment') {
+    return getPhysioUltrasoundMessages();
+  }
+  if (kind === 'diagnostic_image' || kind === 'diagnostic_study') {
+    return getNoExtractableTextMessages();
+  }
+  return getVisualReferenceOnlyMessages();
 }
 
 function truncateClinicalContextText(value: string, label: string): string {
@@ -249,6 +456,7 @@ export class FileProcessorService {
               return {
                 ...baseResult,
                 extractedText: processedOcrText,
+                clinicalAttachmentKind: ocrResult.clinicalAttachmentKind,
                 clinicalContextStatus: ocrResult.clinicalContextStatus,
                 clinicalContextMessage: ocrResult.clinicalContextMessage,
                 pageCount: pdfResult.pageCount,
@@ -307,9 +515,20 @@ export class FileProcessorService {
         if (imageResult.clinicalContextStatus === 'rejected_no_text') {
           return {
             ...baseResult,
+            clinicalAttachmentKind: imageResult.clinicalAttachmentKind,
             clinicalContextStatus: imageResult.clinicalContextStatus,
             clinicalContextMessage: imageResult.clinicalContextMessage,
-            error: getNoExtractableTextMessage(),
+            error: getLocalizedMessage(imageResult.clinicalContextMessage),
+          };
+        }
+
+        if (imageResult.clinicalContextStatus === 'visual_reference_only') {
+          return {
+            ...baseResult,
+            clinicalAttachmentKind: imageResult.clinicalAttachmentKind,
+            clinicalContextStatus: imageResult.clinicalContextStatus,
+            clinicalContextMessage: imageResult.clinicalContextMessage,
+            error: getLocalizedMessage(imageResult.clinicalContextMessage),
           };
         }
 
@@ -317,6 +536,7 @@ export class FileProcessorService {
         return {
           ...baseResult,
           extractedText: processedText,
+          clinicalAttachmentKind: imageResult.clinicalAttachmentKind,
           clinicalContextStatus: imageResult.clinicalContextStatus,
           clinicalContextMessage: imageResult.clinicalContextMessage,
         };
@@ -382,7 +602,8 @@ export class FileProcessorService {
    */
   private static async extractImageTextWithGemini(file: File): Promise<{
     extractedText: string;
-    clinicalContextStatus: 'accepted_ocr_text' | 'rejected_no_text';
+    clinicalContextStatus: 'accepted_ocr_text' | 'rejected_no_text' | 'visual_reference_only';
+    clinicalAttachmentKind: ClinicalAttachmentKind;
     clinicalContextMessage: {
       esES: string;
       enCA: string;
@@ -399,20 +620,32 @@ export class FileProcessorService {
     })();
     const visualScore = 0;
     const ocrScore = scoreImageExtractionUtility(ocrExtractionResult ?? '');
-    const clinicalContextStatus = ocrScore > 0 ? 'accepted_ocr_text' : 'rejected_no_text';
+    const clinicalAttachmentKind = classifyImageAttachmentKind(file, ocrScore);
+    const clinicalContextStatus = (() => {
+      if (ocrScore > 0) {
+        return 'accepted_ocr_text';
+      }
+      if (clinicalAttachmentKind === 'diagnostic_image' || clinicalAttachmentKind === 'diagnostic_study') {
+        return 'rejected_no_text';
+      }
+      return 'visual_reference_only';
+    })();
+    const clinicalContextMessage = getMessageForAttachmentKind(clinicalAttachmentKind);
 
     console.log('[FileProcessor] Clinical context decision:', {
       fileName: file.name,
       ocrScore,
       visualScore,
+      clinicalAttachmentKind,
       clinicalContextStatus,
     });
 
-    if (clinicalContextStatus === 'rejected_no_text') {
+    if (clinicalContextStatus !== 'accepted_ocr_text') {
       return {
         extractedText: '',
+        clinicalAttachmentKind,
         clinicalContextStatus,
-        clinicalContextMessage: getNoExtractableTextMessages(),
+        clinicalContextMessage,
       };
     }
 
@@ -420,8 +653,9 @@ export class FileProcessorService {
     const extractedText = buildOcrClinicalContextText(ocrBody);
     return {
       extractedText,
+      clinicalAttachmentKind,
       clinicalContextStatus,
-      clinicalContextMessage: getNoExtractableTextMessages(),
+      clinicalContextMessage,
     };
   }
 
@@ -433,6 +667,7 @@ export class FileProcessorService {
   private static async extractScannedPDFWithGemini(file: File): Promise<{
     extractedText: string;
     clinicalContextStatus: 'accepted_ocr_text';
+    clinicalAttachmentKind: 'written_report';
     clinicalContextMessage: {
       esES: string;
       enCA: string;
@@ -461,6 +696,7 @@ export class FileProcessorService {
     return {
       extractedText,
       clinicalContextStatus: 'accepted_ocr_text',
+      clinicalAttachmentKind: 'written_report',
       clinicalContextMessage: getNoExtractableTextMessages(),
     };
   }

@@ -11,6 +11,22 @@ export interface ClinicalAttachment {
   uploadedAt: string;
   /** Extracted text from PDF/image (when processed by FileProcessorService or similar) */
   extractedText?: string;
+  /** Clinical context decision made by FileProcessorService */
+  clinicalContextStatus?: 'accepted_ocr_text' | 'rejected_no_text' | 'visual_reference_only';
+  /** Attachment kind used to enforce diagnostic imaging scope */
+  clinicalAttachmentKind?:
+    | 'written_report'
+    | 'diagnostic_image'
+    | 'diagnostic_study'
+    | 'physio_ultrasound_assessment'
+    | 'clinical_context_photo'
+    | 'restricted_body_surface_photo'
+    | 'unknown_image';
+  /** Localized clinical-context message from FileProcessorService */
+  clinicalContextMessage?: {
+    esES: string;
+    enCA: string;
+  };
   /** Optional processing error when extraction fails */
   error?: string | null;
   /** Optional page count detected for PDFs */

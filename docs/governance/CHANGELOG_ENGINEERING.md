@@ -1,5 +1,17 @@
 # ENGINEERING.md Changelog
 
+## 2026-05-19 — v1.9.2
+
+- Sintetiza guardrails de imagen en taxonomía P0: `diagnostic_image`, `diagnostic_study`, `physio_ultrasound_assessment`, `clinical_context_photo` y `restricted_body_surface_photo`.
+- Excluye piel/heridas/cicatrices/edema/hematomas de la foto clínica contextual general y las mueve a superficie corporal restringida.
+- Mantiene regla madre: ningún píxel alimenta razonamiento clínico; solo texto OCR o descripción explícita del profesional.
+
+## 2026-05-19 — v1.9.1
+
+- P0 feedback imágenes: aclara ADR-009 para distinguir imágenes diagnósticas de fotos clínicas contextuales.
+- FileProcessor clasifica imagen sin OCR como `diagnostic_image` solo si el nombre sugiere imagen diagnóstica; si no, la conserva como `clinical_photo_reference` / `visual_reference_only`.
+- Mantiene el guardrail: ninguna imagen sin texto extraíble alimenta el prompt clínico ni genera interpretación diagnóstica automática.
+
 ## 2026-05-19 — v1.9
 
 - ADR-009 — Política de scope de imágenes diagnósticas. Base legal España (LOPS, RD 1976/1999, RD 1001/2002, Orden CIN/2135/2008) y Ontario (Physiotherapy Act 1991, CPO mayo 2026).

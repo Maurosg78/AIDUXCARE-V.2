@@ -3978,7 +3978,15 @@ const ProfessionalWorkflowPage = () => {
           setAttachments((prev) =>
             prev.map((a) =>
               a.id === attachment.id
-                ? { ...a, extractedText: result.extractedText ?? "", error: result.error, processingComplete: true }
+                ? {
+                    ...a,
+                    extractedText: result.extractedText ?? "",
+                    clinicalContextStatus: result.clinicalContextStatus,
+                    clinicalAttachmentKind: result.clinicalAttachmentKind,
+                    clinicalContextMessage: result.clinicalContextMessage,
+                    error: result.error,
+                    processingComplete: true,
+                  }
                 : a
             )
           );

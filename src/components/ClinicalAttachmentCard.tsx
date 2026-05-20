@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { X, FileText, AlertCircle, CheckCircle, Info, Loader2 } from 'lucide-react';
 import type { ClinicalAttachment } from '../services/clinicalAttachmentService';
 
 interface ClinicalAttachmentCardProps {
@@ -45,6 +45,7 @@ export function ClinicalAttachmentCard({
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
+  const isVisualReferenceOnly = attachment.clinicalContextStatus === 'visual_reference_only';
 
   return (
     <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -95,7 +96,25 @@ export function ClinicalAttachmentCard({
         </div>
       )}
 
-      {attachment.error && (
+      {isVisualReferenceOnly && (
+        <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-blue-800 font-apple">
+                Referencia visual guardada
+              </p>
+              {attachment.error && (
+                <p className="text-xs text-blue-700 mt-1 font-apple font-light">
+                  {attachment.error}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {attachment.error && !isVisualReferenceOnly && (
         <div className="mt-3 p-3 bg-yellow-50 rounded-md border border-yellow-200">
           <div className="flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
