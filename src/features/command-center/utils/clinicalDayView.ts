@@ -15,6 +15,7 @@ export type ClinicalDayRow = {
   patientId: string;
   patientName: string;
   time?: string;
+  quickListOrder?: number;
   status: PatientWorkflowStatus;
   rawData: PatientWorkflowInput;
   hasEncounter: boolean;
@@ -158,6 +159,7 @@ export async function buildClinicalDayView(
   const appointmentByPatientId = new Map<string, Appointment>();
   const sessionByPatientId = new Map<string, InProgressSession>();
   const quickItemByPatientId = new Map<string, TodayQuickItem>();
+  const quickItemOrderByPatientId = new Map<string, number>();
 
   for (const appointment of options.appointments) {
     appointmentByPatientId.set(appointment.patientId, appointment);
@@ -169,8 +171,11 @@ export async function buildClinicalDayView(
     }
   }
 
-  for (const quickItem of options.quickItems) {
+  for (const [index, quickItem] of options.quickItems.entries()) {
     quickItemByPatientId.set(quickItem.patientId, quickItem);
+    if (!quickItemOrderByPatientId.has(quickItem.patientId)) {
+      quickItemOrderByPatientId.set(quickItem.patientId, index);
+    }
   }
 
   const patientById = new Map<string, PatientListItem>();
@@ -276,6 +281,7 @@ export async function buildClinicalDayView(
         patientId: patient.id,
         patientName: patient.fullName || [patient.firstName, patient.lastName].filter(Boolean).join(' ') || 'Patient',
         time: getRowTime(appointment),
+        quickListOrder: quickItemOrderByPatientId.get(patient.id),
         status,
         rawData: rawFlags,
         hasEncounter,
@@ -304,6 +310,16 @@ export async function buildClinicalDayView(
     const rightTime = rightRow.time ?? '99:99';
     if (leftTime !== rightTime) {
       return leftTime.localeCompare(rightTime);
+    }
+
+    const leftHasQuickOrder = leftRow.quickListOrder !== undefined;
+    const rightHasQuickOrder = rightRow.quickListOrder !== undefined;
+    if (leftHasQuickOrder && rightHasQuickOrder) {
+      return leftRow.quickListOrder! - rightRow.quickListOrder!;
+    }
+
+    if (leftHasQuickOrder !== rightHasQuickOrder) {
+      return leftHasQuickOrder ? -1 : 1;
     }
 
     return leftRow.patientName.localeCompare(rightRow.patientName, 'en', { sensitivity: 'base' });
