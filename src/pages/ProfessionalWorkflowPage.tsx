@@ -5294,6 +5294,7 @@ const ProfessionalWorkflowPage = () => {
       const hepTotalCount = homeProgramItems.length;
       const hasHepChecklist = hepTotalCount > 0;
       const hepAdherencePercent = hasHepChecklist ? Math.round((hepCompletedCount / hepTotalCount) * 100) : undefined;
+      const hepDecisionWasMade = Boolean(treatmentDecisionConfirmationRef.current);
       // Optional longitudinal context from last completed encounter comparison + trajectory pattern + pain series
       let longitudinalSummary: string | undefined;
       let trajectoryPattern: string | undefined;
@@ -5351,7 +5352,8 @@ const ProfessionalWorkflowPage = () => {
         currentHepAdherenceSummary,
         previousPlansSummary,
         inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
-        homeProgram: homeProgramItems.length > 0 ? homeProgramItems.map((i) => i.label) : undefined,
+        homeProgram: homeProgramItems.map((i) => i.label),
+        homeProgramDecisionProvided: hepDecisionWasMade,
         jurisdiction: currentJurisdiction,
       };
       // Fase C: documentation + considerations (considerations not part of record until clinician inserts).

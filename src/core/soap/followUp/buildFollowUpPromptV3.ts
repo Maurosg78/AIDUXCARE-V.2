@@ -72,6 +72,8 @@ export interface FollowUpPromptV3Input {
   inClinicItems?: string[];
   /** Home exercise program (current or adjusted). Optional. */
   homeProgram?: string[];
+  /** Whether the clinician explicitly edited or confirmed today's HEP decision. */
+  homeProgramDecisionProvided?: boolean;
   /** When ES-ES, prompt and model output target Spanish; otherwise en-CA. */
   jurisdiction?: string;
 }
@@ -96,6 +98,7 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
     inClinicItems = [],
     homeProgram = [],
   } = input;
+  const homeProgramDecisionWasMade = input.homeProgramDecisionProvided === true;
 
   if (!baselineSOAP) {
     throw new Error('Follow-up SOAP requires baselineSOAP; do not call Vertex without baseline.');
@@ -132,18 +135,32 @@ ${inClinicItems.map((item) => `${item}`).join('\n\n')}
 `
       : '';
 
-  const hepSection =
-    homeProgram.length > 0
-      ? `CONTEXT — HOME EXERCISE PROGRAM (if provided)
+  const hepSection = (() => {
+    const currentHepItems = homeProgram;
+    const hasDecision = homeProgramDecisionWasMade;
+    const hasItems = currentHepItems.length > 0;
 
-This represents the current or adjusted home program.
-Do NOT invent new home exercises unless clearly justified by the update.
+    if (!hasDecision && !hasItems) {
+      return '';
+    }
 
-Home exercise program:
-${homeProgram.map((item) => `${item}`).join('\n\n')}
+    if (hasDecision && !hasItems) {
+      const noHepMessageEs = 'PROGRAMA DE EJERCICIOS EN CASA: Ninguno prescrito hoy por decisión del profesional.';
+      const noHepMessageEn = 'HOME EXERCISE PROGRAM: None prescribed today by clinician decision.';
+      const noHepMessage = input.jurisdiction === 'ES-ES' ? noHepMessageEs : noHepMessageEn;
+      return `${noHepMessage}\n\n`;
+    }
 
-`
-      : '';
+    const hepListItems = currentHepItems.map((item) => `${item}`).join('\n\n');
+    const canonicalNoteEs = 'Esta es la lista canónica y definitiva. No añadir ejercicios desde sesiones anteriores ni historial.';
+    const canonicalNoteEn = 'This is the canonical and final list. Do not add exercises from previous sessions or history.';
+    const canonicalNote = input.jurisdiction === 'ES-ES' ? canonicalNoteEs : canonicalNoteEn;
+    const hepHeaderEs = 'CONTEXTO — PROGRAMA DE EJERCICIOS EN CASA (decisión del profesional — canónico)';
+    const hepHeaderEn = 'CONTEXT — HOME EXERCISE PROGRAM (clinician decision — canonical)';
+    const hepHeader = input.jurisdiction === 'ES-ES' ? hepHeaderEs : hepHeaderEn;
+
+    return `${hepHeader}\n\n${canonicalNote}\n\n${hepListItems}\n\n`;
+  })();
 
   const longitudinalSection =
     longitudinalSummary && longitudinalSummary.trim().length > 0
