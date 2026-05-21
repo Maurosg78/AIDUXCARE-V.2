@@ -386,7 +386,19 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
   const getMedicationDisplayName = (entity: ClinicalEntity): string => {
     const medicationData = entity.medication_data;
-    const editedText = entity.text || '';
+    const rawEntityText = entity.text;
+    const entityTextRecord = typeof rawEntityText === 'object' && rawEntityText !== null
+      ? rawEntityText as Record<string, unknown>
+      : null;
+    const entityTextNormalizedName = typeof entityTextRecord?.normalized_name === 'string'
+      ? entityTextRecord.normalized_name
+      : '';
+    const entityTextOriginalText = typeof entityTextRecord?.original_text === 'string'
+      ? entityTextRecord.original_text
+      : '';
+    const editedText = typeof rawEntityText === 'string'
+      ? rawEntityText
+      : entityTextNormalizedName || entityTextOriginalText;
     const normalizedName = medicationData?.normalized_name || '';
     const originalText = medicationData?.original_text || '';
     const rawDisplayName = editedText || normalizedName || originalText;
@@ -398,7 +410,19 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     const medicationData = entity.medication_data;
     const normalizedName = medicationData?.normalized_name || '';
     const originalText = medicationData?.original_text || '';
-    const editedText = entity.text || '';
+    const rawEntityText = entity.text;
+    const entityTextRecord = typeof rawEntityText === 'object' && rawEntityText !== null
+      ? rawEntityText as Record<string, unknown>
+      : null;
+    const entityTextNormalizedName = typeof entityTextRecord?.normalized_name === 'string'
+      ? entityTextRecord.normalized_name
+      : '';
+    const entityTextOriginalText = typeof entityTextRecord?.original_text === 'string'
+      ? entityTextRecord.original_text
+      : '';
+    const editedText = typeof rawEntityText === 'string'
+      ? rawEntityText
+      : entityTextNormalizedName || entityTextOriginalText;
     const rawDisplayName = normalizedName || originalText || editedText;
     const displayName = stripTechnicalSuffix(rawDisplayName);
     return displayName;
