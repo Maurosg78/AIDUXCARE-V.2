@@ -7,7 +7,7 @@
  * @compliance PHIPA-aware (design goal), security audit logging
  */
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Stethoscope, Loader2, FileText, ChevronRight, Mic, Square } from 'lucide-react';
 import type { MSKRegion, MskTestDefinition, TestFieldDefinition } from '../../../core/msk-tests/library/mskTestLibrary';
@@ -19,7 +19,7 @@ import { FirebaseWhisperService } from '../../../services/FirebaseWhisperService
 
 type EvaluationResult = "normal" | "positive" | "negative" | "inconclusive";
 type TestCategoryKey = 'rom' | 'neuro' | 'inspection' | 'strength' | 'functional' | 'orthopedic' | 'general';
-type MageePillarKey = 'observation' | 'palpation' | 'rom' | 'strength';
+export type MageePillarKey = 'observation' | 'palpation' | 'rom' | 'strength';
 
 type MageePillarDefinition = {
   readonly key: MageePillarKey;
@@ -34,7 +34,7 @@ const MAGEE_BASE_PILLARS: readonly MageePillarDefinition[] = [
   { key: 'strength', labelEs: 'Fuerza muscular', labelEn: 'Muscle Strength' },
 ];
 
-type MageePillarNotes = Record<MageePillarKey, string>;
+export type MageePillarNotes = Record<MageePillarKey, string>;
 
 const EMPTY_PILLAR_NOTES: MageePillarNotes = {
   observation: '',
@@ -394,6 +394,7 @@ export interface EvaluationTabProps {
   // SOAP generation
   handleGenerateSoap: () => Promise<void>;
   isGeneratingSOAP: boolean;
+  onPillarNotesChange?: (notes: MageePillarNotes) => void;
   
   // Workflow
   sessionTypeFromUrl: 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate' | null;
@@ -429,6 +430,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   handleLibrarySelect,
   handleGenerateSoap,
   isGeneratingSOAP,
+  onPillarNotesChange,
   sessionTypeFromUrl,
   workflowRoute,
 }) => {
@@ -448,6 +450,14 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
       return updatedNotes;
     });
   };
+
+  useEffect(() => {
+    if (!onPillarNotesChange) {
+      return;
+    }
+
+    onPillarNotesChange(pillarNotes);
+  }, [onPillarNotesChange, pillarNotes]);
   const localizeTestForDisplay = (test: any) => {
     if (!isSpanishLocale) {
       return test;

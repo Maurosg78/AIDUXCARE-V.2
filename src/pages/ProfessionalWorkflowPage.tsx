@@ -140,6 +140,7 @@ import {
   trackError,
 } from "@/services/analytics/AnalyticsEvents";
 import { lazy, Suspense } from "react";
+import type { MageePillarNotes } from "../components/workflow/tabs/EvaluationTab";
 import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
 import { HomeProgramBlock } from "../components/workflow/HomeProgramBlock";
@@ -889,6 +890,12 @@ const ProfessionalWorkflowPage = () => {
   });
 
   const [evaluationTests, setEvaluationTests] = useState<EvaluationTestEntry[]>([]);
+  const [pillarNotes, setPillarNotes] = useState<MageePillarNotes>({
+    observation: '',
+    palpation: '',
+    rom: '',
+    strength: '',
+  });
   const [localSoapNote, setLocalSoapNote] = useState<SOAPNote | null>(null);
   const {
     processText,
@@ -899,10 +906,15 @@ const ProfessionalWorkflowPage = () => {
     reset: resetNiagaraProcessor,
   } = useNiagaraProcessor();
   const [editedAnalysisResults, setEditedAnalysisResults] = useState<any>(null);
+  const hasPillarNotes = Object.values(pillarNotes).some((note) => note.trim().length > 0);
+  const handlePillarNotesChange = useCallback((nextPillarNotes: MageePillarNotes) => {
+    setPillarNotes(nextPillarNotes);
+  }, []);
 
   const hasActiveWorkflowDraft = Boolean(
     transcript?.trim() ||
     evaluationTests.length > 0 ||
+    hasPillarNotes ||
     niagaraResults ||
     localSoapNote ||
     attachments.length > 0 ||
@@ -7758,6 +7770,7 @@ const ProfessionalWorkflowPage = () => {
                   handleGenerateSoap={handleGenerateSoapFromEvaluation}
                   sessionTypeFromUrl={sessionTypeFromUrl}
                   workflowRoute={workflowRoute}
+                  onPillarNotesChange={visitType === 'initial' ? handlePillarNotesChange : undefined}
                 />
               </Suspense>
             )}
