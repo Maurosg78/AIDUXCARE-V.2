@@ -25,7 +25,7 @@ export const ConsentVerificationPage: React.FC = () => {
   const { t } = useTranslation();
   const { patientId, token } = useParams<{ patientId?: string; token?: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { profile: professionalProfile } = useProfessionalProfileContext();
 
   const clinicName = useMemo(
@@ -59,6 +59,20 @@ export const ConsentVerificationPage: React.FC = () => {
       if (!patientId) {
         setLoading(false);
         // No mostrar error, mostrar pantalla de ayuda (ver render más abajo)
+        return;
+      }
+
+      const authenticatedUserId = user?.uid;
+      const hasAuthenticatedUser = Boolean(authenticatedUserId);
+
+      if (!hasAuthenticatedUser) {
+        if (authLoading) {
+          setLoading(true);
+          return;
+        }
+
+        setError('Authenticated user is required to initialize consent verification');
+        setLoading(false);
         return;
       }
 
@@ -98,7 +112,7 @@ export const ConsentVerificationPage: React.FC = () => {
             patientName,
             patientPhone || '+18777804236', // Default to Virtual Phone if no phone
             clinicName,
-            user?.uid || 'temp-user',
+            authenticatedUserId,
             clinicianDisplayName
           );
         }
@@ -125,7 +139,7 @@ export const ConsentVerificationPage: React.FC = () => {
         clearInterval(smsPolling);
       }
     };
-  }, [patientId]);
+  }, [authLoading, clinicianDisplayName, clinicName, navigate, patientId, token, user?.uid]);
 
   // Poll for SMS confirmation
   const startSMSPolling = (pid: string) => {
@@ -418,4 +432,3 @@ export const ConsentVerificationPage: React.FC = () => {
 };
 
 export default ConsentVerificationPage;
-
