@@ -3865,9 +3865,35 @@ const ProfessionalWorkflowPage = () => {
     // Ensure transcript is always a string
     const transcriptText = typeof transcript === 'string' ? transcript : String(transcript || '');
     const combinedClinicalInput = buildVertexClinicalInput(transcriptText, physioNotes);
+    const pillarEntries = Object.entries(pillarNotes);
+    const populatedPillarEntries = pillarEntries.filter((entry) => {
+      const noteValue = entry[1];
+      const trimmedNote = noteValue.trim();
+      return trimmedNote.length > 0;
+    });
+    const hasPillarContent = populatedPillarEntries.length > 0;
+    const pillarBlockLines = populatedPillarEntries.map((entry) => {
+      const pillarKey = entry[0];
+      const noteValue = entry[1];
+      const pillarLabel = pillarKey === 'observation'
+        ? 'Observación'
+        : pillarKey === 'palpation'
+          ? 'Palpación'
+          : pillarKey === 'rom'
+            ? 'Rango de movimiento'
+            : 'Fuerza muscular';
+      const trimmedNote = noteValue.trim();
+      return `${pillarLabel}: ${trimmedNote}`;
+    });
+    const pillarBlock = hasPillarContent
+      ? `[EVALUACIÓN FÍSICA BASE — DOCUMENTADA POR EL PROFESIONAL]\n${pillarBlockLines.join('\n')}`
+      : '';
+    const clinicalInputWithPillars = hasPillarContent
+      ? [combinedClinicalInput, pillarBlock].filter(Boolean).join('\n\n')
+      : combinedClinicalInput;
 
     // ✅ FIX: Allow analysis with attachments only (no transcript required)
-    const hasTranscript = combinedClinicalInput.trim().length > 0;
+    const hasTranscript = clinicalInputWithPillars.trim().length > 0;
     const hasAttachments = attachments && attachments.length > 0 && attachments.some(att => att.extractedText);
 
     if (!hasTranscript && !hasAttachments) {
@@ -3881,7 +3907,7 @@ const ProfessionalWorkflowPage = () => {
 
     // ✅ WO-04: Track analysis requested
     trackAnalysisRequested({
-      transcriptLength: combinedClinicalInput.length,
+      transcriptLength: clinicalInputWithPillars.length,
       hasAttachments: hasAttachments,
       attachmentCount: attachments?.length || 0
     });
@@ -3910,7 +3936,7 @@ const ProfessionalWorkflowPage = () => {
         '';
 
       const payload = {
-        text: combinedClinicalInput, // Can be empty if only analyzing attachments
+        text: clinicalInputWithPillars, // Can be empty if only analyzing attachments
         lang: transcriptMeta?.detectedLanguage ?? (languagePreference !== "auto" ? languagePreference : undefined),
         mode,
         timestamp: Date.now(),
