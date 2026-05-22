@@ -331,16 +331,6 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
               ))}
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => {
-              setMedicationError(null);
-              setIsAddMedicationModalOpen(true);
-            }}
-            className="mt-4 inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900"
-          >
-            ＋ Añadir medicamento
-          </button>
         </div>
         <AddMedicationModal
           isOpen={isAddMedicationModalOpen}
@@ -717,16 +707,6 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                   </div>
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  setMedicationError(null);
-                  setIsAddMedicationModalOpen(true);
-                }}
-                className="mt-3 inline-flex items-center rounded-lg bg-slate-800 px-3 py-2 text-xs font-medium text-white hover:bg-slate-900"
-              >
-                + Añadir medicamento
-              </button>
               {medicationError && (
                 <p className="mt-2 text-xs font-medium text-red-700">{medicationError}</p>
               )}
