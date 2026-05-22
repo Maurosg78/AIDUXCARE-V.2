@@ -710,16 +710,27 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                   <label className="text-xs font-semibold text-slate-700">
                     {pillarLabel}
                   </label>
-                  <textarea
-                    value={pillarNoteValue}
-                    onChange={(event) => {
-                      const newValue = event.target.value;
-                      updatePillarNote(pillar.key, newValue);
-                    }}
-                    placeholder={pillarPlaceholder}
-                    rows={2}
-                    className="w-full rounded-xl border border-emerald-100 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                  />
+                  <div className="relative">
+                    <textarea
+                      value={pillarNoteValue}
+                      onChange={(event) => {
+                        const newValue = event.target.value;
+                        updatePillarNote(pillar.key, newValue);
+                      }}
+                      placeholder={pillarPlaceholder}
+                      rows={2}
+                      className="w-full rounded-xl border border-emerald-100 bg-white px-3 py-2 pr-10 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                    />
+                    <VoiceInputButton
+                      onTranscribedText={(transcribedText) => {
+                        const currentText = pillarNotes[pillar.key];
+                        const needsSpacer = currentText.trim().length > 0;
+                        const spacerText = needsSpacer ? ' ' : '';
+                        const nextText = `${currentText}${spacerText}${transcribedText}`;
+                        updatePillarNote(pillar.key, nextText);
+                      }}
+                    />
+                  </div>
                 </div>
               );
             })}
