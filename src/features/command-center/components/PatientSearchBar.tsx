@@ -1,7 +1,7 @@
 /**
  * Patient Search Bar — WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1
  *
- * Visible search bar in Command Center. Search patient → select → navigate to the history view.
+ * Visible search bar in Command Center. Search patient → choose a direct clinical action.
  * Uses usePatientsList + client-side filter (case-insensitive) — PatientService.searchPatients
  * uses Firestore prefix search which is case-sensitive and returns no results for "nova" vs "Nova".
  */
@@ -31,12 +31,6 @@ export const PatientSearchBar: React.FC = () => {
     });
   }, [allPatients, query]);
 
-  const handleSelect = (patient: { id: string }) => {
-    navigate(`/patients/${patient.id}/history`);
-    setQuery('');
-    setShowResults(false);
-  };
-
   return (
     <div className="relative">
       <div className="relative">
@@ -62,25 +56,67 @@ export const PatientSearchBar: React.FC = () => {
             </div>
           ) : (
             <ul className="py-2">
-              {filteredPatients.map((patient) => (
-                <li key={patient.id} className="px-2">
-                  <button
-                    type="button"
-                    onMouseDown={(mouseEvent) => {
-                      mouseEvent.preventDefault();
-                      handleSelect(patient);
-                    }}
-                    className="w-full px-4 py-3 min-h-[56px] rounded-lg text-left hover:bg-slate-50 active:bg-slate-100 font-apple text-slate-900 flex flex-col justify-center"
-                  >
-                    <span className="block text-sm font-medium leading-snug">
-                      {patient.fullName || `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || t('shell.commandCenter.patientUnknownName')}
-                    </span>
-                    {patient.email && (
-                      <span className="block text-xs text-slate-500 mt-0.5 leading-tight">{patient.email}</span>
-                    )}
-                  </button>
-                </li>
-              ))}
+              {filteredPatients.map((patient) => {
+                const fallbackName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
+                const patientName = patient.fullName || fallbackName || t('shell.commandCenter.patientUnknownName');
+                const historyPath = `/patients/${patient.id}/history`;
+                const initialAssessmentPath = `/workflow?type=initial&patientId=${patient.id}`;
+                const followUpPath = `/workflow?type=followup&patientId=${patient.id}`;
+                const canStartFollowUp = Boolean(patient.activeBaselineId);
+
+                return (
+                  <li key={patient.id} className="px-2 py-1 border-b border-slate-100 last:border-0">
+                    <div className="px-3 py-2">
+                      <span className="block text-sm font-medium text-slate-900 leading-snug">
+                        {patientName}
+                      </span>
+                      {patient.email && (
+                        <span className="block text-xs text-slate-500 mt-0.5">{patient.email}</span>
+                      )}
+                    </div>
+                    <div className="flex gap-2 px-3 pb-2">
+                      <button
+                        type="button"
+                        onMouseDown={(mouseEvent) => {
+                          mouseEvent.preventDefault();
+                          navigate(historyPath);
+                          setQuery('');
+                          setShowResults(false);
+                        }}
+                        className="flex-1 px-2 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+                      >
+                        Ver SOAPs
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(mouseEvent) => {
+                          mouseEvent.preventDefault();
+                          navigate(initialAssessmentPath);
+                          setQuery('');
+                          setShowResults(false);
+                        }}
+                        className="flex-1 px-2 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
+                      >
+                        Evaluación inicial
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!canStartFollowUp}
+                        onMouseDown={(mouseEvent) => {
+                          mouseEvent.preventDefault();
+                          if (!canStartFollowUp) return;
+                          navigate(followUpPath);
+                          setQuery('');
+                          setShowResults(false);
+                        }}
+                        className="flex-1 px-2 py-1.5 text-xs font-medium text-white bg-sky-500 hover:bg-sky-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition"
+                      >
+                        Follow-up
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
