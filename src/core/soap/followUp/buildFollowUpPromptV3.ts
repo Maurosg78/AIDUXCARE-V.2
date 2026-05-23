@@ -116,6 +116,36 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
     input.jurisdiction === 'ES-ES'
       ? 'Use standard Spanish physiotherapy terminology and spelling'
       : 'Use Canadian physiotherapy terminology and spelling';
+  const objectiveEvolutionInstructionEs = `INSTRUCCIÓN CRÍTICA PARA SECCIÓN O — EVOLUCIÓN OBJETIVA:
+Cuando LONGITUDINAL CONTEXT o TRAJECTORY PATTERN AND PAIN TREND contengan métricas comparativas documentadas, incluye esas métricas en la sección O como evolución objetiva documentada longitudinalmente, no como hallazgos medidos de nuevo hoy.
+
+Formato requerido para datos comparativos:
+- Datos de dolor: "Dolor EVA: [previo]/10 → [actual]/10"
+- Datos de ROM: "ROM [movimiento]: [previo]° → [actual]°"
+- Medida funcional/objetiva: "[medida]: [previo] → [actual]"
+- Progreso general solo cuando esté explícitamente documentado: "Evolución clínica: [mejoría/deterioro/estable] desde la sesión anterior"
+
+NO uses lenguaje vago como "progreso estable" o "mejoría general" si hay datos comparativos específicos disponibles.
+NO inventes datos que no estén presentes en LONGITUDINAL CONTEXT o TRAJECTORY PATTERN AND PAIN TREND.
+NO conviertas narrativa del paciente en hallazgos objetivos salvo que se proporcione como métrica comparativa estructurada.
+Si no hay datos comparativos disponibles, documenta solo los hallazgos de hoy.`;
+  const objectiveEvolutionInstructionEn = `CRITICAL INSTRUCTION FOR OBJECTIVE SECTION — OBJECTIVE EVOLUTION:
+When LONGITUDINAL CONTEXT or TRAJECTORY PATTERN AND PAIN TREND contains documented comparative metrics, include those metrics in the O section as longitudinally documented objective evolution, not as newly measured findings from today.
+
+Required format for comparative data:
+- Pain data: "Pain VAS: [previous]/10 → [current]/10"
+- ROM data: "ROM [movement]: [previous]° → [current]°"
+- Functional/objective measure: "[measure]: [previous] → [current]"
+- General progress only when explicitly documented: "Clinical evolution: [improved/regressed/stable] since last session"
+
+Do NOT use vague language like "stable progress" or "general improvement" if specific comparative data is available.
+Do NOT invent data not present in LONGITUDINAL CONTEXT or TRAJECTORY PATTERN AND PAIN TREND.
+Do NOT convert patient narrative into objective findings unless it is provided as a structured comparative metric.
+If no comparative data is available, document only today's findings.`;
+  const objectiveEvolutionInstruction =
+    input.jurisdiction === 'ES-ES'
+      ? objectiveEvolutionInstructionEs
+      : objectiveEvolutionInstructionEn;
 
   const subj = (baselineSOAP.subjective ?? '').trim() || 'Not documented.';
   const obj = (baselineSOAP.objective ?? '').trim() || 'Not documented.';
@@ -411,6 +441,7 @@ Do NOT place progress, stability, response to treatment, or general clinical int
 Only include attachment-derived findings in Objective when they are present in the "attachments reviewed today" section
 If attachment-derived findings are included, make clear that they come from material reviewed today rather than from direct measurement by the physiotherapist
 You may reference previous objective findings only as prior clinical reference when needed for continuity
+${objectiveEvolutionInstruction}
 
 Update the Assessment to summarise progression, response, or tolerance as documented by the clinician
 Assessment MUST be MAX 4 lines
