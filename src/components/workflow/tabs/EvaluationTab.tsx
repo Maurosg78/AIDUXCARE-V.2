@@ -1328,7 +1328,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <div className="sticky bottom-4 z-10 flex items-center justify-between rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-md">
         <div className="text-sm text-slate-500">
           {t('workflow.evaluation.progressText', { completed: completedCount, total: totalTests, percent: progressPercent })}
         </div>
