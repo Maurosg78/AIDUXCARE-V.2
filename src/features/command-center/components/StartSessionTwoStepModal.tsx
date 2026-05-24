@@ -61,11 +61,13 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
   const patientHistory = usePatientHistory(step === 2 && !isNewlyCreatedPatient ? selectedPatient?.id ?? null : null);
   const hasHistory = patientHistory.data || false;
   const isLoadingHistory = patientHistory.loading;
-  const ongoingDisabled =
+  const isAddToTodayMode = mode === 'add_to_today';
+  const ongoingDisabledForStartNow =
     !!selectedPatient &&
     (isLoadingHistory || // Disable while loading (assume may have history)
       !!(selectedPatient as Patient & { activeBaselineId?: string }).activeBaselineId ||
       hasHistory);
+  const ongoingDisabled = isAddToTodayMode ? false : ongoingDisabledForStartNow;
   // Follow-up only for registered patients (have baseline or prior sessions)
   const followUpDisabled = !ongoingDisabled; // when ongoing is enabled (new patient), follow-up is disabled
 
@@ -144,7 +146,6 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
   };
 
   const patientName = selectedPatient?.fullName || selectedPatient?.firstName || t('shell.startSessionModal.patientFallbackName');
-  const isAddToTodayMode = mode === 'add_to_today';
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
