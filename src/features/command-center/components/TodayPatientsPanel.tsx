@@ -55,6 +55,8 @@ export interface TodayPatientsPanelProps {
   ) => void;
   /** Remove item from today's quick list. Does not delete the patient record. */
   onRemoveFromToday?: (item: TodayQuickItem) => void;
+  /** Cancel an appointment row from today's queue. Does not delete the patient record. */
+  onCancelAppointmentFromToday?: (appointmentId: string) => void;
   /** Clear entire list to start fresh */
   onClearList?: () => void;
   /** Dismiss an incomplete (red) session so it no longer appears in the list (marks session as cancelled). */
@@ -171,6 +173,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
   onAddToToday,
   onStartFromToday,
   onRemoveFromToday,
+  onCancelAppointmentFromToday,
   onClearList,
   onDismissIncomplete,
   selectedDate,
@@ -201,6 +204,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
     awaitingDocumentationRows.length + inProgressRows.length + toSeeRows.length;
   const hasActiveClinicalRows = activeClinicalRowCount > 0;
   const [confirmRemoveItem, setConfirmRemoveItem] = useState<TodayQuickItem | null>(null);
+  const [confirmCancelAppointment, setConfirmCancelAppointment] = useState<ClinicalDayRow | null>(null);
   const [dismissIncompleteItem, setDismissIncompleteItem] = useState<TodayQuickItem | null>(null);
   const [isListExpanded, setIsListExpanded] = useState(
     appointments.length > 0 || hasActiveClinicalRows
@@ -243,7 +247,7 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
     const primaryActionLabel = getPrimaryActionLabel(row.status);
     const sessionType = row.sessionType ?? fallbackQuickItem?.sessionType ?? 'followup';
     const quickItemKey = `${row.patientId}::${sessionType}`;
-    const quickItem = quickItemByKey.get(quickItemKey);
+    const quickItem = quickItemByKey.get(quickItemKey) ?? fallbackQuickItem;
     const isOverdue =
       row.status === PatientWorkflowStatus.SCHEDULED &&
       isPastDate(displayDate);
@@ -252,14 +256,24 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
       ? 'border-red-200 bg-red-50/60 hover:bg-red-50/80'
       : 'border-slate-200 bg-white hover:bg-slate-50';
     const hasDismissAction = row.status === PatientWorkflowStatus.ABANDONED && onDismissIncomplete && quickItem;
-    const canRemoveFromToday =
+    const hasClinicalArtifact =
+      row.hasSession ||
+      row.hasEncounter ||
+      row.hasConsultation ||
+      !!row.resumeSessionId;
+    const canRemoveQuickItemFromToday =
       row.status === PatientWorkflowStatus.SCHEDULED &&
       quickItem != null &&
       onRemoveFromToday != null &&
-      !row.hasSession &&
-      !row.hasEncounter &&
-      !row.hasConsultation &&
-      !row.resumeSessionId;
+      !hasClinicalArtifact;
+    const canCancelAppointmentFromToday =
+      row.status === PatientWorkflowStatus.SCHEDULED &&
+      row.appointmentId != null &&
+      onCancelAppointmentFromToday != null &&
+      !hasClinicalArtifact;
+    const canRemoveFromToday =
+      canRemoveQuickItemFromToday ||
+      canCancelAppointmentFromToday;
 
     return (
       <div
@@ -320,7 +334,13 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
           {canRemoveFromToday ? (
             <button
               type="button"
-              onClick={() => setConfirmRemoveItem(quickItem)}
+              onClick={() => {
+                if (canRemoveQuickItemFromToday && quickItem) {
+                  setConfirmRemoveItem(quickItem);
+                  return;
+                }
+                setConfirmCancelAppointment(row);
+              }}
               className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
               aria-label={t('shell.todayPatients.removeFromList')}
               title={t('shell.todayPatients.removeFromListTitle')}
@@ -483,6 +503,40 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                 onClick={() => {
                   onRemoveFromToday?.(confirmRemoveItem);
                   setConfirmRemoveItem(null);
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-apple text-sm"
+              >
+                {t('shell.todayPatients.remove')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm cancel appointment modal */}
+      {confirmCancelAppointment !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 font-apple mb-2">{t('shell.todayPatients.confirmRemoveTitle')}</h3>
+            <p className="text-sm text-gray-600 font-apple mb-4">
+              {t('shell.todayPatients.confirmRemoveMessage', { name: confirmCancelAppointment.patientName })}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setConfirmCancelAppointment(null)}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 font-apple text-sm"
+              >
+                {t('shell.todayPatients.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const appointmentId = confirmCancelAppointment.appointmentId;
+                  if (appointmentId) {
+                    onCancelAppointmentFromToday?.(appointmentId);
+                  }
+                  setConfirmCancelAppointment(null);
                 }}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-apple text-sm"
               >

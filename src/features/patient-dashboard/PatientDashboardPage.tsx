@@ -350,6 +350,52 @@ export const PatientDashboardPage: React.FC = () => {
           </div>
         </div>
 
+        {/* 3 clinical actions: initial, follow-up, ongoing */}
+        <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('patientDashboard.clinicalActions')}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(`/workflow?type=initial&patientId=${patientId}`)}
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-sm font-medium transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              {t('shell.initialAssessment')}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/workflow?type=followup&patientId=${patientId}`)}
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-blue/10 hover:bg-primary-blue/20 border border-primary-blue/30 text-primary-blue text-sm font-medium transition-colors"
+            >
+              <Play className="w-4 h-4" />
+              {t('patientDashboard.followUp')}
+            </button>
+            <button
+              type="button"
+              onClick={() => !ongoingDisabled && navigate('/command-center', { state: { openOngoingForPatientId: patientId } })}
+              disabled={ongoingDisabled}
+              title={ongoingDisabled ? t('shell.ongoingPatientTooltipDisabled') : undefined}
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-primary-blue/5 hover:border-primary-blue/30 text-slate-800 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-50 disabled:hover:border-slate-200"
+            >
+              <History className="w-4 h-4" />
+              {t('patientDashboard.ongoingPatient')}
+            </button>
+            {isSpainPilot() && visitsForDisplay.some(v => (v.status === 'completed' || v.status === 'signed') && v.soapNote?.status === 'finalized') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCertificateSourceSOAP(null);
+                  setShowCertificateModal(true);
+                }}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-sm font-medium transition-colors"
+              >
+                <Award className="w-4 h-4" />
+                Certificado
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Visits timeline */}
         <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
@@ -681,52 +727,6 @@ export const PatientDashboardPage: React.FC = () => {
                   )}
           </div>
         )}
-
-        {/* 3 clinical actions: initial, follow-up, ongoing */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">{t('patientDashboard.clinicalActions')}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button
-              type="button"
-              onClick={() => navigate(`/workflow?type=initial&patientId=${patientId}`)}
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-800 text-sm font-medium transition-colors"
-            >
-              <FileText className="w-4 h-4" />
-              {t('shell.initialAssessment')}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate(`/workflow?type=followup&patientId=${patientId}`)}
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-blue/10 hover:bg-primary-blue/20 border border-primary-blue/30 text-primary-blue text-sm font-medium transition-colors"
-            >
-              <Play className="w-4 h-4" />
-              {t('patientDashboard.followUp')}
-            </button>
-            <button
-              type="button"
-              onClick={() => !ongoingDisabled && navigate('/command-center', { state: { openOngoingForPatientId: patientId } })}
-              disabled={ongoingDisabled}
-              title={ongoingDisabled ? t('shell.ongoingPatientTooltipDisabled') : undefined}
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-primary-blue/5 hover:border-primary-blue/30 text-slate-800 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-50 disabled:hover:border-slate-200"
-            >
-              <History className="w-4 h-4" />
-              {t('patientDashboard.ongoingPatient')}
-            </button>
-            {isSpainPilot() && visitsForDisplay.some(v => (v.status === 'completed' || v.status === 'signed') && v.soapNote?.status === 'finalized') && (
-              <button
-                type="button"
-                onClick={() => {
-                  setCertificateSourceSOAP(null);
-                  setShowCertificateModal(true);
-                }}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-sm font-medium transition-colors"
-              >
-                <Award className="w-4 h-4" />
-                Certificado
-              </button>
-            )}
-          </div>
-        </div>
 
       </div>
 

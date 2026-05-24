@@ -16,6 +16,7 @@ import { usePatientsList } from './hooks/usePatientsList';
 import { Patient } from '../../services/patientService';
 import PatientService from '../../services/patientService';
 import sessionService from '../../services/sessionService';
+import { appointmentService } from '../../services/appointmentService';
 
 // Components
 import { CommandCenterHeader } from './components/CommandCenterHeader';
@@ -973,6 +974,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
                   void saveTodayList(user.uid, dateKey, updatedList);
                   return updatedList;
                 });
+              }}
+              onCancelAppointmentFromToday={async (appointmentId) => {
+                await appointmentService.updateAppointmentStatus(appointmentId, 'cancelled');
+                await getAppointments(selectedDate);
               }}
               />
 
