@@ -256,21 +256,14 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
       ? 'border-red-200 bg-red-50/60 hover:bg-red-50/80'
       : 'border-slate-200 bg-white hover:bg-slate-50';
     const hasDismissAction = row.status === PatientWorkflowStatus.ABANDONED && onDismissIncomplete && quickItem;
-    const hasClinicalArtifact =
-      row.hasSession ||
-      row.hasEncounter ||
-      row.hasConsultation ||
-      !!row.resumeSessionId;
     const canRemoveQuickItemFromToday =
       row.status === PatientWorkflowStatus.SCHEDULED &&
       quickItem != null &&
-      onRemoveFromToday != null &&
-      !hasClinicalArtifact;
+      onRemoveFromToday != null;
     const canCancelAppointmentFromToday =
       row.status === PatientWorkflowStatus.SCHEDULED &&
       row.appointmentId != null &&
-      onCancelAppointmentFromToday != null &&
-      !hasClinicalArtifact;
+      onCancelAppointmentFromToday != null;
     const canRemoveFromToday =
       canRemoveQuickItemFromToday ||
       canCancelAppointmentFromToday;
