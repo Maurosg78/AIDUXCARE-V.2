@@ -7,15 +7,16 @@
  * - Token counter (optional, can be shown elsewhere)
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CalendarDays, Users, MessageSquare, BarChart3 } from 'lucide-react';
+import { CalendarDays, Users, MessageSquare, BarChart3, Pencil } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useIsAdmin } from '../../../hooks/useIsAdmin';
 import { isSpainPilot } from '@/core/pilotDetection';
 import { useProfessionalProfile as useProfessionalProfileContext } from '../../../context/ProfessionalProfileContext';
 import { deriveClinicianDisplayName, resolveSalutationPrefixForGreeting } from '../../../utils/clinicProfile';
+import { EditProfileModal } from './EditProfileModal';
 import type { TokenUsage } from '../../../services/tokenTrackingService';
 
 export interface CommandCenterHeaderProps {
@@ -33,6 +34,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
   const isAdmin = useIsAdmin();
   const { profile: professionalProfile } = useProfessionalProfileContext();
   const isCommandCenter = location.pathname === '/command-center';
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   // P3: Command Center greeting - usar nombre del fisio logueado
   const clinicianDisplayName = useMemo(
@@ -80,7 +82,25 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
             <p className="text-[15px] font-medium text-slate-800 font-apple">
               {t('shell.commandCenter.title')} — {isSpainPilot() ? 'España' : 'Canada'}
             </p>
-            {greetingLine && <p className="text-[14px] text-slate-600 font-apple font-light">· {greetingLine}</p>}
+            {greetingLine && (
+              <div className="flex items-center gap-1.5">
+                <p className="text-[14px] text-slate-600 font-apple font-light">· {greetingLine}</p>
+                <button
+                  type="button"
+                  onClick={() => setIsEditProfileOpen(true)}
+                  title="Editar perfil profesional"
+                  className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+            {isEditProfileOpen && (
+              <EditProfileModal
+                profile={professionalProfile}
+                onClose={() => setIsEditProfileOpen(false)}
+              />
+            )}
           </div>
         </div>
 
