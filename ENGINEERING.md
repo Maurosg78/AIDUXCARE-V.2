@@ -1016,8 +1016,8 @@ Antes de vender AiduxCare a clínicas fuera del piloto, deben existir estos arte
 |---|---|---|
 | Intended Use Statement | Definir si AiduxCare es documentación clínica, CDS, SaMD o MLMD | Pendiente |
 | Claims Register | Controlar claims comerciales y evitar claims medical device no aprobados | Pendiente |
-| SaMD/MLMD Classification Memo | Documentar análisis Health Canada por función y grado de autonomía | Pendiente |
-| Risk Management File | ISO 14971-lite: peligros, daños, controles, riesgo residual | Pendiente |
+| SaMD/MLMD Classification Memo | Documentar análisis Health Canada por función y grado de autonomía | v0.1 activo — docs/governance/SAMD_CLASSIFICATION_MEMO.md |
+| Risk Management File | ISO 14971-lite: peligros, daños, controles, riesgo residual | v0.1 activo — docs/governance/AI_RISK_MANAGEMENT_FILE.md |
 | Software Safety Classification | IEC 62304-lite por módulo clínico | Pendiente |
 | Requirements Traceability Matrix | Requisito → riesgo → control → test → release | Pendiente |
 | Model/Prompt Card | Intended use, inputs, outputs, limitaciones, versión, known failure modes | Parcial |
@@ -1027,7 +1027,7 @@ Antes de vender AiduxCare a clínicas fuera del piloto, deben existir estos arte
 | Vulnerability Management/SBOM | Dependencias, CVEs, patch policy, secure release | Pendiente |
 | Access Review Log | Revisión periódica de usuarios, roles y permisos | Pendiente |
 | Backup/DR Test Evidence | Evidencia de recuperación y continuidad | Pendiente |
-| DPIA/PIA | Evaluación privacidad RGPD/PHIPA/PIPEDA por flujo clínico | Pendiente |
+| DPIA/PIA | Evaluación privacidad RGPD/PHIPA/PIPEDA por flujo clínico | v0.1 activo — docs/governance/DPIA_SOCRATES.md |
 | SOC 2 Control Matrix | Mapeo a Security, Availability, Confidentiality, Processing Integrity, Privacy | Pendiente |
 
 ### 6.5 Reglas SaMD/MLMD para nuevas features clínicas
@@ -1270,6 +1270,7 @@ AiduxCare amplifica. Evidencia. Acompaña.
 | 1.9.1 | 2026-05-19 | Aclaración P0 ADR-009: distinguir imágenes diagnósticas de fotos clínicas contextuales. Las fotos clínicas pueden conservarse como referencia visual sin interpretación diagnóstica ni razonamiento automático. |
 | 1.9.2 | 2026-05-19 | Taxonomía P0 de adjuntos visuales: diagnostic_image, diagnostic_study, physio_ultrasound_assessment, clinical_context_photo y restricted_body_surface_photo. |
 | 1.10 | 2026-05-20 | Añadido §11 — Norte Estratégico de Producto con referencia a docs/governance/PRODUCT_VISION.md v1.0. Visión del profesional, visión del paciente, app del paciente, interoperabilidad FHIR, límites del producto. Sesión estratégica CEO/CTO. |
+| 1.11 | 2026-05-24 | §6.4 actualizado: SaMD Classification Memo, Risk Management File y DPIA pasan de Pendiente a v0.1 activo. Commit be0ddde. |
 
 ---
 
