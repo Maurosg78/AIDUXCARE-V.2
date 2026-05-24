@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FileText, Play, History, Award } from 'lucide-react';
+import { FileText, Play, History, Award, ChevronDown } from 'lucide-react';
 
 import CertificateEsModal from '@/components/CertificateEsModal';
 import { isSpainPilot } from '@/core/pilotDetection';
@@ -74,6 +74,22 @@ export const PatientDashboardPage: React.FC = () => {
   const [isSavingPatient, setIsSavingPatient] = useState(false);
   const [patientDisplayOverride, setPatientDisplayOverride] = useState<Record<string, unknown> | null>(null);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [expandedVisitIds, setExpandedVisitIds] = useState<Set<string>>(() => new Set());
+  const [certificateSourceSOAP, setCertificateSourceSOAP] = useState<{subjective?:string;objective?:string;assessment?:string;plan?:string;date?:string} | null>(null);
+  const rawVisitList = patientVisits.data ?? [];
+  const visitsForDisplay = rawVisitList.filter((v) => !archivedVisitIds.has(v.id));
+  const mostRecentVisitId = visitsForDisplay[0]?.id ?? '';
+
+  useEffect(() => {
+    setExpandedVisitIds(() => {
+      const nextIds = new Set<string>();
+      if (mostRecentVisitId) {
+        nextIds.add(mostRecentVisitId);
+      }
+      return nextIds;
+    });
+  }, [patientId, mostRecentVisitId]);
+
   useEffect(() => {
     const checkBaseline = async () => {
       if (!patientId) return;
@@ -137,10 +153,21 @@ export const PatientDashboardPage: React.FC = () => {
   const hasActiveEpisode = !!activeEpisode.data;
   const hasPreviousEncounters = !!lastEncounter.data;
   const isEstablishedPatient = hasActiveEpisode || hasPreviousEncounters;
-  const rawVisitList = patientVisits.data ?? [];
-  const visitsForDisplay = rawVisitList.filter((v) => !archivedVisitIds.has(v.id));
   // Ongoing only for patients not yet in AiDuxCare (no baseline, no visits). Same logic as StartSessionTwoStepModal.
   const ongoingDisabled = hasActiveBaseline || visitsForDisplay.length > 0;
+
+  const toggleVisitExpanded = (visitId: string) => {
+    setExpandedVisitIds((previousIds) => {
+      const nextIds = new Set(previousIds);
+      const isCurrentlyExpanded = nextIds.has(visitId);
+      if (isCurrentlyExpanded) {
+        nextIds.delete(visitId);
+      } else {
+        nextIds.add(visitId);
+      }
+      return nextIds;
+    });
+  };
 
   const openEditPatientModal = async () => {
     if (!patientId) {
@@ -459,110 +486,145 @@ export const PatientDashboardPage: React.FC = () => {
                     window.alert(errMsg);
                   }
                 };
+                const isExpanded = expandedVisitIds.has(visit.id);
+                const canEmitCertificate =
+                  isSpainPilot() &&
+                  visit.soapNote?.status === 'finalized' &&
+                  !!visit.soap;
+                const emitCertificateFromVisit = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  const visitSoap = visit.soap;
+                  if (!visitSoap) {
+                    return;
+                  }
+                  const visitDateLabel = visit.date?.toLocaleDateString?.() ?? '';
+                  const nextCertificateSourceSOAP = {
+                    ...visitSoap,
+                    date: visitDateLabel,
+                  };
+                  setCertificateSourceSOAP(nextCertificateSourceSOAP);
+                  setShowCertificateModal(true);
+                };
                 return (
                 <div
                   key={visit.id}
-                  onClick={handleVisitClick}
-                  className="bg-slate-50 rounded-lg border border-slate-200 p-4 hover:border-brand-in-500 hover:shadow-md transition-all cursor-pointer"
+                  className="bg-slate-50 rounded-lg border border-slate-200 hover:border-brand-in-500 hover:shadow-md transition-all"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          visit.type === 'initial' ? 'bg-green-500' : 'bg-blue-500'
-                        }`}></div>
-                        <span className="text-sm font-semibold text-slate-900">
-                          {visit.type === 'initial'
-                            ? t('patientDashboard.initialEvaluation')
-                            : t('patientDashboard.followUpVisit')}
+                  <div
+                    className="flex items-center justify-between p-4 cursor-pointer"
+                    onClick={() => toggleVisitExpanded(visit.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${
+                        visit.type === 'initial' ? 'bg-green-500' : 'bg-blue-500'
+                      }`}></div>
+                      <span className="text-sm font-semibold text-slate-900">
+                        {visit.type === 'initial'
+                          ? t('patientDashboard.initialEvaluation')
+                          : t('patientDashboard.followUpVisit')}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {new Date(visit.date).toLocaleDateString('es-ES', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </span>
+                      {showPendingClosure && (
+                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
+                          {t('patientDashboard.pendingClosure')}
                         </span>
-                        <span className="text-xs text-slate-500">
-                          {new Date(visit.date).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric', 
-                            year: 'numeric' 
-                          })}
+                      )}
+                      {initialClosedByBaseline && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                          {t('patientDashboard.closed')}
                         </span>
-                        {showPendingClosure && (
-                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
-                            {t('patientDashboard.pendingClosure')}
-                          </span>
-                        )}
-                        {initialClosedByBaseline && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                            {t('patientDashboard.closed')}
-                          </span>
-                        )}
-                        {visit.status === 'signed' && !initialClosedByBaseline && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                            {t('patientDashboard.signed')}
-                          </span>
-                        )}
-                        {visit.type === 'follow-up' && visit.soapNote?.status === 'finalized' && !showPendingClosure && visit.status !== 'signed' && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                            {t('patientDashboard.closed')}
-                          </span>
-                        )}
-                      </div>
-
-                      {visit.chiefComplaint && (
-                        <p className="text-sm text-slate-700 mb-2 line-clamp-2">
-                          <span className="font-medium">{t('patientDashboard.chiefComplaint')}:</span> {visit.chiefComplaint}
-                        </p>
                       )}
-
-                      {visit.diagnosis && (
-                        <p className="text-sm text-slate-600 mb-2 line-clamp-1">
-                          <span className="font-medium">{t('patientDashboard.assessment')}:</span> {visit.diagnosis}
-                        </p>
+                      {visit.status === 'signed' && !initialClosedByBaseline && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                          {t('patientDashboard.signed')}
+                        </span>
                       )}
-
-                      {visit.soap?.plan && (
-                        <p className="text-sm text-slate-600 line-clamp-1">
-                          <span className="font-medium">{t('patientDashboard.plan')}:</span> {visit.soap.plan.substring(0, 100)}...
-                        </p>
+                      {visit.type === 'follow-up' && visit.soapNote?.status === 'finalized' && !showPendingClosure && visit.status !== 'signed' && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                          {t('patientDashboard.closed')}
+                        </span>
                       )}
                     </div>
-
-                    <div className="ml-4 flex flex-col items-end gap-2 shrink-0">
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        {isFamilyA ? (
-                          <button
-                            type="button"
-                            onClick={navigateToEditFinalizedVisit}
-                            className={`${VISIT_ACTION_SHELL} border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800 focus-visible:ring-slate-400`}
-                          >
-                            {t('patientDashboard.editSoap')}
-                          </button>
-                        ) : null}
-                        {isFamilyB && canArchiveSource ? (
-                          <button
-                            type="button"
-                            onClick={archiveVisitInFirestore}
-                            className={`${VISIT_ACTION_SHELL} border border-rose-200 bg-rose-50 text-rose-700 shadow-sm hover:bg-rose-100/90 hover:border-rose-300 hover:text-rose-800 focus-visible:ring-rose-400`}
-                          >
-                            {t('patientDashboard.removeFromHistory')}
-                          </button>
-                        ) : null}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (visit.source === 'consultation') {
-                            navigate(`/notes/${visit.id}`);
-                          } else if (visit.source === 'encounter') {
-                            openSoapPreview();
-                          } else if (isResumableInitial) {
-                            navigate(`/workflow?type=initial&patientId=${patientId}&sessionId=${visit.id}&resume=true`);
-                          }
-                        }}
-                        className={`${VISIT_ACTION_SHELL} border border-brand-in-200 bg-white text-brand-in-600 shadow-sm hover:bg-brand-in-50 hover:border-brand-in-300 hover:text-brand-in-700 focus-visible:ring-brand-in-400`}
-                      >
-                        {t('patientDashboard.viewSoap')} →
-                      </button>
-                    </div>
+                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                   </div>
+
+                  {isExpanded && (
+                    <div className="px-4 pb-4 border-t border-slate-100">
+                      <div className="flex items-start justify-between pt-4">
+                        <div className="flex-1">
+                          {visit.chiefComplaint && (
+                            <p className="text-sm text-slate-700 mb-2 line-clamp-2">
+                              <span className="font-medium">{t('patientDashboard.chiefComplaint')}:</span> {visit.chiefComplaint}
+                            </p>
+                          )}
+
+                          {visit.diagnosis && (
+                            <p className="text-sm text-slate-600 mb-2 line-clamp-1">
+                              <span className="font-medium">{t('patientDashboard.assessment')}:</span> {visit.diagnosis}
+                            </p>
+                          )}
+
+                          {visit.soap?.plan && (
+                            <p className="text-sm text-slate-600 line-clamp-1">
+                              <span className="font-medium">{t('patientDashboard.plan')}:</span> {visit.soap.plan.substring(0, 100)}...
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="ml-4 flex flex-col items-end gap-2 shrink-0">
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            {isFamilyA ? (
+                              <button
+                                type="button"
+                                onClick={navigateToEditFinalizedVisit}
+                                className={`${VISIT_ACTION_SHELL} border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800 focus-visible:ring-slate-400`}
+                              >
+                                {t('patientDashboard.editSoap')}
+                              </button>
+                            ) : null}
+                            {isFamilyB && canArchiveSource ? (
+                              <button
+                                type="button"
+                                onClick={archiveVisitInFirestore}
+                                className={`${VISIT_ACTION_SHELL} border border-rose-200 bg-rose-50 text-rose-700 shadow-sm hover:bg-rose-100/90 hover:border-rose-300 hover:text-rose-800 focus-visible:ring-rose-400`}
+                              >
+                                {t('patientDashboard.removeFromHistory')}
+                              </button>
+                            ) : null}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleVisitClick();
+                            }}
+                            className={`${VISIT_ACTION_SHELL} border border-brand-in-200 bg-white text-brand-in-600 shadow-sm hover:bg-brand-in-50 hover:border-brand-in-300 hover:text-brand-in-700 focus-visible:ring-brand-in-400`}
+                          >
+                            {t('patientDashboard.viewSoap')} →
+                          </button>
+                        </div>
+                      </div>
+
+                      {canEmitCertificate && (
+                        <div className="mt-3 pt-3 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={emitCertificateFromVisit}
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 hover:border-amber-300 transition-colors"
+                          >
+                            <Award className="w-3.5 h-3.5" />
+                            Emitir certificado
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
               })}
@@ -653,7 +715,10 @@ export const PatientDashboardPage: React.FC = () => {
             {isSpainPilot() && visitsForDisplay.some(v => (v.status === 'completed' || v.status === 'signed') && v.soapNote?.status === 'finalized') && (
               <button
                 type="button"
-                onClick={() => setShowCertificateModal(true)}
+                onClick={() => {
+                  setCertificateSourceSOAP(null);
+                  setShowCertificateModal(true);
+                }}
                 className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-sm font-medium transition-colors"
               >
                 <Award className="w-4 h-4" />
@@ -668,7 +733,7 @@ export const PatientDashboardPage: React.FC = () => {
       {showCertificateModal && isSpainPilot() && (() => {
         const completedVisits = visitsForDisplay.filter(v => (v.status === 'completed' || v.status === 'signed') && v.soapNote?.status === 'finalized');
         const mostRecentVisit = completedVisits[0];
-        const soapAssessment = mostRecentVisit?.soap?.assessment || mostRecentVisit?.diagnosis || '';
+        const soapAssessment = certificateSourceSOAP?.assessment || mostRecentVisit?.soap?.assessment || mostRecentVisit?.diagnosis || '';
         const patientName = `${String(patient.firstName || '').trim()} ${String(patient.lastName || '').trim()}`.trim();
         const patientBirthDate = String((patient as { birthDate?: string }).birthDate || '');
         const professionalName = professionalProfile?.fullName || professionalProfile?.displayName || '';
@@ -677,7 +742,10 @@ export const PatientDashboardPage: React.FC = () => {
         return (
           <CertificateEsModal
             isOpen={showCertificateModal}
-            onClose={() => setShowCertificateModal(false)}
+            onClose={() => {
+              setShowCertificateModal(false);
+              setCertificateSourceSOAP(null);
+            }}
             soapAssessment={soapAssessment}
             professional={{ nombre: professionalName, numeroColegiado: professionalLicense, especialidad: professionalSpecialty }}
             patient={{ nombre: patientName, fechaNacimiento: patientBirthDate }}
