@@ -14,6 +14,7 @@ import type { TodayQuickItem } from '../components/TodayPatientsPanel';
 export type ClinicalDayRow = {
   patientId: string;
   patientName: string;
+  appointmentId?: string;
   time?: string;
   quickListOrder?: number;
   status: PatientWorkflowStatus;
@@ -280,6 +281,7 @@ export async function buildClinicalDayView(
       const row: ClinicalDayRow = {
         patientId: patient.id,
         patientName: patient.fullName || [patient.firstName, patient.lastName].filter(Boolean).join(' ') || 'Patient',
+        appointmentId: appointment?.id,
         time: getRowTime(appointment),
         quickListOrder: quickItemOrderByPatientId.get(patient.id),
         status,
