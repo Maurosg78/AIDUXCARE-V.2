@@ -469,31 +469,43 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
 
           setIsTranscribing(true);
 
-          // Combine all raw chunks into a single valid WebM container.
-          // Splitting into fixed-size segments creates invalid WebM files: segments
-          // after the first lack the initialization cluster that Whisper requires.
-          // One combined Blob preserves the full WebM structure.
-          const combinedBlob = new Blob(chunks, { type: chunks[0].type });
-
           // Firebase Cloud Functions 1st-gen request body limit is 10MB.
-          // Base64 encoding adds ~33% overhead, so the safe binary threshold is ~7MB
-          // (7MB × 1.33 ≈ 9.3MB base64 JSON — safely under the 10MB limit).
-          // Recordings over ~30 minutes at typical Opus bitrates exceed this threshold.
-          const MAX_SAFE_BLOB_BYTES = 7 * 1024 * 1024;
-          if (combinedBlob.size > MAX_SAFE_BLOB_BYTES) {
-            const sizeMB = (combinedBlob.size / 1024 / 1024).toFixed(1);
-            setError(
-              `La grabación es demasiado larga para procesar de una sola vez (${sizeMB} MB). ` +
-              `Por favor grabe en segmentos de menos de 30 minutos.`
-            );
-            setIsTranscribing(false);
-            return;
+          // Base64 encoding adds ~33% overhead, so the safe binary threshold per
+          // segment is 6.5MB (6.5MB × 1.33 ≈ 8.6MB base64 JSON).
+          //
+          // Strategy: split raw chunks into ≤6.5MB groups. The first group is a
+          // naturally valid WebM (contains the initialization cluster). Each
+          // subsequent group gets chunks[0] prepended as the initialization
+          // carrier — this lets Whisper decode the segment without a header.
+          // The ~3–10s of overlapping audio from chunks[0] is removed by the
+          // deduplication step below.
+          const MAX_SEGMENT_BYTES = 6.5 * 1024 * 1024;
+          const headerChunk = chunks[0];
+          const chunkGroups: Blob[][] = [];
+          let currentGroup: Blob[] = [];
+          let currentSize = 0;
+
+          for (const chunk of chunks) {
+            currentGroup.push(chunk);
+            currentSize += chunk.size;
+            if (currentSize >= MAX_SEGMENT_BYTES) {
+              chunkGroups.push(currentGroup);
+              currentGroup = [];
+              currentSize = 0;
+            }
+          }
+          if (currentGroup.length > 0) {
+            chunkGroups.push(currentGroup);
           }
 
-          try {
-            await transcribeChunk(combinedBlob);
-          } catch (err) {
-            console.error('[useTranscript] Error processing audio:', err);
+          for (let i = 0; i < chunkGroups.length; i++) {
+            const blobParts = i === 0 ? chunkGroups[i] : [headerChunk, ...chunkGroups[i]];
+            const segment = new Blob(blobParts, { type: chunks[0].type });
+            try {
+              await transcribeChunk(segment);
+            } catch (err) {
+              console.error(`[useTranscript] Error processing segment ${i + 1}/${chunkGroups.length}:`, err);
+            }
           }
 
           // Ajuste 1: deduplicate adjacent parts that overlap at their boundary
