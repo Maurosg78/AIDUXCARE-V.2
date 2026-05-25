@@ -69,7 +69,10 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
       hasHistory);
   const ongoingDisabled = isAddToTodayMode ? false : ongoingDisabledForStartNow;
   // Follow-up only for registered patients (have baseline or prior sessions)
-  const followUpDisabled = !ongoingDisabled; // when ongoing is enabled (new patient), follow-up is disabled
+  const patientHasBaselineOrHistory =
+    !!(selectedPatient as Patient & { activeBaselineId?: string }).activeBaselineId ||
+    hasHistory;
+  const followUpDisabled = !!selectedPatient && !patientHasBaselineOrHistory;
 
   // When modal opens or initialPatient/initialStep change, sync state
   useEffect(() => {
