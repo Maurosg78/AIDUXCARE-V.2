@@ -1,7 +1,7 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.11
+**Versión:** 1.12
 **Fecha:** Mayo 2026
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
@@ -832,6 +832,46 @@ sin invadir competencias diagnósticas.
   conservarse como referencia visual; AiduxCare no interpreta signos
   dermatológicos, vasculares ni de cicatrización.
 
+**ADR-010: Arquitectura de interoperabilidad — AiduxCare FHIR-aware, Sócrates source-agnostic**
+*Contexto:* AiduxCare necesita integrarse con EMRs institucionales (Ontario,
+España). Sócrates opera sobre un ledger normalizado de hechos clínicos.
+Estas dos necesidades tienen tensión arquitectónica: si Sócrates dependiera
+directamente de FHIR, cada nueva integración requeriría cambios en la capa
+de deliberación clínica.
+
+*Decisión:*
+- **AiduxCare es FHIR-aware.** Los adaptadores en `src/core/fhir/` traducen
+  entre recursos FHIR R4 (Patient, Encounter, Observation) y los tipos
+  internos de AiduxCare. Perfiles soportados: CA\_CORE, US\_CORE.
+- **Sócrates es source-agnostic.** Consume únicamente `ClinicalContextLedger`
+  — no sabe si el dato llegó de FHIR, HL7 v2, CSV o transcripción de sesión.
+- **`ClinicalProvenance`** es el puente: extiende `ClinicalTraceability`
+  (ya en `src/core/socratic/types.ts`) con campos de origen externo
+  (`sourceSystem`, `sourceRecordId`, `sourceResourceType`, `sourceTimestamp`,
+  `sourceAuthor`, `sourceOrganization`) y `confidenceOfMapping`.
+
+*`confidenceOfMapping`* — invariante regulatoria:
+  - `'native'`: dato originado en AiduxCare, sin transformación
+  - `'exact'`: mapeado 1:1 desde fuente externa (mismo código, misma unidad)
+  - `'normalized'`: transformado con pérdida de precisión controlada
+  - `'approximate'`: mapeo heurístico — requiere `acceptedByClinician: true`
+    antes de entrar como `DocumentedFact` al ledger
+
+*`schemaVersion`*: campo obligatorio en todo documento Firestore nuevo
+  a partir del Commit 2. Empieza en `1`. Se incrementa en cambios de schema
+  que rompen compatibilidad hacia atrás.
+
+*Consecuencias:*
+- Añadir un nuevo sistema de origen (HL7 v2, CSV) solo requiere un adaptador
+  nuevo — Sócrates no se toca.
+- La trazabilidad regulatoria es portable: un auditor puede ver en cualquier
+  hecho del ledger exactamente de dónde vino y con qué confianza fue mapeado.
+- Los códigos SNOMED/LOINC en los adaptadores FHIR son placeholders
+  estructurales hasta validación clínica — `code: 'unknown'` es la política
+  hasta que un clínico valide el mapeo.
+
+*Referencia completa:* `docs/governance/INTEROPERABILITY_ARCHITECTURE.md` v1.0
+
 ---
 
 ## 3. Convenciones de Código
@@ -1271,6 +1311,7 @@ AiduxCare amplifica. Evidencia. Acompaña.
 | 1.9.2 | 2026-05-19 | Taxonomía P0 de adjuntos visuales: diagnostic_image, diagnostic_study, physio_ultrasound_assessment, clinical_context_photo y restricted_body_surface_photo. |
 | 1.10 | 2026-05-20 | Añadido §11 — Norte Estratégico de Producto con referencia a docs/governance/PRODUCT_VISION.md v1.0. Visión del profesional, visión del paciente, app del paciente, interoperabilidad FHIR, límites del producto. Sesión estratégica CEO/CTO. |
 | 1.11 | 2026-05-24 | §6.4 actualizado: SaMD Classification Memo, Risk Management File y DPIA pasan de Pendiente a v0.1 activo. Commit be0ddde. |
+| 1.12 | 2026-05-25 | ADR-010: arquitectura de interoperabilidad — AiduxCare FHIR-aware / Sócrates source-agnostic. ClinicalProvenance, confidenceOfMapping y schemaVersion definidos como canónicos. Referencia: docs/governance/INTEROPERABILITY_ARCHITECTURE.md v1.0. |
 
 ---
 
