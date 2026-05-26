@@ -70,7 +70,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
   const ongoingDisabled = isAddToTodayMode ? false : ongoingDisabledForStartNow;
   // Follow-up only for registered patients (have baseline or prior sessions)
   const patientHasBaselineOrHistory =
-    !!(selectedPatient as Patient & { activeBaselineId?: string }).activeBaselineId ||
+    !!(selectedPatient as Patient & { activeBaselineId?: string } | null)?.activeBaselineId ||
     hasHistory;
   const followUpDisabled = !!selectedPatient && !patientHasBaselineOrHistory;
 
