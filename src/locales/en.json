@@ -358,12 +358,13 @@
         "checkboxHint": "This checkbox is required before finalizing AI-generated SOAP notes."
       },
       "finalizeModal": {
-        "title": "Finalize SOAP Note?",
-        "body": "Once finalized, this SOAP note will be saved and marked as complete. You can still edit it, but it will require \"unfinalizing\" first.",
-        "treatmentDecisionCheckboxLabel": "I confirm the treatment plan / HEP as my clinical decision",
-        "treatmentDecisionCheckboxHint": "If checked, the confirmed treatment plan can hydrate the next follow-up as clinician-approved continuity.",
+        "title": "Confirm and finalize clinical note",
+        "body": "Once finalized, this note will be recorded as a completed clinical document. You may edit it subsequently through the documented unlock process.",
+        "reviewCheckboxLabel": "I have reviewed the content of this note and accept professional responsibility for its accuracy, in accordance with the standards of the College of Physiotherapists of Ontario (CPO) and applicable privacy legislation.",
+        "treatmentDecisionCheckboxLabel": "The treatment plan and home exercise program reflect my clinical decision and are documented as approved therapeutic continuity.",
+        "treatmentDecisionCheckboxHint": "The confirmed plan may be used as a reference for clinician-approved continuity in the next follow-up session.",
         "cancel": "Cancel",
-        "finalize": "Finalize"
+        "finalize": "Sign and finalize"
       },
       "cannotFinalize": {
         "title": "Cannot Finalize",

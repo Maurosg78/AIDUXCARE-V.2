@@ -358,12 +358,13 @@
         "checkboxHint": "Esta casilla es obligatoria antes de finalizar notas SOAP generadas por IA."
       },
       "finalizeModal": {
-        "title": "¿Finalizar nota SOAP?",
-        "body": "Al finalizar, la nota SOAP se guardará y se marcará como completada. Podrás editarla después, pero antes tendrás que \"desfinalizarla\".",
-        "treatmentDecisionCheckboxLabel": "Confirmo el plan de tratamiento / HEP como mi decisión clínica",
-        "treatmentDecisionCheckboxHint": "Si se marca, el plan confirmado podrá hidratar el siguiente seguimiento como continuidad aprobada por el fisioterapeuta.",
+        "title": "Confirmar y finalizar nota clínica",
+        "body": "Al finalizar, la nota quedará registrada como documento clínico completado. Podrá editarla posteriormente mediante el proceso de desbloqueo documentado.",
+        "reviewCheckboxLabel": "He revisado el contenido de esta nota y asumo responsabilidad profesional sobre su exactitud, conforme a los estándares del Consejo General de Colegios de Fisioterapeutas de España (CGCFE) y la Ley 41/2002.",
+        "treatmentDecisionCheckboxLabel": "El plan de tratamiento y programa de ejercicios domiciliarios reflejan mi decisión clínica y quedan documentados como continuidad terapéutica aprobada.",
+        "treatmentDecisionCheckboxHint": "El plan confirmado podrá utilizarse como referencia de continuidad clínica aprobada en la siguiente sesión de seguimiento.",
         "cancel": "Cancelar",
-        "finalize": "Finalizar"
+        "finalize": "Firmar y finalizar"
       },
       "cannotFinalize": {
         "title": "No se puede finalizar",
