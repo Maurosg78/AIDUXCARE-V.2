@@ -1,10 +1,123 @@
 # Interoperability Architecture — AiduxCare + Sócrates
 
-**Versión:** 1.0
-**Fecha:** 2026-05-25
+**Versión:** 1.2
+**Fecha:** 2026-05-27
 **Autor:** Mauricio Sobarzo, CEO/CTO
 **Estado:** Activo. Aplica a cualquier código que toque interoperabilidad, `ClinicalProvenance`, o el ledger de Sócrates.
 **ADR de referencia:** ADR-010 en ENGINEERING.md §2.2
+
+---
+
+## Propuesta de valor de interoperabilidad
+
+> *Esta sección es la que abre la conversación con Dedalus, con Ontario Health, o con cualquier HIS. El diagrama de `ClinicalProvenance` viene después.*
+
+### Posicionamiento: capa clínica inteligente, no otro EMR de fisio
+
+AiduxCare no compite por ser otro PMS de fisioterapia con FHIR añadido. Es una **capa clínica inteligente** que:
+
+1. **Consume** contexto histórico del EMR para enriquecer cada sesión
+2. **Genera** razonamiento longitudinal del episodio fisioterapéutico con trazabilidad explícita a cada decisión clínica
+3. **Devuelve** al EMR lo que rara vez aparece en los PMS de fisio: `EpisodeOfCare` + `Goal` + `Observation` + `CarePlan` como recursos FHIR R4 estructurados — no solo como PDF adjunto
+
+### Por qué FHIR R4 solo no es la ventaja
+
+WebPT ya muestra interoperabilidad HL7 v2 documental. Healthie publica señales de FHIR R4/certificación ONC. EMRFlow y SPRY ya usan el lenguaje de FHIR, SMART on FHIR e integración con EHRs. Si la propuesta de valor de AiduxCare fuera "también hacemos FHIR R4", eso no es una ventaja — es un requisito de entrada al mercado enterprise.
+
+La ventaja no es técnica. Es clínica.
+
+### Lo que suele no llegar al EMR y AiduxCare sí genera
+
+En la documentación pública revisada, los PMS/EMR de fisioterapia tienden a resolver agenda, billing, documentación, e integración documental. No aparece como patrón dominante la devolución al EMR hospitalario de un episodio fisioterapéutico como recursos FHIR clínicos estructurados.
+
+Ese es el espacio clínico que AiduxCare puede ocupar:
+
+| Dato clínico | Recurso FHIR | Por qué el EMR no lo tiene |
+|---|---|---|
+| Adherencia longitudinal al HEP sesión a sesión | `Observation` (adherencia) | El HEP se prescribe en el PMS de fisio. Cumplimiento nunca llega al EMR. |
+| Evolución funcional con trazabilidad a decisiones del fisio | `Goal` + `Observation` (outcomes) | Los scores funcionales (NPRS, PSFS, DASH) se miden en el PMS. El médico nunca los ve estructurados. |
+| Señales psicosociales del episodio aceptadas por el fisioterapeuta | `Observation` (flags clínicos) | Identificadas por Sócrates, validadas por el fisio. Rara vez quedan codificadas como dato interoperable. |
+| Razonamiento socrático — qué se preguntó, qué se consideró, qué se descartó | `QuestionnaireResponse` | La deliberación clínica del fisioterapeuta rara vez queda disponible como dato estructurado interoperable. |
+
+Eso no es solo un `DocumentReference` con un PDF. Es un `EpisodeOfCare` con `Goal` de rehabilitación medidos, `Observation` de outcome measures verificados, y `CarePlan` ejecutado con adherencia documentada. Máquina-legible. Diseñado para que Epic, Dedalus u otro HIS puedan ingerirlo sin relectura humana del episodio.
+
+### Paisaje competitivo — señales públicas revisadas (mayo 2026)
+
+Lectura de documentación pública y páginas comerciales disponibles. Esto no reemplaza due diligence técnica con acceso a APIs, contratos o sandboxes:
+
+| Plataforma | FHIR R4 | Bidireccional | Datos estructurados de vuelta al EMR hospitalario |
+|---|---|---|---|
+| Jane App (CA) | No observado públicamente | No observado públicamente | Integraciones públicas centradas en billing, calendario, fax, HEP y herramientas de práctica. |
+| Noterro (CA) | No observado públicamente | No observado públicamente | Integraciones públicas centradas en billing, pagos, calendario, intake y operaciones de clínica. |
+| Cliniko (AU) | No observado públicamente | No observado públicamente | Ecosistema amplio de apps; no se observa FHIR/HL7 clínico en documentación pública revisada. |
+| Power Diary / Zanda (AU) | No observado públicamente | No observado públicamente | Integraciones públicas orientadas a billing, calendario, pagos y administración. |
+| Healthie (US) | Sí, en producto enterprise/certificación ONC | Parcial | FHIR existe como infraestructura; no se observa públicamente una propuesta rehab-specific de devolución longitudinal a Epic/Cerner. |
+| WebPT (US) | HL7 v2 | Sí, documental | Intercambio HL7 de documentos/notas; no se observa devolución del episodio como `Goal`/`Observation`/`CarePlan` FHIR nativos. |
+| EMRFlow (US) | Sí, FHIR R4 / SMART on FHIR anunciado | Sí, anunciado | Señal competitiva relevante. Exporta bundles/encounters; no queda claro si devuelve razonamiento longitudinal rehab-specific al EMR. |
+| SPRY (US) | FHIR/HL7 anunciado | Sí, integración con partners | Señal competitiva relevante. Foco público fuerte en referral-to-payment, RCM y workflows de rehab. |
+
+**Brecha aparente que AiduxCare debe validar:**
+
+```
+HL7 v2 document exchange   ←  WebPT y otros resuelven notas/documentos
+                           ↕  ← espacio a validar comercial y técnicamente
+FHIR R4 structured         ←  EpisodeOfCare + Goal + Observation + CarePlan
+resource exchange               como recursos machine-readable en Epic/Dedalus
+```
+
+### Los dos flujos de datos — asimétricos en valor
+
+**AiduxCare consume del EMR:**
+
+- `Patient` — identidad, demografía, contactos de emergencia
+- `Encounter` históricos — episodios previos en otros servicios del hospital
+- `Condition` activos — diagnósticos que condicionan el tratamiento
+- `Medication` — medicamentos que afectan respuesta al ejercicio o percepción del dolor
+- `DiagnosticReport` / `Observation` — resultados de laboratorio e imagen con texto clínico
+
+Con esto, Sócrates llega a la primera sesión con contexto que antes tomaba 15 minutos reconstituir manualmente. El fisioterapeuta no pregunta lo que ya está documentado.
+
+**AiduxCare devuelve al EMR:**
+
+- `EpisodeOfCare` — el episodio fisioterapéutico completo, estructurado sesión a sesión
+- `Goal` — objetivos funcionales de rehabilitación con estado al alta (achieved / in-progress / cancelled)
+- `Observation` — outcome measures (NPRS, PSFS, DASH, ROM) medidos en cada sesión
+- `CarePlan` — plan ejecutado con actividades, frecuencia, y adherencia documentada
+- `QuestionnaireResponse` — razonamiento socrático del episodio: hipótesis planteadas, hallazgos considerados, banderas evaluadas
+
+Esta información hoy suele **desaparecer en la consulta del fisioterapeuta y no llega al EMR del médico en forma estructurada**. AiduxCare puede cerrar ese gap si convierte el razonamiento clínico validado por el fisioterapeuta en recursos interoperables.
+
+### La conversación con un HIS
+
+**Para Dedalus España, Ontario Health FHIR endpoints, o cualquier hospital con fisioterapia:**
+
+> "Sus clientes hospitales tienen fisioterapeutas cuyo trabajo clínico nunca llega al EMR en forma estructurada. El médico que derivó al paciente nunca sabe qué pasó en esas 12 semanas de rehabilitación — recibe, con suerte, un PDF de alta. Nosotros generamos ese episodio como recursos FHIR R4 y se lo devolvemos al sistema que ya tienen. El EMR se vuelve más completo. Eso es una integración que el hospital quiere pagar, no solo tolerar."
+
+### Roadmap de integración en tres versiones
+
+La arquitectura soporta tres niveles de integración. Cada versión entrega valor real sin depender de la siguiente.
+
+**Versión 1 — Piloto → 2027: Document-first, FHIR-shaped**
+
+- `DocumentReference` FHIR con el episodio estructurado como JSON + PDF legible por humanos
+- Sin SMART on FHIR. Sin escritura directa al EMR. El hospital importa manualmente o vía batch.
+- Costo de implementación: bajo. Demuestra la dirección sin requerir partnership técnico con el HIS.
+- Valor inmediato: el médico recibe más que un PDF — recibe datos que puede procesar.
+
+**Versión 2 — 2027 → 2028: Recursos FHIR R4 nativos**
+
+- `Goal`, `Observation`, `CarePlan`, `QuestionnaireResponse` mapeados con códigos SNOMED/LOINC reales por diagnóstico
+- Requiere que la evidence library de Sócrates tenga 10 o más patologías con códigos clínicos validados por fisioterapeuta
+- Sin SMART on FHIR todavía — los recursos se exponen vía API FHIR propia de AiduxCare
+- Valor: cualquier sistema con cliente FHIR R4 puede consumir el episodio sin intervención humana
+
+**Versión 3 — Enterprise, cliente concreto: SMART on FHIR + integración directa**
+
+- Integración específica con Dedalus Spain, Ontario Health FHIR endpoints, o el HIS del cliente
+- SMART on FHIR para autenticación delegada desde el EMR
+- Escritura directa al historial longitudinal del paciente en el sistema del hospital
+- Financiada por el contrato de partnership, no por runway propio
+- Condición de entrada: un cliente concreto que pague el costo de integración
 
 ---
 
@@ -203,8 +316,10 @@ Son extensión, no sustitución. El código existente que usa `ClinicalTraceabil
 | Versión | Fecha | Cambios |
 |---|---|---|
 | 1.0 | 2026-05-25 | Versión inicial. Decisión AiduxCare FHIR-aware / Sócrates source-agnostic. ClinicalProvenance canónico. Commit 2 scope definido. |
+| 1.1 | 2026-05-27 | Añadida propuesta de valor de interoperabilidad. Flujos asimétricos consume/ofrece. Argumento de venta para HIS/EMR europeos. |
+| 1.2 | 2026-05-27 | Propuesta de valor expandida con señales competitivas públicas (Jane, Noterro, Cliniko, WebPT, Healthie, EMRFlow, SPRY). Posicionamiento como capa clínica inteligente vs. EMR de fisio. Outputs clínicos diferenciales. Roadmap de tres versiones de integración. |
 
 ---
 
 *Documento interno de arquitectura. No contiene datos de pacientes.*
-*Fuentes: FHIR R4 (HL7), CA Core, US Core, ADR-002, ADR-008, ENGINEERING.md §2.2, sesión estratégica CEO/CTO 2026-05-25*
+*Fuentes: FHIR R4 (HL7), CA Core, US Core, ADR-002, ADR-008, ENGINEERING.md §2.2, sesión estratégica CEO/CTO 2026-05-25, revisión pública de Jane App / Noterro / Cliniko / WebPT / Healthie / EMRFlow / SPRY (2026-05-27)*

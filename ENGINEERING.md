@@ -870,7 +870,42 @@ de deliberación clínica.
   estructurales hasta validación clínica — `code: 'unknown'` es la política
   hasta que un clínico valide el mapeo.
 
-*Referencia completa:* `docs/governance/INTEROPERABILITY_ARCHITECTURE.md` v1.0
+*Acceso FHIR inbound — SMART on FHIR patient-authorized:*
+- AiduxCare no necesita acuerdo comercial con Epic/Dedalus para leer datos de
+  un paciente. El paciente autoriza acceso vía OAuth 2.0 (SMART on FHIR) en el
+  onboarding de la primera sesión. Epic, Cerner y Oracle están obligados a
+  exponer FHIR R4 patient access APIs (ONC 21st Century Cures Act, EE.UU.;
+  equivalentes en construcción en Ontario y España).
+- Scopes solicitados: `patient/Patient.read`, `patient/Condition.read`,
+  `patient/Medication.read`, `patient/DiagnosticReport.read`,
+  `patient/Observation.read`. El resultado es un Bundle que alimenta el ledger
+  de Sócrates antes de la primera sesión.
+
+*Soberanía de datos — tres zonas:*
+- **Zona 1 (superficie publicada):** `EpisodeOfCare`, `Goal`, `Observation`,
+  `CarePlan`, `QuestionnaireResponse` — hechos clínicos validados por el
+  fisioterapeuta. Accesibles a partners autorizados vía FHIR API de AiduxCare.
+- **Zona 2 (write-back):** los mismos recursos de Zona 1 escritos en el EMR
+  del hospital vía SMART on FHIR (Versión 3 del roadmap, financiada por
+  contrato de partnership).
+- **Zona 3 (interior protegido, nunca expuesto):** cadenas de razonamiento de
+  Sócrates, ledger interno, transcripciones crudas, lógica de detección de
+  señales psicosociales, patrones de población.
+- Regla: el partner recibe hechos clínicos del paciente, nunca el proceso que
+  los generó.
+
+*Dictado multilingüe — normalización al idioma legal del país de ejercicio:*
+- El fisioterapeuta dicta en su idioma materno. AiduxCare genera el SOAP en el
+  idioma legal del mercado activo (es-ES para España, en-CA para Ontario).
+- Idiomas de dictado soportados: `en`, `es`, `fr`, `pt`. Cada idioma adicional
+  requiere añadir el código en 4 archivos — la normalización la fuerza el
+  locale del mercado activo, no el idioma de entrada.
+- Fundamento: reduce carga cognitiva del cambio de idioma para profesionales
+  de salud inmigrantes o expatriados, sin comprometer el estándar documental.
+
+*Referencia completa:* `docs/governance/INTEROPERABILITY_ARCHITECTURE.md` v1.2
+*(actualizado 2026-05-27: propuesta de valor, paisaje competitivo verificado,
+SMART on FHIR inbound, soberanía de datos, roadmap tres versiones)*
 
 ---
 
