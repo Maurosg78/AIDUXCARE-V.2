@@ -313,6 +313,7 @@ const LANGUAGE_OPTIONS: Array<{ value: WhisperSupportedLanguage; label: string }
   { value: "auto", label: "Auto-detect" },
   { value: "en", label: "English (EN-CA)" },
   { value: "es", label: "Español (LatAm)" },
+  { value: "pt", label: "Português (PT)" },
   { value: "fr", label: "Français (Canada)" }
 ];
 

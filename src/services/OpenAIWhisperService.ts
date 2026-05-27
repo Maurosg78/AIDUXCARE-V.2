@@ -2,7 +2,7 @@
 
 import { OPENAI_API_KEY, WHISPER_MODEL, OPENAI_TRANSCRIPT_URL } from "../config/env";
 
-export type WhisperSupportedLanguage = "auto" | "en" | "es" | "fr";
+export type WhisperSupportedLanguage = "auto" | "en" | "es" | "fr" | "pt";
 export type WhisperMode = "live" | "dictation";
 
 export interface WhisperTranscriptionOptions {
@@ -35,7 +35,7 @@ export class OpenAIWhisperService {
   private static readonly API_KEY = OPENAI_API_KEY;
   private static readonly API_URL = OPENAI_TRANSCRIPT_URL || "https://api.openai.com/v1/audio/transcriptions";
   private static readonly DEFAULT_MODEL = WHISPER_MODEL || "gpt-4o-mini-transcribe";
-  private static readonly ALLOWED_LANGUAGES: WhisperSupportedLanguage[] = ["auto", "en", "es", "fr"];
+  private static readonly ALLOWED_LANGUAGES: WhisperSupportedLanguage[] = ["auto", "en", "es", "fr", "pt"];
 
   private static ensureConfigured() {
     if (!this.API_KEY) {
@@ -59,7 +59,7 @@ export class OpenAIWhisperService {
     const baseLines = [
       "Clinical context: Canadian physiotherapy assessment in compliance with PHIPA/PIPEDA.",
       "Vocabulary bias: AiDuxCare, Niagara, physiotherapy, manual therapy, gait, cervical spine, lumbar spine, vestibular assessment, thoracic outlet syndrome, WSIB, PHIPA, PIPEDA, SOAP, patient safety, mobility training, documentation, discharge planning.",
-      "Respect Canadian English, Canadian French, and Latin American Spanish accents.",
+      "Respect Canadian English, Canadian French, Latin American Spanish, and European Portuguese accents.",
       "Do not fabricate patient identifiers or personal health information."
     ];
 

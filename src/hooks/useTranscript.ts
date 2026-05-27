@@ -102,7 +102,8 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
       case 'en': return 'en-CA';
       case 'es': return 'es-MX';
       case 'fr': return 'fr-CA';
-      case 'auto': return 'en-CA'; // Default to English
+      case 'pt': return 'pt-PT';
+      case 'auto': return 'en-CA';
       default: return 'en-CA';
     }
   }, []);

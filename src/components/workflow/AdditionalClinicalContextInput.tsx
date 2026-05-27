@@ -23,12 +23,10 @@ const UI = esPilot
 
 const getDictationSpeechLang = (languagePreference: WhisperSupportedLanguage): string | undefined => {
   switch (languagePreference) {
-    case 'es':
-      return 'es-ES';
-    case 'fr':
-      return 'fr-CA';
-    case 'en':
-      return 'en-CA';
+    case 'es': return 'es-ES';
+    case 'fr': return 'fr-CA';
+    case 'en': return 'en-CA';
+    case 'pt': return 'pt-PT';
     case 'auto':
     default:
       return undefined;
