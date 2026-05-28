@@ -213,7 +213,14 @@ export class FeedbackService {
    */
   private static getCurrentPatientId(): string | null {
     try {
-      // Intentar desde URL
+      // Intentar desde query string (?patientId=...) — flujo principal
+      const searchParams = new URLSearchParams(window.location.search);
+      const queryPatientId = searchParams.get('patientId');
+      if (queryPatientId) {
+        return queryPatientId;
+      }
+
+      // Intentar desde pathname (/workflow/{id}/) — flujo alternativo
       const urlMatch = window.location.pathname.match(/\/workflow\/([^/]+)\//);
       if (urlMatch && urlMatch[1]) {
         return urlMatch[1];
