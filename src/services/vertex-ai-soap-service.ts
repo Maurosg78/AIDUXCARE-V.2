@@ -372,8 +372,24 @@ export async function generateSOAPNote(
         rawText = data.candidates[0].content.parts[0].text;
       } else if (data.text) {
         rawText = data.text;
+      } else if (data.soap && typeof data.soap === 'object') {
+        const soapStructured = data.soap as Record<string, unknown>;
+        const hasNamedSections =
+          typeof soapStructured.subjective === 'string' ||
+          typeof soapStructured.objective === 'string' ||
+          typeof soapStructured.assessment === 'string' ||
+          typeof soapStructured.plan === 'string';
+        const structuredSoapText = hasNamedSections
+          ? [
+              soapStructured.subjective ? `SUBJECTIVE:\n${soapStructured.subjective}` : '',
+              soapStructured.objective ? `OBJECTIVE:\n${soapStructured.objective}` : '',
+              soapStructured.assessment ? `ASSESSMENT:\n${soapStructured.assessment}` : '',
+              soapStructured.plan ? `PLAN:\n${soapStructured.plan}` : '',
+            ].filter(Boolean).join('\n\n')
+          : JSON.stringify(soapStructured);
+        rawText = structuredSoapText;
       } else if (data.soap) {
-        rawText = JSON.stringify(data.soap);
+        rawText = String(data.soap);
       }
 
       // Enforce contract with retry (max 1 retry)
@@ -1355,10 +1371,24 @@ export async function generateBaselineSOAPFromFreeText(freeText: string): Promis
   }
 
   const data = await response.json();
+  const soapObjectCandidate = data.soap && typeof data.soap === 'object'
+    ? data.soap as Record<string, unknown>
+    : null;
+  const soapObjectText = soapObjectCandidate
+    ? typeof soapObjectCandidate.plan === 'string'
+      ? [
+        soapObjectCandidate.subjective ? `SUBJECTIVE:\n${soapObjectCandidate.subjective}` : '',
+        soapObjectCandidate.objective ? `OBJECTIVE:\n${soapObjectCandidate.objective}` : '',
+        soapObjectCandidate.assessment ? `ASSESSMENT:\n${soapObjectCandidate.assessment}` : '',
+        soapObjectCandidate.plan ? `PLAN:\n${soapObjectCandidate.plan}` : '',
+      ].filter(Boolean).join('\n\n')
+      : JSON.stringify(soapObjectCandidate)
+    : null;
   const rawText =
     data.candidates?.[0]?.content?.parts?.[0]?.text ??
     data.text ??
-    (data.soap ? JSON.stringify(data.soap) : '');
+    soapObjectText ??
+    (data.soap ? String(data.soap) : '');
 
   if (!rawText || typeof rawText !== 'string') {
     throw new Error('No SOAP content returned from AI.');
@@ -1481,10 +1511,24 @@ export async function generateBaselineSOAPFromOngoingIntake(
   }
 
   const data = await response.json();
+  const soapObjectCandidate = data.soap && typeof data.soap === 'object'
+    ? data.soap as Record<string, unknown>
+    : null;
+  const soapObjectText = soapObjectCandidate
+    ? typeof soapObjectCandidate.plan === 'string'
+      ? [
+        soapObjectCandidate.subjective ? `SUBJECTIVE:\n${soapObjectCandidate.subjective}` : '',
+        soapObjectCandidate.objective ? `OBJECTIVE:\n${soapObjectCandidate.objective}` : '',
+        soapObjectCandidate.assessment ? `ASSESSMENT:\n${soapObjectCandidate.assessment}` : '',
+        soapObjectCandidate.plan ? `PLAN:\n${soapObjectCandidate.plan}` : '',
+      ].filter(Boolean).join('\n\n')
+      : JSON.stringify(soapObjectCandidate)
+    : null;
   const rawText =
     data.candidates?.[0]?.content?.parts?.[0]?.text ??
     data.text ??
-    (data.soap ? JSON.stringify(data.soap) : '');
+    soapObjectText ??
+    (data.soap ? String(data.soap) : '');
 
   if (!rawText || typeof rawText !== 'string') {
     throw new Error('No SOAP content returned from AI.');
