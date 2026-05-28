@@ -144,6 +144,10 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
           recognitionRef.current = null;
 
           if (shouldRestart) {
+            if (restartTimerRef.current != null) {
+              setIsDictating(true);
+              return;
+            }
             restartCountRef.current += 1;
             restartTimerRef.current = window.setTimeout(startRecognition, 250);
             setIsDictating(true);
@@ -157,12 +161,20 @@ export function useDictation(options?: { lang?: string; onResult?: (text: string
         rec.onerror = (e: SpeechRecognitionErrorEvent) => {
           logDictation('error', { sessionId, error: e.error, restartCount: restartCountRef.current });
           if (e.error === 'aborted') return;
-          if (e.error === 'no-speech') {
+          if (e.error === 'no-speech') return;
+          const isTransientError = e.error === 'network' || e.error === 'audio-capture';
+          if (isTransientError && keepAliveRef.current && restartCountRef.current < 3) {
+            restartCountRef.current += 1;
+            recognitionRef.current = null;
+            restartTimerRef.current = window.setTimeout(startRecognition, 1500);
             return;
           }
           keepAliveRef.current = false;
           clearRestartTimer();
-          setError(e.error === 'not-allowed' ? 'Microphone access denied.' : `Recognition error: ${e.error}`);
+          const errorMessage = e.error === 'not-allowed'
+            ? 'Microphone access denied.'
+            : `Recognition error: ${e.error}`;
+          setError(errorMessage);
           recognitionRef.current = null;
           setIsDictating(false);
         };
