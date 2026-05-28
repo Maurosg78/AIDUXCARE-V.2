@@ -88,3 +88,5 @@ Signed-off-by: ROADMAP_READ"
             tools/eval/reports/*__*.report.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+# dispatch-reindex: 2025-10-13T06:20:04Z
