@@ -7,15 +7,16 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, FileText, ChevronDown, ChevronUp, UploadCloud, Loader2, Paperclip } from 'lucide-react';
-import { DictationButton } from '@/components/ui/DictationButton';
+import { X, FileText, ChevronDown, ChevronUp, UploadCloud, Loader2, Paperclip, Mic, Square } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { useAuth } from '@/hooks/useAuth';
+import { useTranscript } from '@/hooks/useTranscript';
 import { createBaselineFromMinimalSOAP } from '@/services/clinicalBaselineService';
 import PatientService from '@/services/patientService';
 import { patientsRepo } from '@/repositories/patientsRepo';
 import { ClinicalAttachmentService, ClinicalAttachment } from '@/services/clinicalAttachmentService';
 import { generateBaselineSOAPFromOngoingIntake } from '@/services/vertex-ai-soap-service';
+import type { WhisperSupportedLanguage } from '@/services/OpenAIWhisperService';
 import logger from '@/shared/utils/logger';
 import {
   ongoingFormToBaselineSOAP,
@@ -26,6 +27,98 @@ import {
 } from '../utils/ongoingFormToBaselineSOAP';
 
 const MIN_FIELD = 3;
+
+function getWhisperLanguage(i18nLang: string): WhisperSupportedLanguage {
+  const code = (i18nLang || '').toLowerCase();
+  if (code.startsWith('es')) return 'es';
+  if (code.startsWith('pt')) return 'pt';
+  if (code.startsWith('fr')) return 'fr';
+  if (code.startsWith('en')) return 'en';
+  return 'auto';
+}
+
+const AudioDictationButton: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  className?: string;
+  title?: string;
+}> = ({ value, onChange, disabled = false, className = '', title = 'Dictate' }) => {
+  const { i18n, t } = useTranslation();
+  const accumulatedRef = useRef(value);
+  const {
+    isRecording,
+    isTranscribing,
+    error,
+    startRecording,
+    stopRecording,
+    setTranscript,
+    setLanguagePreference,
+    setMode,
+  } = useTranscript({
+    onTranscriptionComplete: (text) => {
+      const cleanText = text.trim();
+      if (!cleanText) return;
+      const prev = accumulatedRef.current.trim();
+      const next = prev ? `${prev} ${cleanText}` : cleanText;
+      accumulatedRef.current = next;
+      onChange(next);
+    },
+  });
+
+  useEffect(() => {
+    if (!isRecording && !isTranscribing) {
+      accumulatedRef.current = value;
+    }
+  }, [value, isRecording, isTranscribing]);
+
+  useEffect(() => {
+    setMode('dictation');
+    setLanguagePreference(getWhisperLanguage(i18n.language));
+  }, [i18n.language, setLanguagePreference, setMode]);
+
+  const handleClick = async () => {
+    if (disabled || isTranscribing) return;
+    if (isRecording) {
+      stopRecording();
+      return;
+    }
+    accumulatedRef.current = value;
+    setTranscript('');
+    await startRecording();
+  };
+
+  const listeningLabel = t('dictation.listening');
+  const buttonTitle = isRecording ? listeningLabel : error || title;
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={disabled || isTranscribing}
+      title={buttonTitle}
+      aria-label={buttonTitle}
+      aria-live="polite"
+      className={`rounded-lg border transition-colors flex items-center justify-center gap-1.5 min-w-[2.25rem] ${className} ${
+        isRecording
+          ? 'bg-red-100 border-red-300 text-red-700 px-2.5 py-2'
+          : error
+            ? 'p-2 border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+            : isTranscribing
+              ? 'p-2 border-blue-300 bg-blue-50 text-blue-700'
+              : 'p-2 border-slate-300 text-slate-600 hover:bg-slate-50 hover:border-slate-400'
+      } disabled:opacity-50 disabled:cursor-not-allowed`}
+    >
+      {isRecording ? (
+        <Square className="w-4 h-4" />
+      ) : isTranscribing ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : (
+        <Mic className="w-4 h-4" />
+      )}
+    </button>
+  );
+};
 
 const Input = React.memo(function Input({
   label,
@@ -65,7 +158,7 @@ const Input = React.memo(function Input({
           {...rest}
         />
         {withDictation && (
-          <DictationButton value={value} onChange={onChange} disabled={submitting} title={dictateTitle} />
+          <AudioDictationButton value={value} onChange={onChange} disabled={submitting} title={dictateTitle} />
         )}
       </div>
     </div>
@@ -110,7 +203,7 @@ const TextArea = React.memo(function TextArea({
           disabled={submitting}
         />
         {withDictation && (
-          <DictationButton value={value} onChange={onChange} disabled={submitting} title={dictateTitle} className="self-start" />
+          <AudioDictationButton value={value} onChange={onChange} disabled={submitting} title={dictateTitle} className="self-start" />
         )}
       </div>
     </div>
