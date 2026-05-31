@@ -150,7 +150,8 @@ service cloud.firestore {
     match /clinical_baselines/{baselineId} {
       allow read: if isAuthenticated()
         && (isOwner(resource)
-            || resource.data.createdBy == request.auth.uid);
+            || resource.data.createdBy == request.auth.uid
+            || patientBelongsToCurrentUser(resource.data.patientId));
       allow create: if isAuthenticated();
       allow update: if isAuthenticated()
         && (isOwner(resource)

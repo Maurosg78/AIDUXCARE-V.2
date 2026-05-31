@@ -120,24 +120,29 @@ export async function createBaselineFromMinimalSOAP(params: {
  * Get a baseline by id. Returns null if not found.
  */
 export async function getBaselineById(baselineId: string): Promise<ClinicalBaseline | null> {
-  const ref = doc(db, COLLECTION_NAME, baselineId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return null;
-  const data = snap.data();
-  return {
-    id: snap.id,
-    patientId: data.patientId ?? '',
-    sourceSoapId: data.sourceSoapId ?? '',
-    sourceSessionId: data.sourceSessionId,
-    snapshot: {
-      primaryAssessment: data.snapshot?.primaryAssessment ?? '',
-      keyFindings: Array.isArray(data.snapshot?.keyFindings) ? data.snapshot.keyFindings : [],
-      precautions: data.snapshot?.precautions,
-      planSummary: data.snapshot?.planSummary ?? '',
-    },
-    createdAt: data.createdAt,
-    createdBy: data.createdBy ?? '',
-  };
+  try {
+    const ref = doc(db, COLLECTION_NAME, baselineId);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return {
+      id: snap.id,
+      patientId: data.patientId ?? '',
+      sourceSoapId: data.sourceSoapId ?? '',
+      sourceSessionId: data.sourceSessionId,
+      snapshot: {
+        primaryAssessment: data.snapshot?.primaryAssessment ?? '',
+        keyFindings: Array.isArray(data.snapshot?.keyFindings) ? data.snapshot.keyFindings : [],
+        precautions: data.snapshot?.precautions,
+        planSummary: data.snapshot?.planSummary ?? '',
+      },
+      createdAt: data.createdAt,
+      createdBy: data.createdBy ?? '',
+    };
+  } catch (error) {
+    console.error('[clinicalBaselineService] permission-denied or missing:', baselineId, error);
+    throw error;
+  }
 }
 
 /**

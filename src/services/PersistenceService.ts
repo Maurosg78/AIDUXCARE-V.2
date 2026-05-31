@@ -240,8 +240,8 @@ export class PersistenceService {
 
   /**
    * Obtiene notas por paciente
-   * ✅ PHIPA/PIPEDA Compliance: Only returns notes owned by authenticated user
-   * ✅ Uses authorUid to match Firestore security rules
+   * ✅ PHIPA/PIPEDA Compliance: Firestore rules enforce patient-level access.
+   * ✅ Uses patientId to support longitudinal records across authorized clinicians.
    */
   static async getNotesByPatient(patientId: string): Promise<SavedNote[]> {
     try {
@@ -380,11 +380,9 @@ export class PersistenceService {
   }
 
   private static async fetchNotesByPatientRaw(patientId: string): Promise<SavedNote[]> {
-    const userId = this.getCurrentUserId();
     const notesRef = collection(db, this.COLLECTION_NAME);
     const notesQuery = query(
       notesRef,
-      where('authorUid', '==', userId),
       where('patientId', '==', patientId),
       orderBy('createdAt', 'desc')
     );
@@ -394,7 +392,6 @@ export class PersistenceService {
       console.log('[PersistenceService] Found notes for requested patient', {
         count: snapshot.docs.length,
         hasPatientId: Boolean(patientId),
-        hasUserId: Boolean(userId),
       });
     }
 

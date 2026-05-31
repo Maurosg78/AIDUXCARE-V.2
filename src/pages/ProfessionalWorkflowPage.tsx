@@ -1569,7 +1569,8 @@ const ProfessionalWorkflowPage = () => {
         }
         setFollowUpBaselineChecked(true);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('[ProfessionalWorkflowPage] getClinicalState failed:', error);
         if (!cancelled) {
           setFollowUpClinicalState(null);
           setFollowUpBaselineChecked(true);
