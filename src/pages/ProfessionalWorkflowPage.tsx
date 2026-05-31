@@ -6954,6 +6954,10 @@ const ProfessionalWorkflowPage = () => {
                   const patientContextEmail = currentPatient?.email || demoPatient.email;
                   const patientContextDob = currentPatient?.dateOfBirth || (currentPatient as any)?.birthDate;
                   const patientContextAgeYears = patientContextDob ? calculateAge(patientContextDob) : null;
+                  const patientContextDiagnosis =
+                    currentPatient?.referralDiagnosis ||
+                    currentPatient?.suspectedDiagnosis ||
+                    '';
                   const visitTypeLabelForContext =
                     visitType === 'follow-up' ? t('workflow.visit.followupVisit') : t('workflow.visit.initialVisit');
                   const sessionOrdinalForContext =
@@ -6982,8 +6986,6 @@ const ProfessionalWorkflowPage = () => {
                   const hasBriefingHepColumn = homeProgramItems.length > 0;
                   const shouldShowBriefingBodyRow =
                     showClinicalBriefing && (hasBriefingAssessmentColumn || hasBriefingHepColumn);
-                  const briefingGridUsesTwoColumns =
-                    hasBriefingAssessmentColumn && hasBriefingHepColumn;
                   const todayFocusRaw = previousTreatmentPlan?.nextSessionFocus ?? '';
                   const todayFocusTrimmed = todayFocusRaw.trim();
                   const shouldShowTodayFocusRow = showClinicalBriefing && todayFocusTrimmed.length > 0;
@@ -6996,6 +6998,11 @@ const ProfessionalWorkflowPage = () => {
                         {patientContextAgeYears !== null ? (
                           <span className="text-sm text-slate-500 font-apple font-light">
                             {patientContextAgeYears} {isSpainPilot() ? 'años' : 'years'}
+                          </span>
+                        ) : null}
+                        {patientContextDiagnosis ? (
+                          <span className="text-sm text-slate-600 font-apple font-light">
+                            {patientContextDiagnosis}
                           </span>
                         ) : null}
                         <span className="text-sm text-slate-500 font-apple font-light">{patientContextEmail}</span>
@@ -7066,17 +7073,11 @@ const ProfessionalWorkflowPage = () => {
                         )}
                       </div>
                       {shouldShowBriefingBodyRow ? (
-                        <div
-                          className={
-                            briefingGridUsesTwoColumns
-                              ? 'grid grid-cols-2 gap-0 divide-x divide-slate-100'
-                              : 'grid grid-cols-1 gap-0'
-                          }
-                        >
+                        <div className="px-5 py-4 space-y-3">
                           {hasBriefingAssessmentColumn ? (
-                            <div className="px-5 py-4">
-                              <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-semibold mb-2">
-                                {t('workflow.visit.briefingLastAssessment')}
+                            <div className="bg-primary-blue/5 border-l-2 border-primary-blue rounded-r-lg px-4 py-3 mb-3">
+                              <p className="text-[10px] font-medium uppercase tracking-widest text-primary-blue mb-1">
+                                Sesión anterior
                               </p>
                               <p className="text-sm text-slate-700 font-apple font-light leading-relaxed whitespace-pre-wrap">
                                 {baselineAssessmentTrimmed}
@@ -7084,10 +7085,10 @@ const ProfessionalWorkflowPage = () => {
                             </div>
                           ) : null}
                           {hasBriefingHepColumn ? (
-                            <div className="px-5 py-4">
+                            <div className="bg-emerald-50 border-l-2 border-emerald-500 rounded-r-lg px-4 py-3 mb-3">
                               <div className="flex items-center justify-between gap-3 mb-2">
-                                <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-semibold">
-                                  {t('workflow.visit.briefingHepColumnHeader')}
+                                <p className="text-[10px] font-medium uppercase tracking-widest text-emerald-600 mb-1">
+                                  Ejercicios en casa
                                 </p>
                                 {homeProgramItems.length >= 2 ? (() => {
                                   const allHepCompleted = homeProgramItems.every((item) => item.completed);
@@ -7142,28 +7143,30 @@ const ProfessionalWorkflowPage = () => {
                           ) : null}
                         </div>
                       ) : null}
-                      {shouldShowProposedInClinicReadOnlyRow ? (
-                        <div className="px-5 py-4 border-t border-slate-100">
-                          <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-semibold mb-2">
-                            {t('workflow.visit.proposedTreatmentToday')}
+                      {shouldShowProposedInClinicReadOnlyRow || shouldShowTodayFocusRow ? (
+                        <div className="px-5 pb-4">
+                          <div className="bg-slate-50 border-l-2 border-slate-300 rounded-r-lg px-4 py-3 mb-3">
+                          <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-1">
+                            Previsto para hoy
                           </p>
-                          <ul className="space-y-1">
-                            {inClinicItems.map((proposedInClinicItem) => (
-                              <li
-                                key={proposedInClinicItem.id}
-                                className="text-sm text-slate-700 font-apple font-light"
-                              >
-                                {proposedInClinicItem.label}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : null}
-                      {shouldShowTodayFocusRow ? (
-                        <div className="px-5 py-3 bg-blue-50 border-t border-blue-100">
-                          <p className="text-sm font-semibold text-blue-800 font-apple">
-                            {t('workflow.visit.briefingFocusPrefix')}: {todayFocusTrimmed}
-                          </p>
+                          {shouldShowTodayFocusRow ? (
+                            <p className="text-sm text-slate-500 font-apple font-light mb-2">
+                              {t('workflow.visit.briefingFocusPrefix')}: {todayFocusTrimmed}
+                            </p>
+                          ) : null}
+                          {shouldShowProposedInClinicReadOnlyRow ? (
+                            <ul className="space-y-1">
+                              {inClinicItems.map((proposedInClinicItem) => (
+                                <li
+                                  key={proposedInClinicItem.id}
+                                  className="text-sm text-slate-500 font-apple font-light"
+                                >
+                                  {proposedInClinicItem.label}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : null}
+                          </div>
                         </div>
                       ) : null}
                       {previousTreatmentPlan ? (
