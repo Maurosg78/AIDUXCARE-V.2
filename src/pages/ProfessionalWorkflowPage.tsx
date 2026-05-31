@@ -7522,7 +7522,7 @@ const ProfessionalWorkflowPage = () => {
                   const baselineAssessmentRaw = followUpClinicalState?.baselineSOAP?.assessment ?? '';
                   const baselineAssessmentTrimmed = baselineAssessmentRaw.trim();
                   const hasBriefingAssessmentColumn = baselineAssessmentTrimmed.length > 0;
-                  const hasBriefingHepColumn = homeProgramItems.length > 0;
+                  const hasBriefingHepColumn = homeProgramItems.length > 0 && !isDischargeSession;
                   const shouldShowBriefingBodyRow =
                     showClinicalBriefing && (hasBriefingAssessmentColumn || hasBriefingHepColumn);
                   const briefingGridUsesTwoColumns =
@@ -7531,7 +7531,7 @@ const ProfessionalWorkflowPage = () => {
                   const todayFocusTrimmed = todayFocusRaw.trim();
                   const shouldShowTodayFocusRow = showClinicalBriefing && todayFocusTrimmed.length > 0;
                   const shouldShowProposedInClinicReadOnlyRow =
-                    showClinicalBriefing && inClinicItems.length > 0;
+                    showClinicalBriefing && inClinicItems.length > 0 && !isDischargeSession;
                   return (
                     <>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 pt-4 pb-3 border-b border-slate-100">
