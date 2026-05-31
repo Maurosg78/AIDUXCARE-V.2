@@ -4815,6 +4815,20 @@ const ProfessionalWorkflowPage = () => {
     [markTreatmentDecisionEdited],
   );
 
+  const setAllHepComplianceStatus = useCallback(
+    (status: HepComplianceStatus) => {
+      setHepCompliance(
+        homeProgramItems.map((item) => ({ exerciseText: item.label, status })),
+      );
+      const nextCompleted = status === 'done';
+      setHomeProgramItems((current) =>
+        current.map((item) => ({ ...item, completed: nextCompleted })),
+      );
+      markTreatmentDecisionEdited();
+    },
+    [homeProgramItems, markTreatmentDecisionEdited],
+  );
+
   // WO-FU-PLAN-SPLIT-01: derive In-Clinic vs HEP — FOLLOW-UP ONLY; baseline as primary source (no mock)
   // Single source of truth: baselineSOAP.plan from clinical_baselines; fallback to treatment plan only if no baseline
   // Sprint A: optional hydrate of `hepCompliance` from the session doc (does not overwrite local toggles).
@@ -7230,13 +7244,26 @@ const ProfessionalWorkflowPage = () => {
                         Registra cumplimiento por ejercicio. Este estado se guarda cuando se genera el SOAP.
                       </p>
                     </div>
-                    <HomeProgramBlock
-                      items={homeProgramItems}
-                      onChange={updateHomeProgramItemsForFollowUpMoment}
-                      allowAdd={true}
-                    />
                     {homeProgramItems.length > 0 ? (
-                      <div className="mt-4 space-y-3">
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap gap-2">
+                          {(
+                            [
+                              { value: 'done' as const, label: 'Todos cumplidos' },
+                              { value: 'partial' as const, label: 'Todos parcial' },
+                              { value: 'not_done' as const, label: 'Todos no cumplido' },
+                            ] as const
+                          ).map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setAllHepComplianceStatus(option.value)}
+                              className="rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-500 hover:bg-slate-100"
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
                         {homeProgramItems.map((item) => {
                           const complianceStatus =
                             hepCompliance.find((row) => row.exerciseText === item.label)?.status ?? 'not_done';
@@ -7267,7 +7294,9 @@ const ProfessionalWorkflowPage = () => {
                           );
                         })}
                       </div>
-                    ) : null}
+                    ) : (
+                      <p className="text-sm text-slate-400">No hay ejercicios del HEP previo.</p>
+                    )}
                   </div>
 
                   <div className="bg-white border border-blue-200 rounded-lg p-6">
