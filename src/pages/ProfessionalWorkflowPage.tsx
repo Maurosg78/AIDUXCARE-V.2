@@ -6996,12 +6996,12 @@ const ProfessionalWorkflowPage = () => {
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 pt-4 pb-3 border-b border-slate-100">
                         <span className="text-base font-semibold text-slate-900 font-apple">{patientContextDisplayName}</span>
                         {patientContextAgeYears !== null ? (
-                          <span className="text-sm text-slate-500 font-apple font-light">
+                          <span className="text-sm text-slate-600 font-apple font-semibold">
                             {patientContextAgeYears} {isSpainPilot() ? 'años' : 'years'}
                           </span>
                         ) : null}
                         {patientContextDiagnosis ? (
-                          <span className="text-sm text-slate-600 font-apple font-light">
+                          <span className="text-sm text-slate-700 font-apple font-semibold">
                             {patientContextDiagnosis}
                           </span>
                         ) : null}
