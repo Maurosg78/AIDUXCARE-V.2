@@ -12,6 +12,7 @@ export interface ConsentGateWrapperProps {
   patientId: string | null | undefined;
   patientName?: string;
   patientPhone?: string;
+  patientDateOfBirth?: string | null;
   clinicName?: string;
   isFirstSession?: boolean;
   /** Override clinician; if not set, uses useAuth().user */
@@ -24,6 +25,7 @@ export const ConsentGateWrapper: React.FC<ConsentGateWrapperProps> = ({
   patientId,
   patientName,
   patientPhone,
+  patientDateOfBirth,
   clinicName,
   isFirstSession = true,
   physiotherapistId: propPhysiotherapistId,
@@ -87,6 +89,7 @@ export const ConsentGateWrapper: React.FC<ConsentGateWrapperProps> = ({
         patientId={patientId!}
         patientName={patientName}
         patientPhone={patientPhone}
+        patientDateOfBirth={patientDateOfBirth}
         clinicName={clinicName}
         consentResolution={consentResolution}
         physiotherapistId={physiotherapistId ?? undefined}

@@ -39,6 +39,7 @@ export interface VerbalConsentModalProps {
   physiotherapistName?: string;
   hospitalId?: string;
   jurisdiction?: string;
+  forceRepresentativeConsent?: boolean;
   onConsentObtained: (consentId: string) => void | Promise<void>;
   onConsentDenied?: () => void;
 }
@@ -52,6 +53,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   physiotherapistName,
   hospitalId,
   jurisdiction,
+  forceRepresentativeConsent = false,
   onConsentObtained,
   onConsentDenied,
 }) => {
@@ -80,10 +82,15 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     ? getConsentTextVersionForJurisdiction(effectiveJurisdiction)
     : getConsentTextVersionForCurrentJurisdiction();
   const consentText = getVerbalConsentText(consentTextVersion);
-  const representativeConsentRequired = requiresRepresentativeConsent(
-    patientDateOfBirth,
-    effectiveJurisdiction
-  );
+  const representativeConsentRequired =
+    forceRepresentativeConsent ||
+    requiresRepresentativeConsent(
+      patientDateOfBirth,
+      effectiveJurisdiction
+    );
+  const representativeConsentRequiredMessage = forceRepresentativeConsent
+    ? 'Este paciente es menor de edad. El consentimiento debe ser otorgado por su representante legal.'
+    : 'Este paciente es menor de 16 años. Según la Ley 41/2002 art. 9, el consentimiento debe ser otorgado por su representante legal.';
 
   useEffect(() => {
     if (!isOpen || !patientId) {
@@ -228,6 +235,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     setNotes('');
     setRepresentativeName('');
     setRepresentativeRelationship('');
+    setRepresentativeAuthorityBasis('');
     setError(null);
     onClose();
   };
@@ -392,7 +400,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
 
                   {representativeConsentRequired && (
                     <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-                      Este paciente es menor de 16 años. Según la Ley 41/2002 art. 9, el consentimiento debe ser otorgado por su representante legal.
+                      {representativeConsentRequiredMessage}
                     </div>
                   )}
 
@@ -499,7 +507,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
                 <div className="space-y-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
                   {representativeConsentRequired && (
                     <div className="rounded-lg border border-blue-200 bg-white p-3 text-sm text-blue-900">
-                      Este paciente es menor de 16 años. Según la Ley 41/2002 art. 9, el consentimiento debe ser otorgado por su representante legal.
+                      {representativeConsentRequiredMessage}
                     </div>
                   )}
                   <div>

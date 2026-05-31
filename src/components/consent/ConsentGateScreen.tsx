@@ -15,12 +15,14 @@ import {
 } from '@/services/verbalConsentService';
 import { isSpainPilot } from '@/core/pilotDetection';
 import { useAuth } from '@/hooks/useAuth';
+import { isMinorForConsentGate } from '@/utils/ageUtils';
 import type { ConsentResolution } from '@/domain/consent/resolveConsentChannel';
 
 export interface ConsentGateScreenProps {
   patientId: string;
   patientName?: string;
   patientPhone?: string;
+  patientDateOfBirth?: string | null;
   clinicName?: string;
   consentJurisdiction?: string;
   consentResolution: ConsentResolution;
@@ -36,6 +38,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
   patientId,
   patientName,
   patientPhone,
+  patientDateOfBirth,
   clinicName,
   consentJurisdiction,
   consentResolution,
@@ -60,6 +63,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
   const tokenJurisdiction = normalizeConsentJurisdiction((pilotIsSpain || phoneIsSpain) ? 'ES-ES' : normalizedJurisdiction);
   const tokenLanguage = tokenJurisdiction === 'ES-ES' ? 'es' : 'en';
   const tokenConsentTextVersion = tokenJurisdiction === 'ES-ES' ? 'v1-es-ES-written' : 'v2-en-CA';
+  const patientIsMinor = isMinorForConsentGate(patientDateOfBirth);
 
   const handleConsentObtained = async (consentId: string) => {
     console.log('[ConsentGate] ✅ Verbal consent recorded', { consentId: consentId ? '***' : '' });
@@ -142,6 +146,57 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
       setSmsLoading(false);
     }
   };
+
+  if (patientIsMinor) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 flex flex-col items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-xl border border-amber-200 p-8">
+          <div className="mx-auto mb-4 w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+            <Shield className="w-7 h-7 text-amber-700" />
+          </div>
+          <div role="alert" className="text-center">
+            <h2 className="text-xl font-semibold text-amber-900 mb-2">Consentimiento con representante requerido</h2>
+            <p className="text-slate-700 text-sm mb-6">
+              Este paciente es menor de edad. El consentimiento estándar para adultos no aplica. Continúa únicamente a través del flujo de consentimiento con representante legal.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowVerbalModal(true)}
+            disabled={!physiotherapistId}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-purple to-fuchsia-600 text-white rounded-lg font-medium hover:from-primary-purple-hover hover:to-fuchsia-700 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Registrar consentimiento con representante legal
+          </button>
+
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="mt-4 w-full py-2 text-sm text-slate-500 hover:text-primary-purple transition-colors"
+            >
+              {t('consent.cancelReturnToCommandCenter')}
+            </button>
+          )}
+        </div>
+
+        <VerbalConsentModal
+          isOpen={showVerbalModal}
+          onClose={() => setShowVerbalModal(false)}
+          patientId={patientId}
+          patientName={patientName}
+          physiotherapistId={physiotherapistId ?? ''}
+          physiotherapistName={physiotherapistName}
+          jurisdiction={normalizedJurisdiction}
+          forceRepresentativeConsent
+          onConsentObtained={handleConsentObtained}
+          onConsentDenied={onConsentDeclined}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 flex flex-col items-center justify-center p-6">
@@ -229,6 +284,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
         physiotherapistId={physiotherapistId ?? ''}
         physiotherapistName={physiotherapistName}
         jurisdiction={normalizedJurisdiction}
+        forceRepresentativeConsent={false}
         onConsentObtained={handleConsentObtained}
         onConsentDenied={onConsentDeclined}
       />

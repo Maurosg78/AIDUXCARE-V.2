@@ -6665,6 +6665,7 @@ const ProfessionalWorkflowPage = () => {
         patientId={patientIdFromUrl}
         patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
         patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
+        patientDateOfBirth={currentPatient?.dateOfBirth || (currentPatient as any)?.birthDate}
         clinicName={clinicName}
         consentJurisdiction={consentSmsJurisdiction}
         consentResolution={consentResolution}

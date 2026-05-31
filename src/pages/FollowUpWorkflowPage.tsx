@@ -692,6 +692,7 @@ const FollowUpWorkflowPage = () => {
               patientId={patientId}
               patientName={currentPatient?.fullName || `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() || undefined}
               patientPhone={currentPatient?.phone || currentPatient?.personalInfo?.phone}
+              patientDateOfBirth={currentPatient?.dateOfBirth || (currentPatient as any)?.birthDate}
               clinicName={clinicName ?? undefined}
               consentResolution={resolveConsentChannel({
                 hasValidConsent: false,
