@@ -7146,7 +7146,7 @@ const ProfessionalWorkflowPage = () => {
                       {shouldShowProposedInClinicReadOnlyRow || shouldShowTodayFocusRow ? (
                         <div className="px-5 pb-4">
                           <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-3">
-                          <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-1">
+                          <p className="text-[10px] font-medium uppercase tracking-widest text-slate-500 mb-1">
                             Previsto para hoy
                           </p>
                           {shouldShowTodayFocusRow ? (
@@ -7159,7 +7159,7 @@ const ProfessionalWorkflowPage = () => {
                               {inClinicItems.map((proposedInClinicItem) => (
                                 <li
                                   key={proposedInClinicItem.id}
-                                  className="text-sm text-slate-500 font-apple font-light"
+                                  className="text-sm text-slate-700 font-apple font-light"
                                 >
                                   {proposedInClinicItem.label}
                                 </li>
