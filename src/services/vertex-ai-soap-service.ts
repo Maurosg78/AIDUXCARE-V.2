@@ -9,11 +9,6 @@
 
 import { buildSOAPPrompt, buildFollowUpPrompt, type SOAPPromptOptions } from "../core/soap/SOAPPromptFactory";
 import { buildFollowUpPromptV3, type FollowUpPromptV3Input } from "../core/soap/followUp/buildFollowUpPromptV3";
-import {
-  buildTreatmentPlanPrompt,
-  type TreatmentPlanPromptInput,
-  type TreatmentPlanProposal,
-} from "../core/soap/followUp/buildTreatmentPlanPrompt";
 import { guardFollowUpPlanContinuity } from "../core/soap/followUp/followUpPlanContinuityGuard";
 import { compareTokenUsage } from "../core/soap/FollowUpSOAPPromptBuilder";
 import type { SOAPContext } from '../core/soap/SOAPContextBuilder';
@@ -65,38 +60,6 @@ async function callAuthenticatedVertexProxy(payload: unknown): Promise<Response>
     body,
   });
   return response;
-}
-
-function parseTreatmentPlanProposal(rawText: string): TreatmentPlanProposal | null {
-  const jsonString = sanitizeAndExtractJson(rawText);
-  if (!jsonString) {
-    return null;
-  }
-
-  const parsed = JSON.parse(jsonString) as unknown;
-  if (!parsed || typeof parsed !== 'object') {
-    return null;
-  }
-
-  const candidate = parsed as Partial<TreatmentPlanProposal>;
-  const suggestedFocus = String(candidate.suggestedFocus ?? '').trim();
-  const clinicalRationale = String(candidate.clinicalRationale ?? '').trim();
-  const proposedActivities = Array.isArray(candidate.proposedActivities)
-    ? candidate.proposedActivities
-        .map((activity) => String(activity ?? '').trim())
-        .filter((activity) => activity.length > 0)
-        .slice(0, 8)
-    : [];
-
-  if (!suggestedFocus && proposedActivities.length === 0 && !clinicalRationale) {
-    return null;
-  }
-
-  return {
-    suggestedFocus,
-    proposedActivities,
-    clinicalRationale,
-  };
 }
 
 export interface SOAPGenerationResponse {
@@ -1248,41 +1211,6 @@ export function parseConsiderationsFromResponse(text: string): string[] {
   return sanitizedLines
     .filter((line) => line !== '[' && line !== ']')
     .slice(0, 3);
-}
-
-export async function generateTreatmentPlanProposal(
-  input: TreatmentPlanPromptInput
-): Promise<TreatmentPlanProposal> {
-  const prompt = buildTreatmentPlanPrompt(input);
-  const traceId = `followup-treatment-plan-${Date.now()}`;
-  const response = await callAuthenticatedVertexProxy({
-    prompt,
-    action: 'analyze',
-    traceId,
-    model: 'gemini-2.0-flash-exp',
-  });
-
-  if (!response.ok) {
-    const status = response.status;
-    throw new Error(`Treatment plan proposal failed with status ${status}`);
-  }
-
-  const data = await response.json();
-  const rawText =
-    (data as any)?.candidates?.[0]?.content?.parts?.[0]?.text ??
-    (data as any)?.text ??
-    '';
-
-  if (!rawText || typeof rawText !== 'string') {
-    throw new Error('Treatment plan proposal returned empty response.');
-  }
-
-  const proposal = parseTreatmentPlanProposal(rawText);
-  if (!proposal) {
-    throw new Error('Treatment plan proposal returned invalid JSON.');
-  }
-
-  return proposal;
 }
 
 /**
