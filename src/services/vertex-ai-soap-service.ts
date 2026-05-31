@@ -1306,7 +1306,9 @@ export async function generateFollowUpAnalysis(
   }
 
   const documentationSoap = normalizeSOAPForSpain(soapResult.soap);
-  documentationSoap.plan = guardFollowUpPlanContinuity(documentationSoap.plan);
+  if (!input.isDischarge) {
+    documentationSoap.plan = guardFollowUpPlanContinuity(documentationSoap.plan);
+  }
 
   // Structured data first so considerations depend on motor output, not free-text interpretation
   const structured: string[] = [];
