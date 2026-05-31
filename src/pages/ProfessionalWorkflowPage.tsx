@@ -634,7 +634,6 @@ const ProfessionalWorkflowPage = () => {
   const [treatmentPlanProposal, setTreatmentPlanProposal] =
     useState<TreatmentPlanProposal | null>(null);
   const [isGeneratingTreatmentPlanProposal, setIsGeneratingTreatmentPlanProposal] = useState(false);
-  const [isDischargeSession, setIsDischargeSession] = useState(false);
 
   // WO-PILOT-FIX-07: Time-based greeting for header
   const [greeting, setGreeting] = useState(getTimeBasedGreeting());
@@ -4948,14 +4947,12 @@ const ProfessionalWorkflowPage = () => {
       setHepCompliance([]);
       setTreatmentPlanProposal(null);
       setIsGeneratingTreatmentPlanProposal(false);
-      setIsDischargeSession(false);
       return;
     }
 
     setFollowUpMoment('context');
     setAnamnesisTranscript('');
     setTreatmentPlanProposal(null);
-    setIsDischargeSession(false);
   }, [patientIdFromUrl, visitType]);
 
   useEffect(() => {
@@ -5609,7 +5606,6 @@ const ProfessionalWorkflowPage = () => {
         treatmentPlanProposal: treatmentPlanProposal ?? undefined,
         anamnesisTranscript,
         jurisdiction: currentJurisdiction,
-        isDischarge: isDischargeSession,
       };
       // Fase C: documentation + considerations (considerations not part of record until clinician inserts).
       const result = await generateFollowUpAnalysis(followUpInput);
@@ -7215,8 +7211,6 @@ const ProfessionalWorkflowPage = () => {
                       consentValid={Boolean(workflowConsentStatus?.hasValidConsent)}
                       allergies={patientClinicalInfo.allergies ?? []}
                       contraindications={patientClinicalInfo.contraindications ?? []}
-                      isDischargeSession={isDischargeSession}
-                      onDischargeToggle={setIsDischargeSession}
                       onOpenLastSoap={
                         lastEncounter.data?.soap
                           ? () => {
@@ -7245,9 +7239,9 @@ const ProfessionalWorkflowPage = () => {
                 <>
                   <div className="bg-white border border-blue-200 rounded-lg p-6">
                     <div className="mb-4">
-                      <h2 className="text-lg font-semibold text-slate-900">Ejercicios en casa</h2>
+                      <h2 className="text-lg font-semibold text-slate-900">HEP cumplido</h2>
                       <p className="text-sm text-slate-600">
-                        Marca qué ejercicios hizo el paciente en casa. Se registra al generar la nota.
+                        Registra cumplimiento por ejercicio. Este estado se guarda cuando se genera el SOAP.
                       </p>
                     </div>
                     {homeProgramItems.length > 0 ? (
@@ -7374,114 +7368,86 @@ const ProfessionalWorkflowPage = () => {
 
               {followUpMoment === 'treatment_plan' && (
                 <div className="bg-white border border-blue-200 rounded-lg p-6">
-                  {isDischargeSession ? (
-                    <>
-                      <div className="rounded-lg bg-sky-50 border border-sky-100 px-4 py-4">
-                        <p className="text-sm text-sky-900 font-apple">
-                          Sesión de alta — avanza directamente a generar el informe.
-                        </p>
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">Propuesta de tratamiento</h2>
+                      <p className="text-sm text-slate-600">
+                        Vertex genera una propuesta editable. La decisión clínica final es del fisioterapeuta.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleGenerateTreatmentPlanProposal}
+                      disabled={isGeneratingTreatmentPlanProposal}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                    >
+                      {isGeneratingTreatmentPlanProposal ? 'Generando…' : 'Generar propuesta'}
+                    </button>
+                  </div>
+                  {treatmentPlanProposal ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-slate-700">Foco principal</label>
+                        <input
+                          type="text"
+                          value={treatmentPlanProposal.suggestedFocus}
+                          onChange={(event) => {
+                            const suggestedFocus = event.target.value;
+                            setTreatmentPlanProposal((current) =>
+                              current ? { ...current, suggestedFocus } : current,
+                            );
+                            markTreatmentDecisionEdited();
+                          }}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
                       </div>
-                      <div className="mt-6 flex justify-between">
-                        <button
-                          type="button"
-                          onClick={() => setFollowUpMoment('anamnesis')}
-                          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                          Volver
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setFollowUpMoment('soap')}
-                          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                        >
-                          Continuar
-                        </button>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-slate-700">Actividades propuestas</label>
+                        <SuggestedFocusEditor
+                          items={inClinicItems}
+                          onChange={handleInClinicItemsChange}
+                          onFinishSession={undefined}
+                          hideHeader={true}
+                          allowAdd={true}
+                        />
                       </div>
-                    </>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-slate-700">Justificación clínica</label>
+                        <textarea
+                          value={treatmentPlanProposal.clinicalRationale}
+                          onChange={(event) => {
+                            const clinicalRationale = event.target.value;
+                            setTreatmentPlanProposal((current) =>
+                              current ? { ...current, clinicalRationale } : current,
+                            );
+                            markTreatmentDecisionEdited();
+                          }}
+                          className="min-h-[96px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
                   ) : (
-                    <>
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        <div>
-                          <h2 className="text-lg font-semibold text-slate-900">Propuesta de tratamiento</h2>
-                          <p className="text-sm text-slate-600">
-                            Vertex genera una propuesta editable. La decisión clínica final es del fisioterapeuta.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleGenerateTreatmentPlanProposal}
-                          disabled={isGeneratingTreatmentPlanProposal}
-                          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
-                        >
-                          {isGeneratingTreatmentPlanProposal ? 'Generando…' : 'Generar propuesta'}
-                        </button>
-                      </div>
-                      {treatmentPlanProposal ? (
-                        <div className="space-y-4">
-                          <div>
-                            <label className="mb-1 block text-sm font-medium text-slate-700">Foco principal</label>
-                            <input
-                              type="text"
-                              value={treatmentPlanProposal.suggestedFocus}
-                              onChange={(event) => {
-                                const suggestedFocus = event.target.value;
-                                setTreatmentPlanProposal((current) =>
-                                  current ? { ...current, suggestedFocus } : current,
-                                );
-                                markTreatmentDecisionEdited();
-                              }}
-                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-sm font-medium text-slate-700">Actividades propuestas</label>
-                            <SuggestedFocusEditor
-                              items={inClinicItems}
-                              onChange={handleInClinicItemsChange}
-                              onFinishSession={undefined}
-                              hideHeader={true}
-                              allowAdd={true}
-                            />
-                          </div>
-                          <div>
-                            <label className="mb-1 block text-sm font-medium text-slate-700">Justificación clínica</label>
-                            <textarea
-                              value={treatmentPlanProposal.clinicalRationale}
-                              onChange={(event) => {
-                                const clinicalRationale = event.target.value;
-                                setTreatmentPlanProposal((current) =>
-                                  current ? { ...current, clinicalRationale } : current,
-                                );
-                                markTreatmentDecisionEdited();
-                              }}
-                              className="min-h-[96px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="rounded-lg border border-dashed border-slate-300 p-6 text-sm text-slate-600">
-                          Genera una propuesta para continuar. También puedes añadir actividades manualmente después de generarla.
-                        </div>
-                      )}
-                      <div className="mt-6 flex justify-between">
-                        <button
-                          type="button"
-                          onClick={() => setFollowUpMoment('anamnesis')}
-                          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                          Volver
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleConfirmTreatmentPlanProposal}
-                          disabled={!treatmentPlanProposal}
-                          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
-                        >
-                          Confirmar y continuar
-                        </button>
-                      </div>
-                    </>
+                    <div className="rounded-lg border border-dashed border-slate-300 p-6 text-sm text-slate-600">
+                      Genera una propuesta para continuar. También puedes añadir actividades manualmente después de generarla.
+                    </div>
                   )}
+                  <div className="mt-6 flex justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setFollowUpMoment('anamnesis')}
+                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Volver
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmTreatmentPlanProposal}
+                      disabled={!treatmentPlanProposal}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                    >
+                      Confirmar y continuar
+                    </button>
+                  </div>
                 </div>
               )}
 

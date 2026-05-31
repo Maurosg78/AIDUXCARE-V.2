@@ -13,8 +13,6 @@ export interface WorkflowContextCardProps {
   consentValid: boolean;
   allergies: string[];
   contraindications: string[];
-  isDischargeSession: boolean;
-  onDischargeToggle: (value: boolean) => void;
   onOpenLastSoap?: () => void;
 }
 
@@ -38,8 +36,6 @@ export const WorkflowContextCard: React.FC<WorkflowContextCardProps> = ({
   consentValid,
   allergies,
   contraindications,
-  isDischargeSession,
-  onDischargeToggle,
   onOpenLastSoap,
 }) => {
   const diagnosisText = renderClinicalText(diagnosis, 'No diagnosis documented');
@@ -105,7 +101,7 @@ export const WorkflowContextCard: React.FC<WorkflowContextCardProps> = ({
         <div className="px-5 py-4 space-y-4">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-400 font-apple font-semibold mb-2">
-              Ejercicios prescritos para casa
+              HEP asignado previamente
             </p>
             {previousHepItems.length > 0 ? (
               <ul className="space-y-2">
@@ -116,7 +112,7 @@ export const WorkflowContextCard: React.FC<WorkflowContextCardProps> = ({
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-slate-500 font-apple font-light">No hay ejercicios prescritos para casa.</p>
+              <p className="text-sm text-slate-500 font-apple font-light">No hay HEP estructurado disponible.</p>
             )}
           </div>
 
@@ -135,28 +131,6 @@ export const WorkflowContextCard: React.FC<WorkflowContextCardProps> = ({
             </div>
           )}
         </div>
-      </div>
-
-      <div className="px-5 py-4 border-t border-slate-100 space-y-3">
-        <label className="flex items-center gap-3 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={isDischargeSession}
-            onChange={(e) => onDischargeToggle(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="text-sm text-slate-700 font-apple">Última sesión (alta del paciente)</span>
-        </label>
-        {isDischargeSession && (
-          <div className="rounded-lg bg-sky-50 border border-sky-100 px-4 py-3">
-            <p className="text-sm text-sky-900 font-apple leading-relaxed">
-              Última sesión — cuanto más menciones en voz alta, mejor quedará documentado el alta.
-            </p>
-            <p className="mt-1.5 text-sm text-slate-500 font-apple font-light leading-relaxed">
-              Algunos ejemplos: rango de movimiento, fuerza, sensibilidad, tolerancia a actividades diarias, recomendaciones... Tú decides qué es relevante para este paciente.
-            </p>
-          </div>
-        )}
       </div>
     </section>
   );
