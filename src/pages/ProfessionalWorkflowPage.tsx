@@ -143,7 +143,6 @@ import { lazy, Suspense } from "react";
 import type { MageePillarNotes } from "../components/workflow/tabs/EvaluationTab";
 import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
-import { HomeProgramBlock } from "../components/workflow/HomeProgramBlock";
 import TranscriptArea from "../components/workflow/TranscriptArea";
 import { derivePlanFromText } from "../utils/derivePlanFromText";
 import {
@@ -688,6 +687,7 @@ const ProfessionalWorkflowPage = () => {
     [markTreatmentDecisionEdited]
   );
 
+  // TODO: remove when HEP block fully deprecated.
   const handleHomeProgramItemsChange = useCallback(
     (next: TodayFocusItem[]) => {
       markTreatmentDecisionEdited();
@@ -7295,27 +7295,8 @@ const ProfessionalWorkflowPage = () => {
                 </>
               )}
 
-              {visitType === 'follow-up' && (() => {
-                const allHomeProgramDone =
-                  homeProgramItems.length > 0 && homeProgramItems.every((item) => item.completed);
-                return (
-                  <HomeProgramBlock
-                    items={homeProgramItems}
-                    onChange={handleHomeProgramItemsChange}
-                    allowAdd={true}
-                    allDone={allHomeProgramDone}
-                    onSelectAllClick={() => {
-                      const nextCompleted = !allHomeProgramDone;
-                      handleHomeProgramItemsChange(
-                        homeProgramItems.map((item) => ({
-                          ...item,
-                          completed: nextCompleted,
-                        })),
-                      );
-                    }}
-                  />
-                );
-              })()}
+              {/* TODO: remove when HEP block fully deprecated.
+                  Session-level HEP editor hidden; context HEP summary and SOAP persistence remain active. */}
 
               {/* Bloque 2: Clinical notes / Follow-up clinical update */}
               <div className="bg-white border border-blue-200 rounded-lg p-6">
