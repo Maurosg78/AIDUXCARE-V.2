@@ -7075,7 +7075,7 @@ const ProfessionalWorkflowPage = () => {
                       {shouldShowBriefingBodyRow ? (
                         <div className="px-5 py-4 space-y-3">
                           {hasBriefingAssessmentColumn ? (
-                            <div className="bg-primary-blue/5 border-l-2 border-primary-blue rounded-r-lg px-4 py-3 mb-3">
+                            <div className="bg-primary-blue/5 border border-primary-blue/30 rounded-lg px-4 py-3 mb-3">
                               <p className="text-[10px] font-medium uppercase tracking-widest text-primary-blue mb-1">
                                 Sesión anterior
                               </p>
@@ -7085,7 +7085,7 @@ const ProfessionalWorkflowPage = () => {
                             </div>
                           ) : null}
                           {hasBriefingHepColumn ? (
-                            <div className="bg-emerald-50 border-l-2 border-emerald-500 rounded-r-lg px-4 py-3 mb-3">
+                            <div className="bg-emerald-50 border border-emerald-300 rounded-lg px-4 py-3 mb-3">
                               <div className="flex items-center justify-between gap-3 mb-2">
                                 <p className="text-[10px] font-medium uppercase tracking-widest text-emerald-600 mb-1">
                                   Ejercicios en casa
@@ -7145,7 +7145,7 @@ const ProfessionalWorkflowPage = () => {
                       ) : null}
                       {shouldShowProposedInClinicReadOnlyRow || shouldShowTodayFocusRow ? (
                         <div className="px-5 pb-4">
-                          <div className="bg-slate-50 border-l-2 border-slate-300 rounded-r-lg px-4 py-3 mb-3">
+                          <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 mb-3">
                           <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400 mb-1">
                             Previsto para hoy
                           </p>
