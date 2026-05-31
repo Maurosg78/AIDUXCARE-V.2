@@ -19,7 +19,7 @@ import { FileProcessorService } from "../services/FileProcessorService";
 import { matchTestName } from "@/core/msk-tests/matching/fuzzyMatch";
 import { SOAPEditor, type SOAPStatus } from "../components/SOAPEditor";
 import { buildSOAPContext, detectVisitType, validateSOAPContext, type VisitType } from "../core/soap/SOAPContextBuilder";
-import { generateSOAPNote as generateSOAPNoteFromService, generateFollowUpAnalysis, deriveSOAPDataFromRawText } from "../services/vertex-ai-soap-service";
+import { generateSOAPNote as generateSOAPNoteFromService, generateFollowUpAnalysis, deriveSOAPDataFromRawText, generateTreatmentPlanProposal } from "../services/vertex-ai-soap-service";
 import { getClinicalState } from "../services/clinicalStateService";
 import { buildPhysicalExamResults, buildPhysicalEvaluationSummary } from "../core/soap/PhysicalExamResultBuilder";
 import { organizeSOAPData, validateUnifiedData, createDataSummary, type UnifiedClinicalData } from "../core/soap/SOAPDataOrganizer";
@@ -144,8 +144,14 @@ import type { MageePillarNotes } from "../components/workflow/tabs/EvaluationTab
 import type { TodayFocusItem } from "../utils/parsePlanToFocus";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
 import { HomeProgramBlock } from "../components/workflow/HomeProgramBlock";
+import { WorkflowContextCard } from "../components/workflow/WorkflowContextCard";
 import TranscriptArea from "../components/workflow/TranscriptArea";
 import { derivePlanFromText } from "../utils/derivePlanFromText";
+import type {
+  FollowUpHepCompliance,
+  HepComplianceStatus,
+  TreatmentPlanProposal,
+} from "../core/soap/followUp/buildTreatmentPlanPrompt";
 import {
   buildSoapReviewMetadata,
   buildValueMetricsEvent,
@@ -157,6 +163,7 @@ const EvaluationTab = lazy(() => import("../components/workflow/tabs/EvaluationT
 const SOAPTab = lazy(() => import("../components/workflow/tabs/SOAPTab").then(m => ({ default: m.default })));
 
 type ActiveTab = "analysis" | "evaluation" | "soap";
+type FollowUpMoment = 'context' | 'anamnesis' | 'treatment_plan' | 'soap';
 
 // Workflow state persistence key
 const WORKFLOW_STORAGE_KEY = (patientId: string) => `aidux_workflow_${patientId}`;
@@ -621,6 +628,12 @@ const ProfessionalWorkflowPage = () => {
   const [previousTreatmentDecision, setPreviousTreatmentDecision] = useState<TreatmentDecision | null>(null);
   /** True once getClinicalState has settled for follow-up; used to gate "no baseline → cannot start follow-up". */
   const [followUpBaselineChecked, setFollowUpBaselineChecked] = useState(false);
+  const [followUpMoment, setFollowUpMoment] = useState<FollowUpMoment>('context');
+  const [anamnesisTranscript, setAnamnesisTranscript] = useState('');
+  const [hepCompliance, setHepCompliance] = useState<FollowUpHepCompliance[]>([]);
+  const [treatmentPlanProposal, setTreatmentPlanProposal] =
+    useState<TreatmentPlanProposal | null>(null);
+  const [isGeneratingTreatmentPlanProposal, setIsGeneratingTreatmentPlanProposal] = useState(false);
 
   // WO-PILOT-FIX-07: Time-based greeting for header
   const [greeting, setGreeting] = useState(getTimeBasedGreeting());
@@ -4761,6 +4774,47 @@ const ProfessionalWorkflowPage = () => {
     ],
   );
 
+  const updateHomeProgramItemsForFollowUpMoment = useCallback(
+    (next: TodayFocusItem[]) => {
+      setHomeProgramItems(next);
+      markTreatmentDecisionEdited();
+      setHepCompliance((current) => {
+        const nextCompliance = next.map((item) => {
+          const existing = current.find((row) => row.exerciseText === item.label);
+          const status = existing?.status ?? (item.completed ? 'done' : 'not_done');
+          return {
+            exerciseText: item.label,
+            status,
+          };
+        });
+        return nextCompliance;
+      });
+    },
+    [markTreatmentDecisionEdited],
+  );
+
+  const setHepComplianceStatus = useCallback(
+    (exerciseText: string, status: HepComplianceStatus) => {
+      setHepCompliance((current) => {
+        const existingIndex = current.findIndex((item) => item.exerciseText === exerciseText);
+        if (existingIndex === -1) {
+          return [...current, { exerciseText, status }];
+        }
+        const next = [...current];
+        next[existingIndex] = { exerciseText, status };
+        return next;
+      });
+      const nextCompleted = status === 'done';
+      setHomeProgramItems((current) =>
+        current.map((item) =>
+          item.label === exerciseText ? { ...item, completed: nextCompleted } : item,
+        ),
+      );
+      markTreatmentDecisionEdited();
+    },
+    [markTreatmentDecisionEdited],
+  );
+
   // WO-FU-PLAN-SPLIT-01: derive In-Clinic vs HEP — FOLLOW-UP ONLY; baseline as primary source (no mock)
   // Single source of truth: baselineSOAP.plan from clinical_baselines; fallback to treatment plan only if no baseline
   // Sprint A: optional hydrate of `hepCompliance` from the session doc (does not overwrite local toggles).
@@ -4871,6 +4925,49 @@ const ProfessionalWorkflowPage = () => {
     user?.uid,
     sessionStartTime,
   ]);
+
+  useEffect(() => {
+    if (visitType !== 'follow-up') {
+      setFollowUpMoment('context');
+      setAnamnesisTranscript('');
+      setHepCompliance([]);
+      setTreatmentPlanProposal(null);
+      setIsGeneratingTreatmentPlanProposal(false);
+      return;
+    }
+
+    setFollowUpMoment('context');
+    setAnamnesisTranscript('');
+    setTreatmentPlanProposal(null);
+  }, [patientIdFromUrl, visitType]);
+
+  useEffect(() => {
+    if (visitType !== 'follow-up') {
+      return;
+    }
+
+    setHepCompliance((current) => {
+      const nextCompliance = homeProgramItems.map((item) => {
+        const existing = current.find((row) => row.exerciseText === item.label);
+        const status = existing?.status ?? (item.completed ? 'done' : 'not_done');
+        return {
+          exerciseText: item.label,
+          status,
+        };
+      });
+      return nextCompliance;
+    });
+  }, [homeProgramItems, visitType]);
+
+  useEffect(() => {
+    if (visitType !== 'follow-up') {
+      return;
+    }
+    if (followUpMoment !== 'anamnesis') {
+      return;
+    }
+    setAnamnesisTranscript(transcript ?? '');
+  }, [followUpMoment, transcript, visitType]);
 
   // Handler to reload treatment plan after manual creation
   const handlePlanCreated = async () => {
@@ -5298,7 +5395,83 @@ const ProfessionalWorkflowPage = () => {
     }
   };
 
-  // Follow-up path only: ONE Vertex call — SOAP from baseline + transcript + in-clinic/HEP (no Niagara, no analysis_requested).
+  const handleContinueFromAnamnesisMoment = useCallback(() => {
+    setAnamnesisTranscript((transcript ?? '').trim());
+    setTranscript('');
+    setFollowUpMoment('treatment_plan');
+  }, [setTranscript, transcript]);
+
+  const handleGenerateTreatmentPlanProposal = useCallback(async () => {
+    const baseline = followUpClinicalState?.baselineSOAP ?? null;
+    if (!baseline) {
+      setAnalysisError('Follow-up requires prior clinical baseline before generating a treatment plan proposal.');
+      return;
+    }
+
+    const patientDob = currentPatient?.dateOfBirth || (currentPatient as any)?.birthDate;
+    const patientBirthDate = patientDob ? new Date(patientDob) : null;
+    const patientAge =
+      patientBirthDate && !Number.isNaN(patientBirthDate.getTime())
+        ? new Date().getFullYear() - patientBirthDate.getFullYear()
+        : null;
+    const diagnosis =
+      currentPatient?.referralDiagnosis ||
+      currentPatient?.suspectedDiagnosis ||
+      (currentPatient as WorkflowPatientWithClinicalSnapshot | null)?.chiefComplaint ||
+      '';
+    const activeEpisodeLabel = activeEpisode.data?.status ?? '';
+
+    setAnalysisError(null);
+    setIsGeneratingTreatmentPlanProposal(true);
+
+    try {
+      const proposal = await generateTreatmentPlanProposal({
+        baselineSOAP: baseline,
+        hepCompliance,
+        anamnesisTranscript,
+        patientContext: {
+          diagnosis,
+          age: patientAge,
+          activeEpisodeLabel,
+        },
+        jurisdiction: getCurrentJurisdiction(),
+      });
+      setTreatmentPlanProposal(proposal);
+      setInClinicItems(
+        proposal.proposedActivities.map((activity, index) => ({
+          id: `proposal-activity-${index}`,
+          label: activity,
+          completed: false,
+          source: 'plan' as const,
+        })),
+      );
+    } catch (error) {
+      console.error('[Workflow] Treatment plan proposal failed:', error);
+      setAnalysisError('No se pudo generar la propuesta de tratamiento. Puedes continuar documentando manualmente.');
+    } finally {
+      setIsGeneratingTreatmentPlanProposal(false);
+    }
+  }, [
+    activeEpisode.data?.status,
+    anamnesisTranscript,
+    currentPatient,
+    followUpClinicalState,
+    hepCompliance,
+  ]);
+
+  const handleConfirmTreatmentPlanProposal = useCallback(() => {
+    const currentProposal = treatmentPlanProposal;
+    if (currentProposal) {
+      setTreatmentPlanProposal({
+        ...currentProposal,
+        proposedActivities: inClinicItems.map((item) => item.label),
+      });
+    }
+    confirmTreatmentDecisionExplicitly();
+    setFollowUpMoment('soap');
+  }, [confirmTreatmentDecisionExplicitly, inClinicItems, treatmentPlanProposal]);
+
+  // Follow-up path only: SOAP from baseline + anamnesis + confirmed treatment execution + HEP.
   // Single source of truth: baseline comes only from followUpClinicalState (built by getClinicalState on load). No fallbacks.
   const handleGenerateSOAPFollowUp = useCallback(async () => {
     if (visitType === 'follow-up' && (followUpAlerts?.red_flags?.length ?? 0) > 0 && !followUpDecisionResolved) {
@@ -5348,6 +5521,27 @@ const ProfessionalWorkflowPage = () => {
         const adherenceSummaryEn = `HEP adherence today: ${hepCompletedCount}/${hepTotalCount} completed (${hepAdherencePercent}%).`;
         currentHepAdherenceSummary = currentJurisdiction === 'ES-ES' ? adherenceSummaryEs : adherenceSummaryEn;
       }
+      const uid = user?.uid;
+      const sid = sessionId ?? workflowReservedSessionIdRef.current;
+      if (uid && sid) {
+        const persistedHepCompliance = hepCompliance.map((item, index) => ({
+          itemId: `hep-compliance-${index}`,
+          done: item.status === 'done',
+          date: new Date().toISOString(),
+          exerciseText: item.exerciseText,
+          status: item.status,
+        }));
+        await sessionService.updateSession(sid, {
+          hepCompliance: persistedHepCompliance,
+          userId: uid,
+          patientId: patientIdFromUrl || currentPatient?.id || demoPatient.id,
+          patientName:
+            currentPatient?.fullName ||
+            `${currentPatient?.firstName ?? ''} ${currentPatient?.lastName ?? ''}`.trim() ||
+            'Unknown',
+          sessionType: 'followup',
+        });
+      }
       try {
         const pid = patientIdFromUrl || demoPatient.id;
         if (pid) {
@@ -5394,6 +5588,9 @@ const ProfessionalWorkflowPage = () => {
         inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
         homeProgram: homeProgramItems.map((i) => i.label),
         homeProgramDecisionProvided: hepDecisionWasMade,
+        hepCompliance,
+        treatmentPlanProposal: treatmentPlanProposal ?? undefined,
+        anamnesisTranscript,
         jurisdiction: currentJurisdiction,
       };
       // Fase C: documentation + considerations (considerations not part of record until clinician inserts).
@@ -5472,7 +5669,7 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, inClinicItems, homeProgramItems, previousTreatmentDecision, previousTreatmentPlan, patientIdFromUrl]);
+  }, [anamnesisTranscript, attachments, buildVertexClinicalInput, currentPatient, followUpClinicalState, hepCompliance, homeProgramItems, inClinicItems, patientIdFromUrl, physioNotes, previousTreatmentDecision, previousTreatmentPlan, sessionId, transcript, treatmentPlanProposal, user?.uid]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -6944,6 +7141,289 @@ const ProfessionalWorkflowPage = () => {
             </div>
           ) : (
             <div className="space-y-6">
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
+                {[
+                  { id: 'context' as const, label: '0 · Contexto' },
+                  { id: 'anamnesis' as const, label: '1 · Anamnesis' },
+                  { id: 'treatment_plan' as const, label: '2 · Plan' },
+                  { id: 'soap' as const, label: '3 · SOAP' },
+                ].map((moment) => (
+                  <button
+                    key={moment.id}
+                    type="button"
+                    onClick={() => setFollowUpMoment(moment.id)}
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      followUpMoment === moment.id
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {moment.label}
+                  </button>
+                ))}
+              </div>
+
+              {followUpMoment === 'context' && (() => {
+                const patientContextDisplayName =
+                  currentPatient?.fullName ||
+                  `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim() ||
+                  demoPatient.name;
+                const patientContextDob = currentPatient?.dateOfBirth || (currentPatient as any)?.birthDate;
+                const patientContextAgeYears = patientContextDob ? calculateAge(patientContextDob) : null;
+                const diagnosis =
+                  currentPatient?.referralDiagnosis ||
+                  currentPatient?.suspectedDiagnosis ||
+                  (currentPatient as WorkflowPatientWithClinicalSnapshot | null)?.chiefComplaint ||
+                  null;
+                const sessionOrdinalForContext =
+                  followUpContext?.nextSessionOrdinalLabel ??
+                  getSessionOrdinalLabel((visitCount.data ?? 0) + 1);
+                const lastSessionLabel =
+                  lastEncounter.data
+                    ? formatLastSessionDate(lastEncounter.data) || 'Sesión previa'
+                    : followUpContext?.historyStatusLabel || 'Sesión previa';
+                const previousHepItems = homeProgramItems.map((item) => item.label);
+                return (
+                  <>
+                    <WorkflowContextCard
+                      patientName={patientContextDisplayName}
+                      patientAge={patientContextAgeYears}
+                      diagnosis={diagnosis}
+                      visitLabel={sessionOrdinalForContext}
+                      lastSessionLabel={lastSessionLabel}
+                      baselineAssessment={followUpClinicalState?.baselineSOAP?.assessment ?? null}
+                      baselinePlan={followUpClinicalState?.baselineSOAP?.plan ?? null}
+                      previousHepItems={previousHepItems}
+                      consentValid={Boolean(workflowConsentStatus?.hasValidConsent)}
+                      allergies={patientClinicalInfo.allergies ?? []}
+                      contraindications={patientClinicalInfo.contraindications ?? []}
+                      onOpenLastSoap={
+                        lastEncounter.data?.soap
+                          ? () => {
+                              const sidLastSoap = lastEncounter.data?.sessionId || lastEncounter.data?.id;
+                              if (sidLastSoap) {
+                                window.open(`/documents?session=${sidLastSoap}`, '_blank', 'noopener,noreferrer');
+                              }
+                            }
+                          : undefined
+                      }
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setFollowUpMoment('anamnesis')}
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
+
+              {followUpMoment === 'anamnesis' && (
+                <>
+                  <div className="bg-white border border-blue-200 rounded-lg p-6">
+                    <div className="mb-4">
+                      <h2 className="text-lg font-semibold text-slate-900">HEP cumplido</h2>
+                      <p className="text-sm text-slate-600">
+                        Registra cumplimiento por ejercicio. Este estado se guarda cuando se genera el SOAP.
+                      </p>
+                    </div>
+                    <HomeProgramBlock
+                      items={homeProgramItems}
+                      onChange={updateHomeProgramItemsForFollowUpMoment}
+                      allowAdd={true}
+                    />
+                    {homeProgramItems.length > 0 ? (
+                      <div className="mt-4 space-y-3">
+                        {homeProgramItems.map((item) => {
+                          const complianceStatus =
+                            hepCompliance.find((row) => row.exerciseText === item.label)?.status ?? 'not_done';
+                          return (
+                            <div key={item.id} className="rounded-lg border border-slate-200 p-3">
+                              <p className="mb-2 text-sm font-medium text-slate-900">{item.label}</p>
+                              <div className="flex flex-wrap gap-2">
+                                {[
+                                  { value: 'done' as const, label: 'Cumplido' },
+                                  { value: 'partial' as const, label: 'Parcial' },
+                                  { value: 'not_done' as const, label: 'No cumplido' },
+                                ].map((option) => (
+                                  <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => setHepComplianceStatus(item.label, option.value)}
+                                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+                                      complianceStatus === option.value
+                                        ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    {option.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="bg-white border border-blue-200 rounded-lg p-6">
+                    <div className="flex items-start gap-3 mb-4">
+                      <span className="text-2xl">🎙️</span>
+                      <div className="flex-1">
+                        <h2 className="text-lg font-semibold text-slate-900 mb-1">
+                          ¿Cómo llegó hoy el paciente?
+                        </h2>
+                        <p className="text-sm text-slate-600">
+                          Captura anamnesis y cambios reportados antes de decidir el tratamiento de hoy.
+                        </p>
+                      </div>
+                    </div>
+                    <TranscriptArea
+                      recordingTime={recordingTime}
+                      isRecording={isRecording}
+                      startRecording={startRecording}
+                      stopRecording={stopRecording}
+                      transcript={anamnesisTranscript || transcript}
+                      setTranscript={(value) => {
+                        setAnamnesisTranscript(value);
+                        setTranscript(value);
+                      }}
+                      additionalNotes=""
+                      setAdditionalNotes={() => {}}
+                      transcriptError={transcriptError}
+                      transcriptMeta={transcriptMeta}
+                      languagePreference={languagePreference}
+                      setLanguagePreference={setLanguagePreference}
+                      mode={mode}
+                      setMode={setMode}
+                      isTranscribing={isTranscribing}
+                      isProcessing={isProcessing}
+                      isGeneratingSOAP={isGeneratingSOAP}
+                      visitType={visitType}
+                      audioStream={audioStream}
+                      handleAnalyzeWithVertex={handleAnalyzeWithVertex}
+                      attachments={attachments}
+                      isUploadingAttachment={isUploadingAttachment}
+                      attachmentError={attachmentError}
+                      removingAttachmentId={removingAttachmentId}
+                      handleAttachmentUpload={handleAttachmentUpload}
+                      handleAttachmentRemove={handleAttachmentRemove}
+                      handleAttachmentReviewedToggle={handleAttachmentReviewedToggle}
+                      hideAnalyzeButton={true}
+                      hideAdditionalNotesSection={true}
+                    />
+                  </div>
+
+                  <div className="flex justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setFollowUpMoment('context')}
+                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Volver
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleContinueFromAnamnesisMoment}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    >
+                      Continuar
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {followUpMoment === 'treatment_plan' && (
+                <div className="bg-white border border-blue-200 rounded-lg p-6">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">Propuesta de tratamiento</h2>
+                      <p className="text-sm text-slate-600">
+                        Vertex genera una propuesta editable. La decisión clínica final es del fisioterapeuta.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleGenerateTreatmentPlanProposal}
+                      disabled={isGeneratingTreatmentPlanProposal}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                    >
+                      {isGeneratingTreatmentPlanProposal ? 'Generando…' : 'Generar propuesta'}
+                    </button>
+                  </div>
+                  {treatmentPlanProposal ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-slate-700">Foco principal</label>
+                        <input
+                          type="text"
+                          value={treatmentPlanProposal.suggestedFocus}
+                          onChange={(event) => {
+                            const suggestedFocus = event.target.value;
+                            setTreatmentPlanProposal((current) =>
+                              current ? { ...current, suggestedFocus } : current,
+                            );
+                            markTreatmentDecisionEdited();
+                          }}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-slate-700">Actividades propuestas</label>
+                        <SuggestedFocusEditor
+                          items={inClinicItems}
+                          onChange={handleInClinicItemsChange}
+                          onFinishSession={undefined}
+                          hideHeader={true}
+                          allowAdd={true}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-slate-700">Justificación clínica</label>
+                        <textarea
+                          value={treatmentPlanProposal.clinicalRationale}
+                          onChange={(event) => {
+                            const clinicalRationale = event.target.value;
+                            setTreatmentPlanProposal((current) =>
+                              current ? { ...current, clinicalRationale } : current,
+                            );
+                            markTreatmentDecisionEdited();
+                          }}
+                          className="min-h-[96px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-slate-300 p-6 text-sm text-slate-600">
+                      Genera una propuesta para continuar. También puedes añadir actividades manualmente después de generarla.
+                    </div>
+                  )}
+                  <div className="mt-6 flex justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setFollowUpMoment('anamnesis')}
+                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Volver
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmTreatmentPlanProposal}
+                      disabled={!treatmentPlanProposal}
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                    >
+                      Confirmar y continuar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {followUpMoment === 'soap' && (
+                <>
               {/* SECCIÓN 1: Patient context — Sprint B redesign (follow-up; single sticky card, no 3-col grid) */}
               <div className="overflow-hidden bg-white border border-blue-100 rounded-xl shadow-sm">
                 {(() => {
@@ -7587,6 +8067,9 @@ const ProfessionalWorkflowPage = () => {
               )}
 
               {/* WO-07: Botón sticky ELIMINADO en follow-up - fuerza a llegar al final y rellenar datos mínimos */}
+                </>
+              )}
+
               {visitType !== 'follow-up' && (
                 (() => {
                   const hasClinicalNotes = transcript?.trim().length > 0;

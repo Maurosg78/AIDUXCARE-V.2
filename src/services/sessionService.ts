@@ -88,7 +88,13 @@ interface SessionData {
   };
   attachments?: ClinicalAttachment[];
   /** Sprint A (follow-up): HEP compliance for this session doc only — source of truth on `sessions/{id}`. */
-  hepCompliance?: Array<{ itemId: string; done: boolean; date: string }>;
+  hepCompliance?: Array<{
+    itemId: string;
+    done: boolean;
+    date: string;
+    exerciseText?: string;
+    status?: 'done' | 'partial' | 'not_done';
+  }>;
   treatmentDecision?: TreatmentDecision;
   writeState?: 'draft' | 'soap_generated' | 'soap_saved' | 'encounter_saved' | 'fully_committed' | 'commit_failed';
   lastCommitStep?: string;

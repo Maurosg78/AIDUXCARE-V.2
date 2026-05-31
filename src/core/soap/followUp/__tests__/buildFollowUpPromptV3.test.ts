@@ -68,7 +68,7 @@ describe('buildFollowUpPromptV3', () => {
       clinicalUpdate: 'Update',
       homeProgram: ['Core stability 3x/day', 'Stretching 2x/day'],
     });
-    expect(prompt).toContain('CONTEXT — HOME EXERCISE PROGRAM (if provided)');
+    expect(prompt).toContain('CONTEXT — HOME EXERCISE PROGRAM (clinician decision — canonical)');
     expect(prompt).toContain('Core stability 3x/day');
     expect(prompt).toContain('Stretching 2x/day');
   });
