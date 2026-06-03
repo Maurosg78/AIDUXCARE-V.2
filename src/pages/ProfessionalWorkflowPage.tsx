@@ -3990,6 +3990,39 @@ const ProfessionalWorkflowPage = () => {
     }
   };
 
+  const normalizePatientNameForAttachmentSafety = (value?: string | null): string => {
+    return (value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const getActivePatientName = (patient: typeof currentPatient): { value: string; source: 'fullName' | 'name' | 'displayName' | 'first_last' | 'personalInfo' | 'empty' } => {
+    if (!patient) return { value: '', source: 'empty' };
+
+    const patientRecord = patient as typeof currentPatient & {
+      name?: string;
+      displayName?: string;
+      personalInfo?: {
+        firstName?: string;
+        lastName?: string;
+      };
+    };
+    const firstLastName = `${patientRecord.firstName || ''} ${patientRecord.lastName || ''}`.trim();
+    const personalInfoName = `${patientRecord.personalInfo?.firstName || ''} ${patientRecord.personalInfo?.lastName || ''}`.trim();
+    const candidates: Array<{ value?: string; source: 'fullName' | 'name' | 'displayName' | 'first_last' | 'personalInfo' }> = [
+      { value: patientRecord.fullName, source: 'fullName' },
+      { value: patientRecord.name, source: 'name' },
+      { value: patientRecord.displayName, source: 'displayName' },
+      { value: firstLastName, source: 'first_last' },
+      { value: personalInfoName, source: 'personalInfo' },
+    ];
+    const resolved = candidates.find((candidate) => candidate.value?.trim());
+    return resolved ? { value: resolved.value!.trim(), source: resolved.source } : { value: '', source: 'empty' };
+  };
+
   const handleAttachmentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
@@ -4007,6 +4040,9 @@ const ProfessionalWorkflowPage = () => {
 
       setAttachments((prev) => [...prev, ...uploads]);
 
+      const activePatientNameResolution = getActivePatientName(currentPatient);
+      const activePatientName = activePatientNameResolution.value;
+
       for (let i = 0; i < uploads.length; i++) {
         const file = files[i];
         const attachment = uploads[i];
@@ -4014,13 +4050,31 @@ const ProfessionalWorkflowPage = () => {
           console.log("[Workflow] Starting processing attachment", {
             hasAttachmentName: Boolean(attachment.name),
           });
-          const result = await FileProcessorService.processFile(file, attachment.downloadURL);
+          console.log('[PATIENT-NAME-MISMATCH-DIAGNOSTIC]', {
+            hasActivePatientName: Boolean(activePatientName),
+            patientNameSource: activePatientNameResolution.source,
+            fileType: file.type || 'unknown',
+          });
+          const result = await FileProcessorService.processFile(file, attachment.downloadURL, activePatientName);
+          const detectedPatientName = result.detectedPatientName ?? null;
+          const normalizedDetectedName = normalizePatientNameForAttachmentSafety(detectedPatientName);
+          const normalizedActivePatientName = normalizePatientNameForAttachmentSafety(activePatientName);
+          const hasNameMismatch =
+            Boolean(normalizedDetectedName && normalizedActivePatientName) &&
+            !normalizedDetectedName.includes(normalizedActivePatientName) &&
+            !normalizedActivePatientName.includes(normalizedDetectedName);
+          const patientNameMismatchWarning = hasNameMismatch
+            ? `El nombre en este documento (${detectedPatientName}) no coincide con el paciente en sesión (${activePatientName}). Revisa que sea el documento correcto.`
+            : null;
+
           setAttachments((prev) =>
             prev.map((a) =>
               a.id === attachment.id
                 ? {
                     ...a,
                     extractedText: result.extractedText ?? "",
+                    detectedPatientName,
+                    patientNameMismatchWarning,
                     clinicalContextStatus: result.clinicalContextStatus,
                     clinicalAttachmentKind: result.clinicalAttachmentKind,
                     clinicalContextMessage: result.clinicalContextMessage,

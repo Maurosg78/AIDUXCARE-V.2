@@ -6,6 +6,7 @@ export interface ProcessedFile {
   fileType: string;
   fileSize: number;
   extractedText?: string;
+  detectedPatientName?: string | null;
   clinicalContextStatus?: 'accepted_ocr_text' | 'rejected_no_text' | 'visual_reference_only';
   clinicalAttachmentKind?: ClinicalAttachmentKind;
   clinicalContextMessage?: {
@@ -415,6 +416,54 @@ function truncateClinicalContextText(value: string, label: string): string {
   return processedText;
 }
 
+function normalizeNameSearchText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractLikelyLastName(patientName?: string): string | null {
+  if (!patientName) return null;
+  const tokens = normalizeNameSearchText(patientName)
+    .split(' ')
+    .filter((token) => token.length >= 2);
+  return tokens.length > 0 ? tokens[tokens.length - 1] : null;
+}
+
+function cleanDetectedPatientName(value: string): string | null {
+  const cleaned = value
+    .replace(/\s+/g, ' ')
+    .replace(/^(sr\.?|sra\.?|mr\.?|mrs\.?|ms\.?)\s+/i, '')
+    .replace(/\b(fecha|date|dob|nacimiento|birth|edad|age|sexo|sex)\b.*$/i, '')
+    .trim()
+    .replace(/[.,;:|/\\-]+$/g, '')
+    .trim();
+
+  return cleaned.length >= 3 ? cleaned.slice(0, 100) : null;
+}
+
+function detectPatientNameFromText(extractedText: string, sessionPatientName?: string): string | null {
+  const firstWords = extractedText.split(/\s+/).slice(0, 500).join(' ');
+  const explicitPattern = /\b(?:paciente|nombre|patient|name)\s*[:\-]\s*([A-Za-zÀ-ÖØ-öø-ÿ'´`.\-\s]{3,100})/i;
+  const explicitMatch = explicitPattern.exec(firstWords);
+  if (explicitMatch?.[1]) {
+    return cleanDetectedPatientName(explicitMatch[1]);
+  }
+
+  const likelyLastName = extractLikelyLastName(sessionPatientName);
+  if (!likelyLastName) return null;
+
+  const firstLines = extractedText.split(/\r?\n/).slice(0, 40);
+  const matchingLine = firstLines.find((line) =>
+    normalizeNameSearchText(line).split(/\s+/).includes(likelyLastName)
+  );
+
+  return matchingLine ? cleanDetectedPatientName(matchingLine) : null;
+}
+
 export class FileProcessorService {
   /**
    * Procesa un archivo y extrae información relevante
@@ -424,7 +473,8 @@ export class FileProcessorService {
    */
   static async processFile(
     file: File,
-    downloadURL: string = ''
+    downloadURL: string = '',
+    sessionPatientName?: string
   ): Promise<ProcessedFile> {
     const baseResult: ProcessedFile = {
       fileName: file.name,
@@ -452,10 +502,12 @@ export class FileProcessorService {
             try {
               const ocrResult = await FileProcessorService.extractScannedPDFWithGemini(file);
               const processedOcrText = truncateClinicalContextText(ocrResult.extractedText, 'Scanned PDF OCR');
+              const detectedPatientName = detectPatientNameFromText(processedOcrText, sessionPatientName);
               console.log(`[FileProcessor] ✅ Scanned PDF OCR extracted ${processedOcrText.length} characters`);
               return {
                 ...baseResult,
                 extractedText: processedOcrText,
+                detectedPatientName,
                 clinicalAttachmentKind: ocrResult.clinicalAttachmentKind,
                 clinicalContextStatus: ocrResult.clinicalContextStatus,
                 clinicalContextMessage: ocrResult.clinicalContextMessage,
@@ -489,10 +541,12 @@ export class FileProcessorService {
         console.log(
           `[FileProcessor] ✅ Extracted ${processedText.length} characters from ${pdfResult.pageCount} pages`
         );
+        const detectedPatientName = detectPatientNameFromText(processedText, sessionPatientName);
         
         return {
           ...baseResult,
           extractedText: processedText,
+          detectedPatientName,
           pageCount: pdfResult.pageCount,
           metadata: pdfResult.metadata,
         };

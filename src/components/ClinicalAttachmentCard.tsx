@@ -96,6 +96,17 @@ export function ClinicalAttachmentCard({
         </div>
       )}
 
+      {attachment.patientNameMismatchWarning && (
+        <div className="mt-3 p-3 bg-amber-50 rounded-md border border-amber-300">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs font-medium text-amber-800 font-apple">
+              ⚠️ {attachment.patientNameMismatchWarning}
+            </p>
+          </div>
+        </div>
+      )}
+
       {isVisualReferenceOnly && (
         <div className="mt-3 p-3 bg-blue-50 rounded-md border border-blue-200">
           <div className="flex items-start gap-2">

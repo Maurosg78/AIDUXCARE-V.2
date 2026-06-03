@@ -11,6 +11,10 @@ export interface ClinicalAttachment {
   uploadedAt: string;
   /** Extracted text from PDF/image (when processed by FileProcessorService or similar) */
   extractedText?: string;
+  /** Best-effort patient name detected from extracted document text */
+  detectedPatientName?: string | null;
+  /** Non-blocking warning shown when document patient name differs from active session patient */
+  patientNameMismatchWarning?: string | null;
   /** Clinical context decision made by FileProcessorService */
   clinicalContextStatus?: 'accepted_ocr_text' | 'rejected_no_text' | 'visual_reference_only';
   /** Attachment kind used to enforce diagnostic imaging scope */
