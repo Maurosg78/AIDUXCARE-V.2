@@ -26,6 +26,35 @@ describe('evaluateAttachmentPatientIdentity', () => {
     expect(result.patientIdentityStatus).toBe('suspected_mismatch');
   });
 
+  it.each([
+    'ANÁLISIS CLINICOS Y HEMATOLOGIA KINGA KATARZYNA Nº Historia: 12345',
+    'ANÁLISIS CLÍNICOS Y HEMATOLOGÍA KINGA KATARZYNA Nº Historia: 12345',
+  ])('flags a flattened lab-header wrong-patient name as suspected mismatch', (extractedText) => {
+    const result = evaluateAttachmentPatientIdentity(extractedText, 'John Doe');
+
+    expect(result.detectedPatientName).toBe('KINGA KATARZYNA');
+    expect(result.patientIdentityStatus).toBe('suspected_mismatch');
+  });
+
+  it('matches a flattened lab-header name to the active patient', () => {
+    const extractedText = 'ANALISIS CLINICOS Y HEMATOLOGIA KINGA KATARZYNA SIP: 12345';
+
+    const result = evaluateAttachmentPatientIdentity(extractedText, 'Kinga Katarzyna');
+
+    expect(result.detectedPatientName).toBe('KINGA KATARZYNA');
+    expect(result.patientIdentityStatus).toBe('match');
+  });
+
+  it.each([
+    'ANÁLISIS CLINICOS Y HEMATOLOGIA SERVICIO DE BIOQUIMICA Nº Historia: 12345',
+    'ANÁLISIS CLINICOS Y HEMATOLOGIA RESULTADOS DE LABORATORIO Historia: 12345',
+  ])('does not treat a flattened section header as a patient name', (extractedText) => {
+    const result = evaluateAttachmentPatientIdentity(extractedText, 'John Doe');
+
+    expect(result.detectedPatientName).toBeNull();
+    expect(result.patientIdentityStatus).toBe('no_name_detected');
+  });
+
   it('does not treat absence of an explicit patient name as mismatch', () => {
     const extractedText = 'Informe clínico sin identificación explícita del paciente.';
 

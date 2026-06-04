@@ -439,6 +439,35 @@ function cleanDetectedPatientName(value: string): string | null {
   return cleaned.length >= 3 ? cleaned.slice(0, 100) : null;
 }
 
+const NON_PATIENT_UPPERCASE_LABELS = new Set([
+  'analisis clinicos y hematologia',
+  'bioquimica',
+  'hematologia',
+  'informe',
+  'laboratorio',
+  'resultados',
+  'resultados de laboratorio',
+  'servicio de bioquimica',
+]);
+
+function cleanReliableUppercaseNameCandidate(value: string): string | null {
+  const cleanedCandidate = cleanDetectedPatientName(value);
+  if (!cleanedCandidate) {
+    return null;
+  }
+
+  const words = cleanedCandidate.split(/\s+/);
+  const isUppercaseName = words.length >= 2
+    && words.length <= 4
+    && words.every((word) => /^\p{Lu}[\p{Lu}\p{M}'´`.\-]+$/u.test(word));
+
+  if (!isUppercaseName || NON_PATIENT_UPPERCASE_LABELS.has(normalizeNameSearchText(cleanedCandidate))) {
+    return null;
+  }
+
+  return cleanedCandidate;
+}
+
 function detectExplicitPatientNameCandidate(extractedText: string): string | null {
   const normalizedLines = extractedText
     .replace(/\r\n?/g, '\n')
@@ -457,7 +486,16 @@ function detectExplicitPatientNameCandidate(extractedText: string): string | nul
   const uppercaseNameMatch = uppercaseNameBeforeIdentifierPattern.exec(candidateText);
 
   if (uppercaseNameMatch?.[1]) {
-    return cleanDetectedPatientName(uppercaseNameMatch[1]);
+    return cleanReliableUppercaseNameCandidate(uppercaseNameMatch[1]);
+  }
+
+  const flattenedCandidateText = candidateText.replace(/\s+/g, ' ');
+  const flattenedLabNameBeforeIdentifierPattern =
+    /AN[ÁA]LISIS\s+CL[ÍI]NICOS\s+Y\s+HEMATOLOG[ÍI]A\s+([\p{L}\p{M}'´`.\-]+(?:\s+[\p{L}\p{M}'´`.\-]+){1,3}?)\s+(?=N\s*[º°o.]?\s*Historia\s*:|Historia\s*:|SIP\s*:)/iu;
+  const flattenedLabNameMatch = flattenedLabNameBeforeIdentifierPattern.exec(flattenedCandidateText);
+
+  if (flattenedLabNameMatch?.[1]) {
+    return cleanReliableUppercaseNameCandidate(flattenedLabNameMatch[1]);
   }
 
   return null;
