@@ -72,6 +72,13 @@ export default defineConfig({
       Pragma: "no-cache",
       Expires: "0",
     },
+    proxy: {
+      "/vertexAIProxy": {
+        target: "https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net",
+        changeOrigin: true,
+        secure: true,
+      },
+    },
     fs: {
       strict: false,
       allow: [".."],

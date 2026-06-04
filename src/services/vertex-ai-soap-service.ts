@@ -49,7 +49,8 @@ function sanitizeAndExtractJson(raw: string): string | null {
 
 
 // ✅ CANADÁ: Vertex AI Proxy en región canadiense (northamerica-northeast1)
-const VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
+const CLOUD_VERTEX_PROXY_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
+const VERTEX_PROXY_URL = import.meta.env.DEV ? '/vertexAIProxy' : CLOUD_VERTEX_PROXY_URL;
 
 async function callAuthenticatedVertexProxy(payload: unknown): Promise<Response> {
   const headers = await buildAuthenticatedJsonHeaders();
