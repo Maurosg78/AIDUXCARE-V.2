@@ -2,7 +2,10 @@ import { getSessionOrdinalLabel } from '@/utils/sessionOrdinalLabel';
 import { ensureSpanishClinicalText } from '@/utils/normalizers/es/ensureSpanishClinicalText';
 import { PatientTrajectoryMemoryService } from './patientTrajectoryMemoryService';
 import { SessionComparisonService, type EncountersComparisonState } from './sessionComparisonService';
-import type { ClinicalAttachment } from './clinicalAttachmentService';
+import {
+  isAttachmentEligibleForClinicalAI,
+  type ClinicalAttachment,
+} from './clinicalAttachmentService';
 import {
   formatLongitudinalSignalsForPrompt,
   retrievePreviousLongitudinalContext,
@@ -58,6 +61,7 @@ function classifyTrajectoryFromTwoPoints(previousPain?: number, currentPain?: nu
 
 function buildReviewedAttachmentsSummary(attachments: ClinicalAttachment[]): string | undefined {
   const reviewedAttachments = attachments
+    .filter(isAttachmentEligibleForClinicalAI)
     .filter((attachment) => attachment.reviewedToday === true)
     .filter((attachment) => attachment.processingComplete === true)
     .filter((attachment) => typeof attachment.extractedText === 'string' && attachment.extractedText.trim().length > 0);

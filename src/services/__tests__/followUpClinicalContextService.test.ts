@@ -146,4 +146,47 @@ describe('FollowUpClinicalContextService', () => {
     expect(context.reviewedAttachmentsSummary).toContain('RX muñeca.jpg');
     expect(context.reviewedAttachmentsSummary).not.toContain('RX pendiente.jpg');
   });
+
+  it('excludes suspected mismatch attachments until clinician confirmation', async () => {
+    mockGetEncountersComparisonState.mockResolvedValue({
+      isFirstSession: true,
+      reason: 'no_previous_session',
+      currentSessionNumber: 1,
+    });
+    mockGetLastNPainSeries.mockResolvedValue([]);
+    mockGetPatternInsight.mockResolvedValue(null);
+
+    const service = new FollowUpClinicalContextService();
+    const context = await service.resolve('patient-4', [
+      {
+        id: 'a1',
+        name: 'Suspicious report.pdf',
+        size: 100,
+        contentType: 'application/pdf',
+        storagePath: 'x',
+        downloadURL: 'https://example.com/a1',
+        uploadedAt: new Date().toISOString(),
+        extractedText: 'Clinical report content.',
+        reviewedToday: true,
+        processingComplete: true,
+        patientIdentityStatus: 'suspected_mismatch',
+      },
+      {
+        id: 'a2',
+        name: 'Confirmed report.pdf',
+        size: 100,
+        contentType: 'application/pdf',
+        storagePath: 'y',
+        downloadURL: 'https://example.com/a2',
+        uploadedAt: new Date().toISOString(),
+        extractedText: 'Confirmed clinical report content.',
+        reviewedToday: true,
+        processingComplete: true,
+        patientIdentityStatus: 'confirmed_by_clinician',
+      },
+    ]);
+
+    expect(context.reviewedAttachmentsSummary).not.toContain('Suspicious report.pdf');
+    expect(context.reviewedAttachmentsSummary).toContain('Confirmed report.pdf');
+  });
 });

@@ -14,7 +14,10 @@ import type { ClinicalAnalysis } from "../utils/cleanVertexResponse";
 import { filterTrivialRedFlagEntries, normalizeRedFlagsForDisplay } from "../utils/normalizeRedFlagsForDisplay";
 import type { SOAPNote } from "../types/vertex-ai";
 import { ClinicalAnalysisResults } from "../components/ClinicalAnalysisResults";
-import ClinicalAttachmentService, { ClinicalAttachment } from "../services/clinicalAttachmentService";
+import ClinicalAttachmentService, {
+  isAttachmentEligibleForClinicalAI,
+  type ClinicalAttachment,
+} from "../services/clinicalAttachmentService";
 import { FileProcessorService } from "../services/FileProcessorService";
 import { matchTestName } from "@/core/msk-tests/matching/fuzzyMatch";
 import { SOAPEditor, type SOAPStatus } from "../components/SOAPEditor";
@@ -3896,7 +3899,8 @@ const ProfessionalWorkflowPage = () => {
 
     // ✅ FIX: Allow analysis with attachments only (no transcript required)
     const hasTranscript = clinicalInputWithPillars.trim().length > 0;
-    const hasAttachments = attachments && attachments.length > 0 && attachments.some(att => att.extractedText);
+    const eligibleAttachments = attachments.filter(isAttachmentEligibleForClinicalAI);
+    const hasAttachments = eligibleAttachments.some((attachment) => attachment.extractedText);
 
     if (!hasTranscript && !hasAttachments) {
       console.warn('[Workflow] Cannot analyze: no transcript and no attachments with extracted text');
@@ -3918,8 +3922,8 @@ const ProfessionalWorkflowPage = () => {
 
     try {
       // Map ClinicalAttachment to prompt format (extract only needed fields)
-      const promptAttachments = attachments && attachments.length > 0
-        ? attachments.map(att => ({
+      const promptAttachments = eligibleAttachments.length > 0
+        ? eligibleAttachments.map(att => ({
           fileName: att.name,
           fileType: att.contentType || 'unknown',
           extractedText: att.extractedText,
@@ -3990,15 +3994,6 @@ const ProfessionalWorkflowPage = () => {
     }
   };
 
-  const normalizePatientNameForAttachmentSafety = (value?: string | null): string => {
-    return (value || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/\s+/g, ' ')
-      .trim();
-  };
-
   const getActivePatientName = (patient: typeof currentPatient): { value: string; source: 'fullName' | 'name' | 'displayName' | 'first_last' | 'personalInfo' | 'empty' } => {
     if (!patient) return { value: '', source: 'empty' };
 
@@ -4057,14 +4052,9 @@ const ProfessionalWorkflowPage = () => {
           });
           const result = await FileProcessorService.processFile(file, attachment.downloadURL, activePatientName);
           const detectedPatientName = result.detectedPatientName ?? null;
-          const normalizedDetectedName = normalizePatientNameForAttachmentSafety(detectedPatientName);
-          const normalizedActivePatientName = normalizePatientNameForAttachmentSafety(activePatientName);
-          const hasNameMismatch =
-            Boolean(normalizedDetectedName && normalizedActivePatientName) &&
-            !normalizedDetectedName.includes(normalizedActivePatientName) &&
-            !normalizedActivePatientName.includes(normalizedDetectedName);
-          const patientNameMismatchWarning = hasNameMismatch
-            ? `El nombre en este documento (${detectedPatientName}) no coincide con el paciente en sesión (${activePatientName}). Revisa que sea el documento correcto.`
+          const patientIdentityStatus = result.patientIdentityStatus ?? 'not_checked';
+          const patientNameMismatchWarning = patientIdentityStatus === 'suspected_mismatch'
+            ? 'Este documento parece pertenecer a otro paciente o no coincide con el paciente activo. Confirma manualmente antes de usarlo en el análisis clínico.'
             : null;
 
           setAttachments((prev) =>
@@ -4074,6 +4064,7 @@ const ProfessionalWorkflowPage = () => {
                     ...a,
                     extractedText: result.extractedText ?? "",
                     detectedPatientName,
+                    patientIdentityStatus,
                     patientNameMismatchWarning,
                     clinicalContextStatus: result.clinicalContextStatus,
                     clinicalAttachmentKind: result.clinicalAttachmentKind,
@@ -4129,7 +4120,34 @@ const ProfessionalWorkflowPage = () => {
     }
   };
 
+  const confirmAttachmentPatientIdentity = (attachmentId: string) => {
+    setAttachments((previousAttachments) => {
+      const confirmedAttachments = previousAttachments.map((attachment) => {
+        if (attachment.id !== attachmentId) {
+          return attachment;
+        }
+
+        return {
+          ...attachment,
+          patientIdentityStatus: 'confirmed_by_clinician' as const,
+          patientIdentityConfirmedAt: new Date().toISOString(),
+          patientIdentityConfirmedBy: user?.uid,
+          patientNameMismatchWarning: null,
+          reviewedToday: false,
+        };
+      });
+
+      return confirmedAttachments;
+    });
+  };
+
   const handleAttachmentReviewedToggle = (attachmentId: string) => {
+    const selectedAttachment = attachments.find((attachment) => attachment.id === attachmentId);
+    if (selectedAttachment?.patientIdentityStatus === 'suspected_mismatch') {
+      confirmAttachmentPatientIdentity(attachmentId);
+      return;
+    }
+
     setAttachments((previousAttachments) => {
       const updatedAttachments = previousAttachments.map((attachment) => {
         if (attachment.id !== attachmentId) {

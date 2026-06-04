@@ -1,5 +1,6 @@
 import { extractTextFromPDF, isValidPDF, renderPDFPagesAsBase64, SCANNED_PDF_ERROR } from './pdfTextExtractor';
 import { buildAuthenticatedJsonHeaders } from './firebaseAuthHeaders';
+import type { AttachmentPatientIdentityStatus } from './clinicalAttachmentService';
 
 export interface ProcessedFile {
   fileName: string;
@@ -7,6 +8,7 @@ export interface ProcessedFile {
   fileSize: number;
   extractedText?: string;
   detectedPatientName?: string | null;
+  patientIdentityStatus?: AttachmentPatientIdentityStatus;
   clinicalContextStatus?: 'accepted_ocr_text' | 'rejected_no_text' | 'visual_reference_only';
   clinicalAttachmentKind?: ClinicalAttachmentKind;
   clinicalContextMessage?: {
@@ -425,14 +427,6 @@ function normalizeNameSearchText(value: string): string {
     .trim();
 }
 
-function extractLikelyLastName(patientName?: string): string | null {
-  if (!patientName) return null;
-  const tokens = normalizeNameSearchText(patientName)
-    .split(' ')
-    .filter((token) => token.length >= 2);
-  return tokens.length > 0 ? tokens[tokens.length - 1] : null;
-}
-
 function cleanDetectedPatientName(value: string): string | null {
   const cleaned = value
     .replace(/\s+/g, ' ')
@@ -445,23 +439,84 @@ function cleanDetectedPatientName(value: string): string | null {
   return cleaned.length >= 3 ? cleaned.slice(0, 100) : null;
 }
 
-function detectPatientNameFromText(extractedText: string, sessionPatientName?: string): string | null {
-  const firstWords = extractedText.split(/\s+/).slice(0, 500).join(' ');
-  const explicitPattern = /\b(?:paciente|nombre|patient|name)\s*[:\-]\s*([A-Za-zÀ-ÖØ-öø-ÿ'´`.\-\s]{3,100})/i;
-  const explicitMatch = explicitPattern.exec(firstWords);
-  if (explicitMatch?.[1]) {
-    return cleanDetectedPatientName(explicitMatch[1]);
+function detectExplicitPatientNameCandidate(extractedText: string): string | null {
+  const normalizedLines = extractedText
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\x00-\x09\x0B-\x1F\x7F]/g, '')
+    .replace(/[^\S\n]+/g, ' ');
+  const candidateText = normalizedLines.slice(0, 5000);
+  const explicitLabelPattern = /(?:^|\n)\s*(?:paciente|nombre|patient|name)\s*[:\-]\s*([^\n]{3,100})/i;
+  const explicitLabelMatch = explicitLabelPattern.exec(candidateText);
+
+  if (explicitLabelMatch?.[1]) {
+    return cleanDetectedPatientName(explicitLabelMatch[1]);
   }
 
-  const likelyLastName = extractLikelyLastName(sessionPatientName);
-  if (!likelyLastName) return null;
+  const uppercaseNameBeforeIdentifierPattern =
+    /(?:^|\n)\s*([A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ'´`.\-]+(?:\s+[A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ'´`.\-]+){1,3})\s*\n\s*(?:N\s*[º°o.]?\s*Historia|Historia|SIP)\s*:?/im;
+  const uppercaseNameMatch = uppercaseNameBeforeIdentifierPattern.exec(candidateText);
 
-  const firstLines = extractedText.split(/\r?\n/).slice(0, 40);
-  const matchingLine = firstLines.find((line) =>
-    normalizeNameSearchText(line).split(/\s+/).includes(likelyLastName)
-  );
+  if (uppercaseNameMatch?.[1]) {
+    return cleanDetectedPatientName(uppercaseNameMatch[1]);
+  }
 
-  return matchingLine ? cleanDetectedPatientName(matchingLine) : null;
+  return null;
+}
+
+function namesMatch(activePatientName: string, detectedPatientName: string): boolean {
+  const normalizedActiveName = normalizeNameSearchText(activePatientName);
+  const normalizedDetectedName = normalizeNameSearchText(detectedPatientName);
+
+  if (!normalizedActiveName || !normalizedDetectedName) {
+    return false;
+  }
+
+  if (normalizedActiveName === normalizedDetectedName) {
+    return true;
+  }
+
+  const activeTokens = normalizedActiveName.split(' ').filter((token) => token.length >= 2);
+  const detectedTokens = normalizedDetectedName.split(' ').filter((token) => token.length >= 2);
+  const shorterTokens = activeTokens.length <= detectedTokens.length ? activeTokens : detectedTokens;
+  const longerTokens = activeTokens.length <= detectedTokens.length ? detectedTokens : activeTokens;
+
+  if (shorterTokens.length < 2) {
+    return false;
+  }
+
+  return shorterTokens.every((token) => longerTokens.includes(token));
+}
+
+export function evaluateAttachmentPatientIdentity(
+  extractedText: string,
+  sessionPatientName?: string
+): {
+  detectedPatientName: string | null;
+  patientIdentityStatus: AttachmentPatientIdentityStatus;
+} {
+  if (!sessionPatientName?.trim()) {
+    return {
+      detectedPatientName: null,
+      patientIdentityStatus: 'not_checked',
+    };
+  }
+
+  const detectedPatientName = detectExplicitPatientNameCandidate(extractedText);
+  if (!detectedPatientName) {
+    return {
+      detectedPatientName: null,
+      patientIdentityStatus: 'no_name_detected',
+    };
+  }
+
+  const patientIdentityStatus = namesMatch(sessionPatientName, detectedPatientName)
+    ? 'match'
+    : 'suspected_mismatch';
+
+  return {
+    detectedPatientName,
+    patientIdentityStatus,
+  };
 }
 
 export class FileProcessorService {
@@ -502,12 +557,12 @@ export class FileProcessorService {
             try {
               const ocrResult = await FileProcessorService.extractScannedPDFWithGemini(file);
               const processedOcrText = truncateClinicalContextText(ocrResult.extractedText, 'Scanned PDF OCR');
-              const detectedPatientName = detectPatientNameFromText(processedOcrText, sessionPatientName);
+              const patientIdentity = evaluateAttachmentPatientIdentity(processedOcrText, sessionPatientName);
               console.log(`[FileProcessor] ✅ Scanned PDF OCR extracted ${processedOcrText.length} characters`);
               return {
                 ...baseResult,
                 extractedText: processedOcrText,
-                detectedPatientName,
+                ...patientIdentity,
                 clinicalAttachmentKind: ocrResult.clinicalAttachmentKind,
                 clinicalContextStatus: ocrResult.clinicalContextStatus,
                 clinicalContextMessage: ocrResult.clinicalContextMessage,
@@ -541,12 +596,12 @@ export class FileProcessorService {
         console.log(
           `[FileProcessor] ✅ Extracted ${processedText.length} characters from ${pdfResult.pageCount} pages`
         );
-        const detectedPatientName = detectPatientNameFromText(processedText, sessionPatientName);
+        const patientIdentity = evaluateAttachmentPatientIdentity(processedText, sessionPatientName);
         
         return {
           ...baseResult,
           extractedText: processedText,
-          detectedPatientName,
+          ...patientIdentity,
           pageCount: pdfResult.pageCount,
           metadata: pdfResult.metadata,
         };

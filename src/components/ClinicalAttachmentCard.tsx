@@ -46,6 +46,7 @@ export function ClinicalAttachmentCard({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
   const isVisualReferenceOnly = attachment.clinicalContextStatus === 'visual_reference_only';
+  const hasSuspectedPatientMismatch = attachment.patientIdentityStatus === 'suspected_mismatch';
 
   return (
     <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -96,13 +97,24 @@ export function ClinicalAttachmentCard({
         </div>
       )}
 
-      {attachment.patientNameMismatchWarning && (
+      {hasSuspectedPatientMismatch && (
         <div className="mt-3 p-3 bg-amber-50 rounded-md border border-amber-300">
           <div className="flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <p className="text-xs font-medium text-amber-800 font-apple">
-              ⚠️ {attachment.patientNameMismatchWarning}
-            </p>
+            <div className="flex-1">
+              <p className="text-xs font-medium text-amber-800 font-apple">
+                Este documento parece pertenecer a otro paciente o no coincide con el paciente activo. Confirma manualmente antes de usarlo en el análisis clínico.
+              </p>
+              {onToggleReviewedToday && (
+                <button
+                  type="button"
+                  onClick={onToggleReviewedToday}
+                  className="mt-2 rounded-md border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100"
+                >
+                  Confirmar que corresponde al paciente
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -178,7 +190,7 @@ export function ClinicalAttachmentCard({
           >
             {viewDownloadLabel} →
           </a>
-          {onToggleReviewedToday && (
+          {onToggleReviewedToday && !hasSuspectedPatientMismatch && (
             <label className="inline-flex items-center gap-2 text-xs text-slate-600 font-apple font-light cursor-pointer">
               <input
                 type="checkbox"

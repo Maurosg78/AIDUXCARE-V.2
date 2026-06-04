@@ -1,6 +1,13 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { storage } from '../lib/firebase';
 
+export type AttachmentPatientIdentityStatus =
+  | 'not_checked'
+  | 'no_name_detected'
+  | 'match'
+  | 'suspected_mismatch'
+  | 'confirmed_by_clinician';
+
 export interface ClinicalAttachment {
   id: string;
   name: string;
@@ -15,6 +22,12 @@ export interface ClinicalAttachment {
   detectedPatientName?: string | null;
   /** Non-blocking warning shown when document patient name differs from active session patient */
   patientNameMismatchWarning?: string | null;
+  /** Deterministic patient-identity safety state for clinical AI eligibility */
+  patientIdentityStatus?: AttachmentPatientIdentityStatus;
+  /** Explicit clinician confirmation timestamp for a suspected mismatch */
+  patientIdentityConfirmedAt?: string;
+  /** Authenticated clinician uid that confirmed a suspected mismatch */
+  patientIdentityConfirmedBy?: string;
   /** Clinical context decision made by FileProcessorService */
   clinicalContextStatus?: 'accepted_ocr_text' | 'rejected_no_text' | 'visual_reference_only';
   /** Attachment kind used to enforce diagnostic imaging scope */
@@ -39,6 +52,10 @@ export interface ClinicalAttachment {
   reviewedToday?: boolean;
   /** Explicit processing lifecycle flag for upload/extraction pipeline */
   processingComplete?: boolean;
+}
+
+export function isAttachmentEligibleForClinicalAI(attachment: ClinicalAttachment): boolean {
+  return attachment.patientIdentityStatus !== 'suspected_mismatch';
 }
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB per attachment
@@ -121,6 +138,7 @@ export class ClinicalAttachmentService {
       uploadedAt: new Date(timestamp).toISOString(),
       reviewedToday: false,
       processingComplete: false,
+      patientIdentityStatus: 'not_checked',
     };
   }
 

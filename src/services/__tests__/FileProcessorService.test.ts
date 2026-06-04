@@ -1,10 +1,40 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  evaluateAttachmentPatientIdentity,
   isLowSignalImageExtraction,
   mergeImageExtractionResults,
   scoreImageExtractionUtility,
 } from '../FileProcessorService';
+
+describe('evaluateAttachmentPatientIdentity', () => {
+  it('matches an explicit document patient name to the active patient', () => {
+    const extractedText = 'Informe clínico\nPaciente: John Doe\nFecha: 2026-06-04';
+
+    const result = evaluateAttachmentPatientIdentity(extractedText, 'John Doe');
+
+    expect(result.detectedPatientName).toBe('John Doe');
+    expect(result.patientIdentityStatus).toBe('match');
+  });
+
+  it('flags an explicit wrong-patient document name as suspected mismatch', () => {
+    const extractedText = 'ANÁLISIS CLÍNICOS Y HEMATOLOGÍA\nKINGA KATARZYNA\nNº Historia: 12345';
+
+    const result = evaluateAttachmentPatientIdentity(extractedText, 'John Doe');
+
+    expect(result.detectedPatientName).toBe('KINGA KATARZYNA');
+    expect(result.patientIdentityStatus).toBe('suspected_mismatch');
+  });
+
+  it('does not treat absence of an explicit patient name as mismatch', () => {
+    const extractedText = 'Informe clínico sin identificación explícita del paciente.';
+
+    const result = evaluateAttachmentPatientIdentity(extractedText, 'John Doe');
+
+    expect(result.detectedPatientName).toBeNull();
+    expect(result.patientIdentityStatus).toBe('no_name_detected');
+  });
+});
 
 describe('isLowSignalImageExtraction', () => {
   it('flags trivial OCR output as low signal', () => {
