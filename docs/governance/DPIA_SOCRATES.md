@@ -1,7 +1,7 @@
 # DPIA — Sócrates / ClinicalContextLedger
 
-**Versión:** 0.1
-**Fecha:** 2026-05-24
+**Versión:** 0.2
+**Fecha:** 2026-06-04
 **Autor:** Mauricio Sobarzo, Nº colegiado 9657 COFCV
 **Estado:** Estructura base. Requiere completar secciones 2-5 antes de activar Estrato 2.
 **Marco:** GDPR 2016/679 · LOPDGDD (España) · PHIPA (Ontario)
@@ -143,20 +143,36 @@ No interrumpe la sesión clínica.
 
 ---
 
-## 4. Transferencias internacionales [PENDIENTE — verificar configuración actual]
+## 4. Transferencias internacionales [PARCIALMENTE VERIFICADO — cierre contractual pendiente]
 
 **Vertex AI (Google Cloud Platform):**
 - Región de procesamiento: [verificar — debe ser EU para datos de pacientes españoles]
 - Mecanismo de adecuación: decisión de adecuación CE o SCCs vigentes
-- DPA con Google Cloud: [verificar si está firmado como parte de GCP]
+- DPA con Google Cloud: aceptado el 2026-06-04 según evidencia aportada por CTO.
+  Pendiente archivar copia/captura contractual en el repositorio de evidencias legales.
 
 **OpenAI Whisper / gpt-4o-mini-transcribe:**
-- Región de procesamiento: [verificar]
-- Mecanismo de adecuación: SCCs o mecanismo equivalente
-- DPA con OpenAI: [verificar]
+- Ruta activa verificada: `whisperProxy` en `northamerica-northeast1` llama a
+  `https://api.openai.com/v1/audio/transcriptions`.
+- Acceso técnico europeo verificado: la clave productiva respondió HTTP 200 para
+  modelos y transcripción sintética sin PHI mediante `eu.api.openai.com`.
+- Routing europeo en AiduxCare: no configurado. El runtime sigue usando el endpoint global.
+- Retención del endpoint: la documentación oficial observada el 2026-06-04 declara
+  que `/v1/audio/transcriptions` no se usa para entrenamiento y no conserva abuse
+  monitoring logs ni application state por defecto.
+- DPA con OpenAI: el DPA publicado declara incorporación al OpenAI Services
+  Agreement. Pendiente confirmar y archivar entidad contractual, owner de la
+  organización API, fecha de aceptación y alcance del proyecto.
+- ZDR/MAM: no confirmado. La clave productiva no tiene privilegios Administration
+  API y no existe un endpoint documentado para confirmar estos controles con ella.
+- Evidencia técnica completa: `OPENAI_COMPLIANCE_CLI_AUDIT_2026-06-04.md`.
 - Nota de riesgo: el audio de la sesión clínica contiene PHI. Si el procesamiento
   no está en EU o bajo SCCs válidas, esto es una transferencia internacional de
   datos de salud que requiere base legal específica bajo GDPR Cap. V.
+
+**Decisión provisional:** no declarar OpenAI "cerrado" ni declarar routing europeo
+hasta recibir confirmación escrita de OpenAI y completar revisión legal/DPO. El uso
+con PHI identificable queda condicionado a ese cierre.
 
 ---
 
@@ -180,6 +196,7 @@ Solo si el riesgo residual sigue siendo alto después de todas las medidas.
 | Versión | Fecha | Cambios |
 |---|---|---|
 | 0.1 | 2026-05-24 | Estructura base. Estrato 1 con base legal. Estrato 2 con análisis pendiente. Derechos del paciente documentados. |
+| 0.2 | 2026-06-04 | §4 actualizado con auditoría CLI OpenAI, DPA Google aceptado según evidencia CTO, endpoint/modelo activos, acceso técnico EU y pendientes contractuales/ZDR/MAM. |
 
 ---
 
