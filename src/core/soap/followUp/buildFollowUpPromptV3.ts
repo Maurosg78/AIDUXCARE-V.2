@@ -264,6 +264,7 @@ Use this section only when the clinician reviewed attachments in today's follow-
 Findings from this section may be documented in Objective only if they are clearly attributable to a reviewed attachment or report from today.
 Do NOT convert ambiguous patient retelling into objective findings.
 If you use this section in Objective, make the source explicit as attachment/report review from today.
+Solo consigna valores fuera del rango de referencia indicado en el documento. No menciones valores dentro de rango normal. Si todos los valores están dentro de rango, indica únicamente: "Analítica revisada: sin valores fuera de rango de referencia."
 For image-based attachments, describe findings as suggestive visual observations only.
 Do NOT write that an image "confirms" a diagnosis, fracture status, cartilage injury, hyperlaxity, bone quality, or prognosis.
 If image quality or provenance is limited, state that interpretation is limited and that the image does not constitute a diagnosis.
