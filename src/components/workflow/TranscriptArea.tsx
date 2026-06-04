@@ -54,7 +54,7 @@ const UI = esPilot
       uploadingFileTitle: 'Subiendo archivo…',
       uploadingFileBody: 'Espera mientras subimos y procesamos tu archivo',
       attachmentsEmpty: 'Adjunta analíticas, informes de imagen o fotos del paciente. Los archivos se almacenan cifrados.',
-      reviewedTodayLabel: 'Revisado hoy',
+      reviewedTodayLabel: 'He revisado este documento y deseo incorporarlo al historial clínico',
       analyzingBtnFollowUp: 'Generando nota de seguimiento…',
       analyzingBtnInitial: 'Analizando…',
       analyzeBtnFollowUp: 'Generar nota de seguimiento',
