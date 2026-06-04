@@ -575,6 +575,8 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     extractedText: attachment.extractedText ?? '',
     clinicalContextStatus: attachment.clinicalContextStatus ?? '',
     clinicalAttachmentKind: attachment.clinicalAttachmentKind ?? '',
+    patientIdentityStatus: attachment.patientIdentityStatus ?? '',
+    patientNameMismatchWarning: attachment.patientNameMismatchWarning ?? null,
     error: attachment.error ?? '',
   }));
   const nextAttachmentState = nextProps.attachments.map((attachment) => ({
@@ -584,6 +586,8 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     extractedText: attachment.extractedText ?? '',
     clinicalContextStatus: attachment.clinicalContextStatus ?? '',
     clinicalAttachmentKind: attachment.clinicalAttachmentKind ?? '',
+    patientIdentityStatus: attachment.patientIdentityStatus ?? '',
+    patientNameMismatchWarning: attachment.patientNameMismatchWarning ?? null,
     error: attachment.error ?? '',
   }));
   const sameAttachmentState = JSON.stringify(previousAttachmentState) === JSON.stringify(nextAttachmentState);
