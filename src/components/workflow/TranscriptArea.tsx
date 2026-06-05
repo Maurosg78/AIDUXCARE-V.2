@@ -191,6 +191,7 @@ export interface TranscriptAreaProps {
   // Analysis handler
   handleAnalyzeWithVertex: () => Promise<void>;
   visitType?: string;
+  physicalTestAssistanceChoice?: 'ai' | 'manual' | null;
 
   // Attachments
   attachments: ClinicalAttachment[];
@@ -204,6 +205,8 @@ export interface TranscriptAreaProps {
   hideAnalyzeButton?: boolean;
   /** When true, keep additional clinical context outside this capture block. */
   hideAdditionalNotesSection?: boolean;
+  /** Optional control rendered immediately before the analyze CTA. */
+  preAnalyzeContent?: React.ReactNode;
 }
 
 export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
@@ -227,6 +230,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   audioStream,
   handleAnalyzeWithVertex,
   visitType,
+  physicalTestAssistanceChoice,
   attachments,
   isUploadingAttachment,
   attachmentError,
@@ -236,17 +240,21 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   handleAttachmentReviewedToggle,
   hideAnalyzeButton = false,
   hideAdditionalNotesSection = false,
+  preAnalyzeContent,
 }) => {
   const [localTranscript, setLocalTranscript] = useState(transcript);
   const isPastingRef = useRef(false);
   const timerRef = useRef<number | null>(null);
   const hasReadyAttachments = attachments.some((attachment) => Boolean(attachment.extractedText));
   const hasPendingAttachments = attachments.some((attachment) => attachment.processingComplete !== true);
+  const requiresPhysicalTestAssistanceChoice =
+    visitType === 'initial' && physicalTestAssistanceChoice === null;
   const canAnalyze =
     !isUploadingAttachment &&
     !isProcessing &&
     !isGeneratingSOAP &&
     !hasPendingAttachments &&
+    !requiresPhysicalTestAssistanceChoice &&
     (Boolean(transcript?.trim()) || Boolean(additionalNotes.trim()) || hasReadyAttachments);
 
   useEffect(() => {
@@ -531,6 +539,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
 
         {!hideAnalyzeButton ? (
           <div className="mt-4 pt-4 border-t border-slate-200">
+            {preAnalyzeContent}
             <button
               onClick={handleAnalyzeWithVertex}
               disabled={!canAnalyze}
@@ -600,13 +609,15 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     prevProps.isTranscribing === nextProps.isTranscribing &&
     prevProps.isProcessing === nextProps.isProcessing &&
     prevProps.isGeneratingSOAP === nextProps.isGeneratingSOAP &&
+    prevProps.physicalTestAssistanceChoice === nextProps.physicalTestAssistanceChoice &&
     prevProps.transcriptError === nextProps.transcriptError &&
     prevProps.languagePreference === nextProps.languagePreference &&
     prevProps.mode === nextProps.mode &&
     sameAttachmentState &&
     prevProps.isUploadingAttachment === nextProps.isUploadingAttachment &&
     prevProps.attachmentError === nextProps.attachmentError &&
-    prevProps.hideAnalyzeButton === nextProps.hideAnalyzeButton
+    prevProps.hideAnalyzeButton === nextProps.hideAnalyzeButton &&
+    prevProps.preAnalyzeContent === nextProps.preAnalyzeContent
   );
 });
 

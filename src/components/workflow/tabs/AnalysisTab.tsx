@@ -290,6 +290,46 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   const shouldRequirePhysicalTestAssistance = visitType !== 'follow-up';
   const canContinueToEvaluation =
     !shouldRequirePhysicalTestAssistance || physicalTestAssistanceChoice !== null;
+  const physicalTestAssistanceChoiceControl = shouldRequirePhysicalTestAssistance ? (
+    <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-sm font-semibold text-slate-800">
+        ¿Cómo deseas trabajar las evaluaciones físicas?
+      </p>
+      <div className="mt-3 space-y-3">
+        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm text-slate-700 hover:bg-slate-50">
+          <input
+            type="radio"
+            name="physical-test-assistance-choice"
+            value="ai"
+            checked={physicalTestAssistanceChoice === 'ai'}
+            onChange={() => onPhysicalTestAssistanceChoiceChange('ai')}
+            className="mt-1 h-4 w-4 border-slate-300 text-primary-blue focus:ring-primary-blue"
+          />
+          <span>
+            Solicitar al asistente IA un listado de evaluaciones físicas pertinentes para este paciente
+          </span>
+        </label>
+        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm text-slate-700 hover:bg-slate-50">
+          <input
+            type="radio"
+            name="physical-test-assistance-choice"
+            value="manual"
+            checked={physicalTestAssistanceChoice === 'manual'}
+            onChange={() => onPhysicalTestAssistanceChoiceChange('manual')}
+            className="mt-1 h-4 w-4 border-slate-300 text-primary-blue focus:ring-primary-blue"
+          />
+          <span>
+            Definiré manualmente las pruebas físicas que considere prudentes — no requiero asistencia IA
+          </span>
+        </label>
+      </div>
+      {physicalTestAssistanceChoice === null && (
+        <p className="mt-3 text-xs text-amber-700">
+          Selecciona cómo deseas trabajar las evaluaciones físicas antes de analizar
+        </p>
+      )}
+    </div>
+  ) : null;
   const rawRedFlagsFromInteraction = interactiveResults?.redFlags;
   const normalizedRedFlagsRaw = useMemo(
     () => normalizeRedFlagsForDisplay(rawRedFlagsFromInteraction),
@@ -573,6 +613,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             isProcessing={isProcessing}
             isGeneratingSOAP={isGeneratingSOAP}
             visitType={visitType}
+            physicalTestAssistanceChoice={physicalTestAssistanceChoice}
             audioStream={audioStream}
             handleAnalyzeWithVertex={handleAnalyzeWithVertex}
             attachments={attachments}
@@ -582,6 +623,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             handleAttachmentUpload={handleAttachmentUpload}
             handleAttachmentRemove={handleAttachmentRemove}
             handleAttachmentReviewedToggle={handleAttachmentReviewedToggle}
+            preAnalyzeContent={physicalTestAssistanceChoiceControl}
           />
 
           {isTranscribing && (
@@ -1072,47 +1114,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
                 currentSessionId={currentSessionId}
                 currentPatientId={currentPatientId}
               />
-            </div>
-          )}
-
-          {shouldRequirePhysicalTestAssistance && (
-            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-sm font-semibold text-slate-800">
-                ¿Cómo deseas trabajar las evaluaciones físicas?
-              </p>
-              <div className="mt-3 space-y-3">
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm text-slate-700 hover:bg-slate-50">
-                  <input
-                    type="radio"
-                    name="physical-test-assistance-choice"
-                    value="ai"
-                    checked={physicalTestAssistanceChoice === 'ai'}
-                    onChange={() => onPhysicalTestAssistanceChoiceChange('ai')}
-                    className="mt-1 h-4 w-4 border-slate-300 text-primary-blue focus:ring-primary-blue"
-                  />
-                  <span>
-                    Solicitar al asistente IA un listado de evaluaciones físicas pertinentes para este paciente
-                  </span>
-                </label>
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm text-slate-700 hover:bg-slate-50">
-                  <input
-                    type="radio"
-                    name="physical-test-assistance-choice"
-                    value="manual"
-                    checked={physicalTestAssistanceChoice === 'manual'}
-                    onChange={() => onPhysicalTestAssistanceChoiceChange('manual')}
-                    className="mt-1 h-4 w-4 border-slate-300 text-primary-blue focus:ring-primary-blue"
-                  />
-                  <span>
-                    Definiré manualmente las pruebas físicas que considere prudentes — no requiero asistencia IA
-                  </span>
-                </label>
-              </div>
-              {physicalTestAssistanceChoice === null && (
-                <p className="mt-3 text-xs text-amber-700">
-                  Selecciona cómo deseas trabajar las evaluaciones antes de continuar
-                </p>
-              )}
             </div>
           )}
 

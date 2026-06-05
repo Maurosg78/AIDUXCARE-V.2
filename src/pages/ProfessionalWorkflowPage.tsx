@@ -3882,6 +3882,11 @@ const ProfessionalWorkflowPage = () => {
   }, []);
 
   const handleAnalyzeWithVertex = async () => {
+    if (visitType === 'initial' && physicalTestAssistanceChoice === null) {
+      setAnalysisError('Selecciona cómo deseas trabajar las evaluaciones físicas antes de analizar');
+      return;
+    }
+
     // Follow-up path: do NOT call Niagara (no highlights, no biopsychosocial). Only generate SOAP.
     if (visitType === 'follow-up') {
       await handleGenerateSOAPFollowUp();
