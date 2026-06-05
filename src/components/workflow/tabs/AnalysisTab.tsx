@@ -623,60 +623,6 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         </div>
       )}
 
-      {visitType === 'initial' && !(niagaraResults && interactiveResults) && (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-800">
-                {isSpainPilot() ? 'Medicación actual' : 'Current medication'}
-              </h3>
-              <p className="mt-1 text-xs text-slate-500">
-                {isSpainPilot()
-                  ? 'Registra medicación manualmente aunque no haya sido detectada por la entrevista.'
-                  : 'Manually record medication even when it was not detected from the interview.'}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setMedicationError(null);
-                setIsAddMedicationModalOpen(true);
-              }}
-              className="inline-flex items-center justify-center rounded-lg bg-slate-800 px-3 py-2 text-xs font-medium text-white hover:bg-slate-900"
-            >
-              + {isSpainPilot() ? 'Añadir medicamento' : 'Add medication'}
-            </button>
-          </div>
-
-          {physioAddedMedications.length > 0 && (
-            <div className="mt-3 space-y-2">
-              {physioAddedMedications.map((medication) => (
-                <div
-                  key={medication.id}
-                  className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-slate-800">{medication.text}</span>
-                    <span className="rounded-full bg-white px-2 py-0.5 text-xs text-emerald-700">
-                      {isSpainPilot() ? 'Confirmado por fisio' : 'Clinician confirmed'}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
-                    {medication.medicationState && <span>{medication.medicationState}</span>}
-                    {medication.medicationDose && <span>{medication.medicationDose}</span>}
-                    {medication.medicationFrequency && <span>{medication.medicationFrequency}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {medicationError && (
-            <p className="mt-2 text-xs font-medium text-red-700">{medicationError}</p>
-          )}
-        </div>
-      )}
-
       <AddMedicationModal
         isOpen={isAddMedicationModalOpen}
         onConfirm={(medication) => {
