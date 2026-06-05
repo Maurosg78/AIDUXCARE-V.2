@@ -328,11 +328,15 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
             <button
               type="button"
               onClick={() => {
-                if (canRemoveQuickItemFromToday && quickItem) {
-                  setConfirmRemoveItem(quickItem);
+                // When appointmentId exists, always cancel via appointment path —
+                // the confirm modal removes both the appointment and any quickItem.
+                if (canCancelAppointmentFromToday) {
+                  setConfirmCancelAppointment(row);
                   return;
                 }
-                setConfirmCancelAppointment(row);
+                if (canRemoveQuickItemFromToday && quickItem) {
+                  setConfirmRemoveItem(quickItem);
+                }
               }}
               className="p-2 rounded-lg border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
               aria-label={t('shell.todayPatients.removeFromList')}
@@ -528,6 +532,14 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
                   const appointmentId = confirmCancelAppointment.appointmentId;
                   if (appointmentId) {
                     onCancelAppointmentFromToday?.(appointmentId);
+                  }
+                  // Also remove the quick item if one exists for this patient —
+                  // clinicalDayView rebuilds from appointment || quickItem, so both must be cleared.
+                  const matchingQuickItem = todayQuickList?.find(
+                    (qi) => qi.patientId === confirmCancelAppointment.patientId
+                  );
+                  if (matchingQuickItem) {
+                    onRemoveFromToday?.(matchingQuickItem);
                   }
                   setConfirmCancelAppointment(null);
                 }}
