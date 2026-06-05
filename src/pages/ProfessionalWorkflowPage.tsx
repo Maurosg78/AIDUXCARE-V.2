@@ -101,6 +101,7 @@ import { usePatientVisitCount } from "../features/patient-dashboard/hooks/usePat
 import { SessionTypeService } from "../services/sessionTypeService";
 import { getPublicBaseUrl } from "../utils/urlHelpers";
 import { SessionStorage } from "../services/session-storage";
+import { FirestoreAuditLogger } from "../core/audit/FirestoreAuditLogger";
 import { createBaseline, createBaselineFromMinimalSOAP } from "../services/clinicalBaselineService";
 import { CloseInitialAssessmentConfirmModal } from "../components/workflow/CloseInitialAssessmentConfirmModal";
 import { setSessionCompleted } from "@/features/command-center/todayListSessionStorage";
@@ -121,7 +122,6 @@ import {
   getWorkflowEfficiencySummary,
   type WorkflowMetrics
 } from "../services/workflowMetricsService";
-import { isAiPhysicalTestSuggestionsEnabled } from "@/flags";
 import {
   trackSessionStarted,
   trackSessionCompleted,
@@ -159,6 +159,7 @@ const EvaluationTab = lazy(() => import("../components/workflow/tabs/EvaluationT
 const SOAPTab = lazy(() => import("../components/workflow/tabs/SOAPTab").then(m => ({ default: m.default })));
 
 type ActiveTab = "analysis" | "evaluation" | "soap";
+type PhysicalTestAssistanceChoice = 'ai' | 'manual' | null;
 
 // Workflow state persistence key
 const WORKFLOW_STORAGE_KEY = (patientId: string) => `aidux_workflow_${patientId}`;
@@ -386,7 +387,6 @@ const ProfessionalWorkflowPage = () => {
 
   const isSpainPilotActive = isSpainPilot();
   const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
-  const aiPhysicalTestSuggestionsEnabled = isAiPhysicalTestSuggestionsEnabled();
 
   // WO-IA-RESUME-01: Resume Initial Assessment — load existing session, do not create new one
   const resumeFromUrl = searchParams.get('resume') === 'true';
@@ -473,6 +473,9 @@ const ProfessionalWorkflowPage = () => {
   const secondaryMemorySourceRef = useRef<unknown | null>(null);
   const lastAnalysisTimestampRef = useRef<number | null>(null);
   const [analysisSelectionResetKey, setAnalysisSelectionResetKey] = useState<number | null>(null);
+  const [physicalTestAssistanceChoice, setPhysicalTestAssistanceChoice] =
+    useState<PhysicalTestAssistanceChoice>(null);
+  const aiPhysicalTestSuggestionsEnabled = physicalTestAssistanceChoice === 'ai';
 
   const getWorkflowRedFlagId = (flag: unknown, idx: number): string => {
     if (typeof flag === 'string') {
@@ -1006,6 +1009,7 @@ const ProfessionalWorkflowPage = () => {
         setTranscript('');
         setPhysioNotes('');
         setEvaluationTests([]);
+        setPhysicalTestAssistanceChoice(null);
         setLocalSoapNote(null);
         resetSharedWorkflowState();
         setResumeLoadFailed(null);
@@ -1754,6 +1758,7 @@ const ProfessionalWorkflowPage = () => {
     evaluationTests: unknown[];
     activeTab: string;
     selectedEntityIds: string[];
+    physicalTestAssistanceChoice: PhysicalTestAssistanceChoice;
     localSoapNote: unknown;
     soapStatus: string;
     niagaraResults: unknown;
@@ -1779,6 +1784,7 @@ const ProfessionalWorkflowPage = () => {
       evaluationTests: evaluationTests || [],
       activeTab,
       selectedEntityIds: selectedEntityIds || [],
+      physicalTestAssistanceChoice,
       localSoapNote: localSoapNote ?? null,
       soapStatus,
       niagaraResults: niagaraResults ?? null,
@@ -1815,6 +1821,7 @@ const ProfessionalWorkflowPage = () => {
             evaluationTests: state.evaluationTests,
             activeTab: state.activeTab,
             selectedEntityIds: state.selectedEntityIds,
+            physicalTestAssistanceChoice: state.physicalTestAssistanceChoice,
             localSoapNote: state.localSoapNote,
             soapStatus: state.soapStatus,
             niagaraResults: state.niagaraResults,
@@ -1850,7 +1857,7 @@ const ProfessionalWorkflowPage = () => {
         }
       }
     };
-  }, [patientIdFromUrl, user?.uid, sessionTypeFromUrl, visitType, sessionId, transcript, physioNotes, evaluationTests, activeTab, selectedEntityIds, localSoapNote, soapStatus, niagaraResults, selectedRedFlagIds, redFlagDecisions, initialAssessmentClosedAt, baselineIdFromSession, isRecording, currentPatient]);
+  }, [patientIdFromUrl, user?.uid, sessionTypeFromUrl, visitType, sessionId, transcript, physioNotes, evaluationTests, activeTab, selectedEntityIds, physicalTestAssistanceChoice, localSoapNote, soapStatus, niagaraResults, selectedRedFlagIds, redFlagDecisions, initialAssessmentClosedAt, baselineIdFromSession, isRecording, currentPatient]);
 
   const [customTestName, setCustomTestName] = useState("");
   const [customTestRegion, setCustomTestRegion] = useState<MSKRegion | "other">("shoulder");
@@ -2104,6 +2111,7 @@ const ProfessionalWorkflowPage = () => {
           setTranscript('');
           setEvaluationTests([]);
           setSelectedEntityIds([]);
+          setPhysicalTestAssistanceChoice(null);
           setSelectedRedFlagIds([]);
           setRedFlagDecisions({});
           setLocalSoapNote(null);
@@ -2167,6 +2175,15 @@ const ProfessionalWorkflowPage = () => {
         if (savedState.selectedEntityIds && Array.isArray(savedState.selectedEntityIds)) {
           setSelectedEntityIds(savedState.selectedEntityIds);
           console.log('[WORKFLOW] ✅ Restored selected entity IDs:', savedState.selectedEntityIds.length);
+        }
+
+        const savedPhysicalTestAssistanceChoice = (savedState as {
+          physicalTestAssistanceChoice?: PhysicalTestAssistanceChoice;
+        }).physicalTestAssistanceChoice;
+        if (savedPhysicalTestAssistanceChoice === 'ai' || savedPhysicalTestAssistanceChoice === 'manual') {
+          setPhysicalTestAssistanceChoice(savedPhysicalTestAssistanceChoice);
+        } else {
+          setPhysicalTestAssistanceChoice(null);
         }
 
         if (savedState.redFlagsAccepted && Array.isArray(savedState.redFlagsAccepted)) {
@@ -2346,6 +2363,7 @@ const ProfessionalWorkflowPage = () => {
           evaluationTests: evaluationTests || [],
           activeTab: activeTab,
           selectedEntityIds: selectedEntityIds || [],
+          physicalTestAssistanceChoice,
           redFlagsDetected: niagaraResults?.red_flags ?? [],
           redFlagsAccepted: selectedRedFlagIds ?? [],
           redFlagDecisions: redFlagDecisions || {},
@@ -2365,6 +2383,7 @@ const ProfessionalWorkflowPage = () => {
           testCount: evaluationTests.length,
           activeTab: activeTab,
           selectedEntityIdsCount: selectedEntityIds.length,
+          physicalTestAssistanceChoice,
           redFlagsAcceptedCount: selectedRedFlagIds.length,
           redFlagDecisionCount: Object.keys(redFlagDecisions || {}).length,
           soapStatus: soapStatus,
@@ -2412,7 +2431,7 @@ const ProfessionalWorkflowPage = () => {
       // Final save on cleanup
       saveWorkflowState();
     };
-  }, [patientId, transcript, physioNotes, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, redFlagDecisions, localSoapNote, soapStatus, visitType, initialAssessmentClosedAt, baselineIdFromSession]);
+  }, [patientId, transcript, physioNotes, niagaraResults, evaluationTests, activeTab, selectedEntityIds, physicalTestAssistanceChoice, selectedRedFlagIds, redFlagDecisions, localSoapNote, soapStatus, visitType, initialAssessmentClosedAt, baselineIdFromSession]);
 
   // WO-BUG-011: Auto-save transcript to Firestore every 30s while recording (survives browser close)
   useEffect(() => {
@@ -2559,6 +2578,7 @@ const ProfessionalWorkflowPage = () => {
       console.log('[PHASE2] Patient changed, clearing evaluation tests');
       resetSharedWorkflowState();
       setEvaluationTests([]);
+      setPhysicalTestAssistanceChoice(null);
       lastSharedStateRef.current = '';
       prevPatientIdRef.current = patientId;
       return;
@@ -2577,6 +2597,7 @@ const ProfessionalWorkflowPage = () => {
       });
       resetSharedWorkflowState();
       setEvaluationTests([]);
+      setPhysicalTestAssistanceChoice(null);
       lastSharedStateRef.current = '';
       return;
     }
@@ -4168,6 +4189,12 @@ const ProfessionalWorkflowPage = () => {
   };
 
   const continueToEvaluation = () => {
+    if (visitType !== 'follow-up' && physicalTestAssistanceChoice === null) {
+      setAnalysisError('Selecciona cómo deseas trabajar las evaluaciones antes de continuar');
+      return;
+    }
+    setAnalysisError(null);
+
     // ✅ PHASE 2: Enhanced logging for debugging test transfer
     console.log('[PHASE2] continueToEvaluation called');
     console.log('[PHASE2] transfer summary:', {
@@ -5606,6 +5633,30 @@ const ProfessionalWorkflowPage = () => {
     return fallbackSessionId;
   };
 
+  const handlePhysicalTestAssistanceChoiceChange = useCallback(
+    (choice: Exclude<PhysicalTestAssistanceChoice, null>) => {
+      setPhysicalTestAssistanceChoice(choice);
+      const activeUserId = user?.uid || TEMP_USER_ID;
+      const activePatientId = patientIdFromUrl || currentPatient?.id || demoPatient.id;
+      const activeSessionId = getActiveWorkflowSessionId();
+
+      void FirestoreAuditLogger.logEvent({
+        type: 'physical_test_assistance_choice',
+        userId: activeUserId,
+        userRole: 'PHYSICIAN',
+        patientId: activePatientId,
+        visitId: activeSessionId,
+        metadata: {
+          eventType: 'physical_test_assistance_choice',
+          choice,
+          sessionId: activeSessionId,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    },
+    [currentPatient?.id, patientIdFromUrl, sessionId, user?.uid, sessionStartTime]
+  );
+
   const updateSessionFinalizationState = async (
     targetSessionId: string,
     state: FinalizationWriteState,
@@ -5937,6 +5988,7 @@ const ProfessionalWorkflowPage = () => {
         evaluationTests: evaluationTests || [],
         activeTab,
         selectedEntityIds: selectedEntityIds || [],
+        physicalTestAssistanceChoice,
         redFlagsDetected: niagaraResults?.red_flags ?? [],
         redFlagsAccepted: selectedRedFlagIds ?? [],
         redFlagDecisions: redFlagDecisions || {},
@@ -5957,7 +6009,7 @@ const ProfessionalWorkflowPage = () => {
       const message = err instanceof Error ? err.message : 'Failed to close initial assessment.';
       setAnalysisError(message);
     }
-  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, physioNotes, niagaraResults, evaluationTests, activeTab, selectedEntityIds, selectedRedFlagIds, redFlagDecisions, visitType, currentPatient]);
+  }, [soapStatus, initialAssessmentClosedAt, localSoapNote, patientIdFromUrl, user?.uid, sessionId, sessionStartTime, transcript, physioNotes, niagaraResults, evaluationTests, activeTab, selectedEntityIds, physicalTestAssistanceChoice, selectedRedFlagIds, redFlagDecisions, visitType, currentPatient]);
 
   const handleFinalizeSOAP = async (soap: SOAPNote) => {
     if (isFinalizingRef.current) return;
@@ -7467,6 +7519,8 @@ const ProfessionalWorkflowPage = () => {
                     onEditedResultsChange={setEditedAnalysisResults}
                     selectedEntityIds={selectedEntityIds}
                     setSelectedEntityIds={setSelectedEntityIds}
+                    physicalTestAssistanceChoice={physicalTestAssistanceChoice}
+                    onPhysicalTestAssistanceChoiceChange={handlePhysicalTestAssistanceChoiceChange}
                     continueToEvaluation={continueToEvaluation}
                     analysisError={analysisError}
                     successMessage={successMessage}
@@ -7796,6 +7850,8 @@ const ProfessionalWorkflowPage = () => {
                   onEditedResultsChange={setEditedAnalysisResults}
                   selectedEntityIds={selectedEntityIds}
                   setSelectedEntityIds={setSelectedEntityIds}
+                  physicalTestAssistanceChoice={physicalTestAssistanceChoice}
+                  onPhysicalTestAssistanceChoiceChange={handlePhysicalTestAssistanceChoiceChange}
                   continueToEvaluation={continueToEvaluation}
                   analysisError={analysisError}
                   successMessage={successMessage}
@@ -7832,6 +7888,7 @@ const ProfessionalWorkflowPage = () => {
                   detectedCaseRegion={detectedCaseRegion}
                   pendingAiSuggestions={pendingAiSuggestions}
                   allAiSuggestions={aiSuggestions}
+                  physicalTestAssistanceChoice={physicalTestAssistanceChoice}
                   isTestAlreadySelected={isTestAlreadySelected}
                   addEvaluationTest={addEvaluationTest}
                   removeEvaluationTest={removeEvaluationTest}

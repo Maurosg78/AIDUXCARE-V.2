@@ -72,6 +72,8 @@ interface DismissedRedFlagEntry {
   note: string;
 }
 
+type PhysicalTestAssistanceChoice = 'ai' | 'manual' | null;
+
 export interface AnalysisTabProps {
   // Patient data
   currentPatient: Patient | null;
@@ -153,6 +155,8 @@ export interface AnalysisTabProps {
   interactiveResults: any;
   selectedEntityIds: string[];
   setSelectedEntityIds: (ids: string[]) => void;
+  physicalTestAssistanceChoice: PhysicalTestAssistanceChoice;
+  onPhysicalTestAssistanceChoiceChange: (choice: Exclude<PhysicalTestAssistanceChoice, null>) => void;
   onEditedResultsChange?: (editedResults: any) => void;
   continueToEvaluation: () => void;
   
@@ -253,6 +257,8 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   interactiveResults,
   selectedEntityIds,
   setSelectedEntityIds,
+  physicalTestAssistanceChoice,
+  onPhysicalTestAssistanceChoiceChange,
   onEditedResultsChange,
   continueToEvaluation,
   analysisError,
@@ -281,6 +287,9 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   onConfirmFollowUpRedFlags,
 }) => {
   const { t } = useTranslation();
+  const shouldRequirePhysicalTestAssistance = visitType !== 'follow-up';
+  const canContinueToEvaluation =
+    !shouldRequirePhysicalTestAssistance || physicalTestAssistanceChoice !== null;
   const rawRedFlagsFromInteraction = interactiveResults?.redFlags;
   const normalizedRedFlagsRaw = useMemo(
     () => normalizeRedFlagsForDisplay(rawRedFlagsFromInteraction),
@@ -1120,6 +1129,47 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             </div>
           )}
 
+          {shouldRequirePhysicalTestAssistance && (
+            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-sm font-semibold text-slate-800">
+                ¿Cómo deseas trabajar las evaluaciones físicas?
+              </p>
+              <div className="mt-3 space-y-3">
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm text-slate-700 hover:bg-slate-50">
+                  <input
+                    type="radio"
+                    name="physical-test-assistance-choice"
+                    value="ai"
+                    checked={physicalTestAssistanceChoice === 'ai'}
+                    onChange={() => onPhysicalTestAssistanceChoiceChange('ai')}
+                    className="mt-1 h-4 w-4 border-slate-300 text-primary-blue focus:ring-primary-blue"
+                  />
+                  <span>
+                    Solicitar al asistente IA un listado de evaluaciones físicas pertinentes para este paciente
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-3 py-3 text-sm text-slate-700 hover:bg-slate-50">
+                  <input
+                    type="radio"
+                    name="physical-test-assistance-choice"
+                    value="manual"
+                    checked={physicalTestAssistanceChoice === 'manual'}
+                    onChange={() => onPhysicalTestAssistanceChoiceChange('manual')}
+                    className="mt-1 h-4 w-4 border-slate-300 text-primary-blue focus:ring-primary-blue"
+                  />
+                  <span>
+                    Definiré manualmente las pruebas físicas que considere prudentes — no requiero asistencia IA
+                  </span>
+                </label>
+              </div>
+              {physicalTestAssistanceChoice === null && (
+                <p className="mt-3 text-xs text-amber-700">
+                  Selecciona cómo deseas trabajar las evaluaciones antes de continuar
+                </p>
+              )}
+            </div>
+          )}
+
           {/* WO-BUTTON-POSITION-001: physical tests info + Continue button at end of tab */}
           <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div>
@@ -1129,7 +1179,8 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             </div>
             <button
               onClick={continueToEvaluation}
-              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow-sm hover:from-primary-blue-hover hover:to-primary-purple-hover transition font-apple text-[15px] font-medium"
+              disabled={!canContinueToEvaluation}
+              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white shadow-sm hover:from-primary-blue-hover hover:to-primary-purple-hover transition font-apple text-[15px] font-medium disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:text-slate-500"
             >
               <ChevronsRight className="w-4 h-4" />
               {t('workflow.analysis.continueToEvaluation')}

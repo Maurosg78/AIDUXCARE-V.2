@@ -19,6 +19,7 @@ import { FirebaseWhisperService } from '../../../services/FirebaseWhisperService
 
 type EvaluationResult = "normal" | "positive" | "negative" | "inconclusive";
 type TestCategoryKey = 'rom' | 'neuro' | 'inspection' | 'strength' | 'functional' | 'orthopedic' | 'general';
+type PhysicalTestAssistanceChoice = 'ai' | 'manual' | null;
 export type MageePillarKey = 'observation' | 'palpation' | 'rom' | 'strength';
 
 type MageePillarDefinition = {
@@ -367,6 +368,7 @@ export interface EvaluationTabProps {
     rawName: string;
     match?: MskTestDefinition | null;
   }>;
+  physicalTestAssistanceChoice: PhysicalTestAssistanceChoice;
   
   // Test library
   isTestAlreadySelected: (id: string, name: string) => boolean;
@@ -409,6 +411,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   detectedCaseRegion,
   pendingAiSuggestions,
   allAiSuggestions, // ✅ NEW: All suggestions (not filtered) for top 5 calculation
+  physicalTestAssistanceChoice,
   isTestAlreadySelected,
   addEvaluationTest,
   removeEvaluationTest,
@@ -438,6 +441,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   const isSpanishLocale = i18n.language.toLowerCase().startsWith('es');
   const [pillarNotes, setPillarNotes] = useState<MageePillarNotes>(EMPTY_PILLAR_NOTES);
   const visibleRegionLabels = isSpanishLocale ? regionLabelsEs : regionLabels;
+  const shouldShowAiSuggestions = physicalTestAssistanceChoice === 'ai';
   const updatePillarNote = (
     pillarKey: MageePillarKey,
     noteValue: string
@@ -741,7 +745,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <div className="space-y-6">
           {/* FASE 2: Additional AI-suggested tests (6+) in sidebar for deeper exploration */}
-          {additionalAiSuggestions.length > 0 && !(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && (
+          {shouldShowAiSuggestions && additionalAiSuggestions.length > 0 && !(sessionTypeFromUrl === 'followup' || workflowRoute?.type === 'follow-up') && (
             <section className="rounded-3xl border border-slate-200 bg-white px-4 py-5 shadow-sm">
               <h3 className="text-sm font-semibold text-slate-800">{t('workflow.additionalTests')}</h3>
               <p className="mt-1 text-xs text-slate-500">
