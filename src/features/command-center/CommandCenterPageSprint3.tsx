@@ -724,9 +724,14 @@ export const CommandCenterPageSprint3: React.FC = () => {
     if (!dismissOpenResponsibilityItem || !user?.uid) {
       return;
     }
-    setDismissingOpenResponsibilityId(dismissOpenResponsibilityItem.id);
+    const sessionId = dismissOpenResponsibilityItem.id;
+    setDismissingOpenResponsibilityId(sessionId);
     try {
-      await sessionService.dismissOpenResponsibility(dismissOpenResponsibilityItem.id, user.uid);
+      await sessionService.dismissOpenResponsibility(sessionId, user.uid);
+      // Optimistically remove from local state before refetch — prevents the
+      // read-after-write race where getDocs() returns stale server data that
+      // still includes the dismissed session before the Firestore write propagates.
+      inProgressSessions.optimisticRemove(sessionId);
       setDismissOpenResponsibilityItem(null);
       await inProgressSessions.refetch();
     } catch {
@@ -734,7 +739,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
     } finally {
       setDismissingOpenResponsibilityId(null);
     }
-  }, [dismissOpenResponsibilityItem, inProgressSessions.refetch, user?.uid]);
+  }, [dismissOpenResponsibilityItem, inProgressSessions, user?.uid]);
 
   const handleOngoingModalSuccess = useCallback(
     (patientId: string, baselineSOAP?: { subjective: string; objective: string; assessment: string; plan: string }, patientName?: string) => {

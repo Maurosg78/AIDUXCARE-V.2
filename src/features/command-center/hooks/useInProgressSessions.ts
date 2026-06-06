@@ -20,11 +20,17 @@ export interface InProgressSessionsState {
   data: InProgressSession[];
   /** Refetch from Firestore (e.g. after dismissing a session or when page is shown). */
   refetch: () => Promise<void>;
+  /** Optimistically remove a session by id — avoids read-after-write race with Firestore. */
+  optimisticRemove: (sessionId: string) => void;
 }
 
 export function useInProgressSessions(): InProgressSessionsState {
   const [state, setState] = useState<InProgressSessionsState['data']>([]);
   const [loading, setLoading] = useState(true);
+
+  const optimisticRemove = useCallback((sessionId: string) => {
+    setState((prev) => prev.filter((s) => s.id !== sessionId));
+  }, []);
 
   const refetch = useCallback(async () => {
     const user = getAuth().currentUser;
@@ -65,5 +71,5 @@ export function useInProgressSessions(): InProgressSessionsState {
     return unsubscribe;
   }, []);
 
-  return { data: state, loading, refetch };
+  return { data: state, loading, refetch, optimisticRemove };
 }
