@@ -296,6 +296,7 @@ class SessionService {
         limit(40)
       );
       const snapshot = await getDocs(q);
+      const reusableStatuses = ['recording_in_progress', 'interrupted'];
       for (const d of snapshot.docs) {
         const data = d.data();
         const kind = this.normalizeSessionKind(data.sessionType);
@@ -303,6 +304,9 @@ class SessionService {
         const docKey = this.resolveSessionDateKey(data);
         if (docKey !== targetKey) continue;
         if (data.soapStatus === 'finalized') continue;
+        if (data.openResponsibilityDismissed === true) continue;
+        if (data.status === 'cancelled') continue;
+        if (!reusableStatuses.includes(data.status)) continue;
         return d.id;
       }
       return null;
