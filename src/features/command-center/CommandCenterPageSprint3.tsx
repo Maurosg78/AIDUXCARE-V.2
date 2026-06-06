@@ -263,6 +263,25 @@ export const CommandCenterPageSprint3: React.FC = () => {
     pendingTodayQuickItemsRef.current.set(getTodayQuickItemKey(item), item);
   }, []);
 
+  const removeTodayQuickItem = useCallback((item: TodayQuickItem) => {
+    if (!user?.uid) {
+      return;
+    }
+    const dateKey = toLocalDateKey(selectedDate);
+    const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
+    const targetKey = getTodayQuickItemKey(item);
+    removedTodayQuickItemKeysRef.current.add(scopedKey);
+    markTodayQuickListForSave();
+    setTodayQuickList((prev) => {
+      const updatedList = prev.filter((currentItem) => {
+        const currentKey = getTodayQuickItemKey(currentItem);
+        return currentKey !== targetKey;
+      });
+      void saveTodayList(user.uid, dateKey, updatedList);
+      return updatedList;
+    });
+  }, [markTodayQuickListForSave, selectedDate, user?.uid]);
+
   // WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: when arriving from the history view with "New ongoing/assessment" → open Ongoing modal
   useEffect(() => {
     const state = location.state as { openOngoingForPatientId?: string } | null;
@@ -732,6 +751,11 @@ export const CommandCenterPageSprint3: React.FC = () => {
       // read-after-write race where getDocs() returns stale server data that
       // still includes the dismissed session before the Firestore write propagates.
       inProgressSessions.optimisticRemove(sessionId);
+      const patientId = dismissOpenResponsibilityItem.patientId;
+      const matchingQuickItem = todayQuickList.find((quickItem) => quickItem.patientId === patientId);
+      if (matchingQuickItem) {
+        removeTodayQuickItem(matchingQuickItem);
+      }
       setDismissOpenResponsibilityItem(null);
       await inProgressSessions.refetch();
     } catch {
@@ -739,7 +763,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
     } finally {
       setDismissingOpenResponsibilityId(null);
     }
-  }, [dismissOpenResponsibilityItem, inProgressSessions, user?.uid]);
+  }, [dismissOpenResponsibilityItem, inProgressSessions, removeTodayQuickItem, todayQuickList, user?.uid]);
 
   const handleOngoingModalSuccess = useCallback(
     (patientId: string, baselineSOAP?: { subjective: string; objective: string; assessment: string; plan: string }, patientName?: string) => {
@@ -962,24 +986,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
                   setShowOngoingIntake(true);
                 }
               }}
-              onRemoveFromToday={(item) => {
-                if (!user?.uid) {
-                  return;
-                }
-                const dateKey = toLocalDateKey(selectedDate);
-                const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
-                const targetKey = getTodayQuickItemKey(item);
-                removedTodayQuickItemKeysRef.current.add(scopedKey);
-                markTodayQuickListForSave();
-                setTodayQuickList((prev) => {
-                  const updatedList = prev.filter((currentItem) => {
-                    const currentKey = getTodayQuickItemKey(currentItem);
-                    return currentKey !== targetKey;
-                  });
-                  void saveTodayList(user.uid, dateKey, updatedList);
-                  return updatedList;
-                });
-              }}
+              onRemoveFromToday={removeTodayQuickItem}
               onCancelAppointmentFromToday={async (appointmentId) => {
                 await appointmentService.updateAppointmentStatus(appointmentId, 'cancelled');
                 await getAppointments(selectedDate);
