@@ -25,10 +25,7 @@ function getProcessWithVertexAI() {
       throw new Error('Firebase Functions is not available. Please refresh the page.');
     }
 
-    console.log('[VertexAI] Using shared Functions instance from firebase.ts', {
-      region: 'northamerica-northeast1',
-      functionsExists: !!functions
-    });
+    safeLogger.identifierOperation('vertex_functions', 'shared_instance_ready');
 
     processWithVertexAIFn = httpsCallable(functions, 'processWithVertexAI', {
       timeout: 300000 // 5 minutos
@@ -39,7 +36,7 @@ function getProcessWithVertexAI() {
 
 export async function callVertexAI(prompt: string): Promise<string> {
   try {
-    console.log('📡 Llamando a Firebase Function...');
+    safeLogger.identifierOperation('vertex_function', 'calling');
     const processWithVertexAI = getProcessWithVertexAI();
     const result = await processWithVertexAI({ prompt });
 
@@ -49,28 +46,32 @@ export async function callVertexAI(prompt: string): Promise<string> {
     safeLogger.vertexResponse(responseCharCount, responseHasContent, 'firebase_function_raw_response');
 
     if (response.error) {
-      console.error('❌ Error de Cloud Function:', response.error);
+      const cloudFunctionErrorCode = 'cloud_function_error';
+      const cloudFunctionHasMessage = Boolean(response.error);
+      safeLogger.errorOccurred('VertexAICloudFunction', cloudFunctionErrorCode, cloudFunctionHasMessage);
       throw new Error(response.error);
     }
 
     if (!response.text) {
-      console.warn('⚠️ Respuesta vacía, usando fallback...');
+      safeLogger.vertexResponse(0, false, 'firebase_function_empty_response');
       // FALLBACK: Generar respuesta por defecto basada en el prompt
       return generateFallbackResponse(prompt);
     }
 
-    console.log('✅ Respuesta recibida de Firebase Function');
+    safeLogger.identifierOperation('vertex_function', 'response_received');
     safeLogger.vertexResponse(responseCharCount, responseHasContent, 'firebase_function_text_response');
     return response.text;
   } catch (error) {
-    console.error('Error llamando función:', error);
+    const callVertexErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const callVertexHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('VertexAICall', callVertexErrorCode, callVertexHasMessage);
     // En lugar de fallar, usar fallback
     return generateFallbackResponse(prompt);
   }
 }
 
 function generateFallbackResponse(prompt: string): string {
-  console.log('🔄 Generando respuesta fallback...');
+  safeLogger.identifierOperation('vertex_fallback', 'generated');
 
   // Respuesta estructurada por defecto cuando Vertex AI falla
   return `SÍNTOMAS Y HALLAZGOS ACTUALES:
@@ -102,7 +103,7 @@ EVALUACIÓN FÍSICA PROPUESTA:
 export class VertexAIServiceViaFirebase {
   static async processTranscript(transcript: string): Promise<ClinicalAnalysisResponse> {
     try {
-      console.log('🔄 Procesando transcripción...');
+      safeLogger.identifierOperation('vertex_transcript', 'processing');
 
       const prompt = `Eres un asistente especializado en fisioterapia. Analiza el siguiente contenido y extrae información en las categorías especificadas.
 
@@ -162,7 +163,9 @@ EVALUACIÓN FÍSICA PROPUESTA:
         standardizedMeasures: [],
       };
     } catch (error) {
-      console.error('Error en processTranscript:', error);
+      const processTranscriptErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const processTranscriptHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('VertexAIProcessTranscript', processTranscriptErrorCode, processTranscriptHasMessage);
       // Bloque 5E: Retornar estructura válida en caso de error
       return {
         entities: [],
@@ -183,7 +186,7 @@ EVALUACIÓN FÍSICA PROPUESTA:
   }): Promise<SOAPNote> {
     const { transcript, selectedEntityIds, physicalExamResults, analysis } = params;
     try {
-      console.log('📝 Generando nota clínica...');
+      safeLogger.identifierOperation('vertex_clinical_note', 'generating');
       const payload = {
         transcript,
         selectedEntityIds,
@@ -216,7 +219,9 @@ ${JSON.stringify(payload, null, 2)}`;
 
       return parsed;
     } catch (error) {
-      console.error('Error generating clinical note:', error);
+      const clinicalNoteErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const clinicalNoteHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('VertexAIClinicalNote', clinicalNoteErrorCode, clinicalNoteHasMessage);
       throw error;
     }
   }
@@ -244,7 +249,9 @@ function parseSoapResponse(text: string): SOAPNote | null {
       referrals: parsed.referrals ? String(parsed.referrals) : undefined
     };
   } catch (err) {
-    console.error('Error parsing SOAP response:', err);
+    const soapParseErrorCode = (err as { code?: string })?.code ?? 'unknown';
+    const soapParseHasMessage = Boolean((err as { message?: string })?.message);
+    safeLogger.errorOccurred('VertexAISoapParse', soapParseErrorCode, soapParseHasMessage);
     return null;
   }
 }

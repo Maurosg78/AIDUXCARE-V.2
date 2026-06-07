@@ -3,6 +3,7 @@ import { auditedPatientDataSource } from '../dataSources/AuditedPatientDataSourc
 import { auditedVisitDataSource } from '../dataSources/AuditedVisitDataSource';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '@/utils/safeLogger';
 
 /**
  * Tipos de exportación disponibles
@@ -310,7 +311,9 @@ export class AuditedDataExportService {
           userRole
         );
       } catch (error) {
-        console.error(`Error obteniendo visitas para paciente ${patient.id}:`, error);
+        const visitExportErrorCode = (error as { code?: string })?.code ?? 'unknown';
+        const visitExportHasMessage = Boolean((error as { message?: string })?.message);
+        safeLogger.errorOccurred('AuditedDataExportVisits', visitExportErrorCode, visitExportHasMessage);
         return [];
       }
     });
@@ -421,4 +424,4 @@ export class AuditedDataExportService {
 }
 
 // Exportar instancia singleton
-export const auditedDataExportService = new AuditedDataExportService(); 
+export const auditedDataExportService = new AuditedDataExportService();

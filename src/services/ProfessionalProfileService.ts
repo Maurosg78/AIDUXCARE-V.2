@@ -1,4 +1,5 @@
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '@/utils/safeLogger';
 /**
  * 🏥 Professional Profile Service - AiDuxCare V.2
  * Sistema de perfiles profesionales con compliance por país
@@ -231,8 +232,9 @@ export class ProfessionalProfileService {
 
     this.profiles.set(id, profile);
     
-    console.log(`🏥 Perfil profesional creado: ${profileData.license} (${profileData.country})`);
-    console.log(`📋 Compliance aplicado: ${complianceSettings.regulations.length} normativas`);
+    const hasLicense = Boolean(profileData.license);
+    safeLogger.profileOperation('professional_profile_created', hasLicense);
+    safeLogger.identifierOperation('compliance_regulations', String(complianceSettings.regulations.length));
     
     return profile;
   }

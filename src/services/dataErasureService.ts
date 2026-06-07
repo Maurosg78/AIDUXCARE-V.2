@@ -25,6 +25,7 @@ import { db } from '../lib/firebase';
 import { FirestoreAuditLogger } from '../core/audit/FirestoreAuditLogger';
 import { ref, deleteObject, listAll } from 'firebase/storage';
 import { storage } from '../lib/firebase';
+import { safeLogger } from '@/utils/safeLogger';
 
 export interface ErasureRequest {
   patientId: string;
@@ -98,7 +99,9 @@ export async function verifyHICAuthorization(
     
     return true;
   } catch (error) {
-    console.error('[DataErasure] Authorization check failed:', error);
+    const authorizationErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const authorizationHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('DataErasureAuthorization', authorizationErrorCode, authorizationHasMessage);
     return false;
   }
 }
@@ -123,7 +126,9 @@ export async function checkLegalHold(patientId: string): Promise<boolean> {
     
     return false;
   } catch (error) {
-    console.error('[DataErasure] Legal hold check failed:', error);
+    const legalHoldErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const legalHoldHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('DataErasureLegalHold', legalHoldErrorCode, legalHoldHasMessage);
     return false;
   }
 }
@@ -149,7 +154,9 @@ export async function checkRetentionRequirements(patientId: string): Promise<boo
     
     return false;
   } catch (error) {
-    console.error('[DataErasure] Retention check failed:', error);
+    const retentionErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const retentionHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('DataErasureRetention', retentionErrorCode, retentionHasMessage);
     return false;
   }
 }
@@ -243,7 +250,9 @@ async function deleteFromCollection(
 
     return deletedCount;
   } catch (error) {
-    console.error(`[DataErasure] Error deleting from ${collectionName}:`, error);
+    const collectionDeleteErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const collectionDeleteHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('DataErasureCollectionDelete', collectionDeleteErrorCode, collectionDeleteHasMessage);
     throw error;
   }
 }
@@ -263,7 +272,9 @@ async function performBatchDeletion(patientId: string): Promise<Record<string, n
       const count = await deleteFromCollection(collectionName, patientId);
       deletedCounts[collectionName] = count;
     } catch (error) {
-      console.error(`[DataErasure] Failed to delete from ${collectionName}:`, error);
+      const batchDeleteErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const batchDeleteHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('DataErasureBatchDelete', batchDeleteErrorCode, batchDeleteHasMessage);
       deletedCounts[collectionName] = 0;
     }
   }
@@ -277,7 +288,9 @@ async function performBatchDeletion(patientId: string): Promise<Record<string, n
       deletedCounts['patients'] = 1;
     }
   } catch (error) {
-    console.error('[DataErasure] Failed to delete patient record:', error);
+    const patientRecordDeleteErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const patientRecordDeleteHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('DataErasurePatientRecordDelete', patientRecordDeleteErrorCode, patientRecordDeleteHasMessage);
   }
 
   return deletedCounts;
@@ -303,7 +316,9 @@ async function deleteAuditLogs(patientId: string): Promise<number> {
     
     return 0; // No logs deleted (retained for legal compliance)
   } catch (error) {
-    console.error('[DataErasure] Failed to delete audit logs:', error);
+    const auditDeleteErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const auditDeleteHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('DataErasureAuditDelete', auditDeleteErrorCode, auditDeleteHasMessage);
     return 0;
   }
 }
@@ -327,7 +342,11 @@ async function deleteMediaFiles(patientId: string): Promise<number> {
         await deleteObject(itemRef);
         deletedCount++;
       } catch (error) {
-        console.error(`[DataErasure] Failed to delete file ${itemRef.fullPath}:`, error);
+        const filePathDepth = itemRef.fullPath.split('/').length;
+        safeLogger.storageOperation('delete_file_failed', filePathDepth);
+        const fileDeleteErrorCode = (error as { code?: string })?.code ?? 'unknown';
+        const fileDeleteHasMessage = Boolean((error as { message?: string })?.message);
+        safeLogger.errorOccurred('DataErasureStorageDelete', fileDeleteErrorCode, fileDeleteHasMessage);
       }
     }
 
@@ -339,14 +358,20 @@ async function deleteMediaFiles(patientId: string): Promise<number> {
           await deleteObject(itemRef);
           deletedCount++;
         } catch (error) {
-          console.error(`[DataErasure] Failed to delete file ${itemRef.fullPath}:`, error);
+          const nestedFilePathDepth = itemRef.fullPath.split('/').length;
+          safeLogger.storageOperation('delete_nested_file_failed', nestedFilePathDepth);
+          const nestedFileDeleteErrorCode = (error as { code?: string })?.code ?? 'unknown';
+          const nestedFileDeleteHasMessage = Boolean((error as { message?: string })?.message);
+          safeLogger.errorOccurred('DataErasureNestedStorageDelete', nestedFileDeleteErrorCode, nestedFileDeleteHasMessage);
         }
       }
     }
 
     return deletedCount;
   } catch (error) {
-    console.error('[DataErasure] Failed to delete media files:', error);
+    const mediaDeleteErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const mediaDeleteHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('DataErasureMediaDelete', mediaDeleteErrorCode, mediaDeleteHasMessage);
     return 0;
   }
 }
@@ -423,7 +448,9 @@ async function storeDeletionCertificate(certificate: DeletionCertificate): Promi
     });
     return docRef.id;
   } catch (error) {
-    console.error('[DataErasure] Failed to store deletion certificate:', error);
+    const certificateStoreErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const certificateStoreHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('DataErasureCertificateStore', certificateStoreErrorCode, certificateStoreHasMessage);
     throw error;
   }
 }
@@ -561,7 +588,9 @@ export async function getDeletionCertificate(
       deletedAt: data.deletedAt?.toDate() || new Date(),
     } as DeletionCertificate;
   } catch (error) {
-    console.error('[DataErasure] Failed to retrieve deletion certificate:', error);
+    const certificateRetrieveErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const certificateRetrieveHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('DataErasureCertificateRetrieve', certificateRetrieveErrorCode, certificateRetrieveHasMessage);
     return null;
   }
 }
@@ -579,8 +608,9 @@ export async function isPatientDeleted(patientId: string): Promise<boolean> {
     const snapshot = await getDocs(q);
     return !snapshot.empty;
   } catch (error) {
-    console.error('[DataErasure] Failed to check deletion status:', error);
+    const deletionStatusErrorCode = (error as { code?: string })?.code ?? 'unknown';
+    const deletionStatusHasMessage = Boolean((error as { message?: string })?.message);
+    safeLogger.errorOccurred('DataErasureDeletionStatus', deletionStatusErrorCode, deletionStatusHasMessage);
     return false;
   }
 }
-

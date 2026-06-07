@@ -16,6 +16,7 @@ import type { ComparisonDisplayData, Session } from '../services/sessionComparis
 export type SessionComparisonView = ComparisonDisplayData;
 import { LoadingSpinner } from './ui/LoadingSpinner';
 import { ErrorMessage } from './ui/ErrorMessage';
+import { safeLogger } from '@/utils/safeLogger';
 
 // ============================================================================
 // INTERFACES
@@ -134,7 +135,9 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
       errorCountRef.current += 1;
       const errorMessage = error instanceof Error ? error.message : 'Failed to load session comparison';
       if (errorCountRef.current === 1) {
-        console.error('[SessionComparisonView] Error fetching comparison:', error);
+        const comparisonErrorCode = (error as { code?: string })?.code ?? 'unknown';
+        const comparisonHasMessage = Boolean((error as { message?: string })?.message);
+        safeLogger.errorOccurred('SessionComparisonFetch', comparisonErrorCode, comparisonHasMessage);
       }
       if (errorCountRef.current === 1) {
         setState({
@@ -171,14 +174,16 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
     // Fetch if we haven't already fetched (even if patientId is empty, to validate and show error)
     if (!externalLoading && !hasFetchedRef.current) {
       if (patientId) {
-        console.log('[SessionComparisonView] Fetching comparison for patient:', patientId, 'session:', currentSessionId);
+        safeLogger.identifierOperation('session_comparison', 'fetching');
       }
       hasFetchedRef.current = true;
       
       // Use timeout to prevent immediate re-fetch
       fetchTimeoutRef.current = setTimeout(() => {
         fetchComparison().catch((err) => {
-          console.error('[SessionComparisonView] Fetch failed:', err);
+          const comparisonFetchErrorCode = (err as { code?: string })?.code ?? 'unknown';
+          const comparisonFetchHasMessage = Boolean((err as { message?: string })?.message);
+          safeLogger.errorOccurred('SessionComparisonFetch', comparisonFetchErrorCode, comparisonFetchHasMessage);
           // Mark as fetched even on error to prevent infinite retries
           hasFetchedRef.current = true;
         }).finally(() => {
@@ -502,4 +507,3 @@ export const SessionComparison: React.FC<SessionComparisonProps> = ({
 };
 
 export default SessionComparison;
-

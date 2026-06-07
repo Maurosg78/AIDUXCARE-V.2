@@ -17,6 +17,7 @@
 import { db } from '../lib/firebase';
 import { collection, doc, setDoc, getDoc, query, where, getDocs, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import TraceabilityService from './traceabilityService';
+import { safeLogger } from '@/utils/safeLogger';
 
 // ✅ Security audit: Lazy import to prevent build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
@@ -183,7 +184,7 @@ export class EpisodeService {
         },
       });
 
-      console.log(`[Episode] Created inpatient episode: ${episodeId} for ${patientTraceNumber}`);
+      safeLogger.identifierOperation('episode', 'created_inpatient');
 
       return {
         episodeId,
@@ -191,7 +192,9 @@ export class EpisodeService {
         accessUrl: episode.access.inpatientUrl,
       };
     } catch (error) {
-      console.error('[Episode] Error creating episode:', error);
+      const createEpisodeErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const createEpisodeHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('EpisodeCreate', createEpisodeErrorCode, createEpisodeHasMessage);
       throw new Error('Failed to create episode');
     }
   }
@@ -210,7 +213,9 @@ export class EpisodeService {
 
       return snapshot.data() as Episode;
     } catch (error) {
-      console.error('[Episode] Error getting episode:', error);
+      const getEpisodeErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const getEpisodeHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('EpisodeGet', getEpisodeErrorCode, getEpisodeHasMessage);
       return null;
     }
   }
@@ -254,7 +259,9 @@ export class EpisodeService {
 
       return episodes[0].data;
     } catch (error) {
-      console.error('[Episode] Error getting episode by trace number:', error);
+      const getEpisodeByTraceErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const getEpisodeByTraceHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('EpisodeGetByTrace', getEpisodeByTraceErrorCode, getEpisodeByTraceHasMessage);
       return null;
     }
   }
@@ -335,7 +342,7 @@ export class EpisodeService {
         },
       });
 
-      console.log(`[Episode] Virtual transfer completed: ${episodeId} → ${outpatientUrl}`);
+      safeLogger.identifierOperation('episode', 'virtual_transfer_completed');
 
       return {
         success: true,
@@ -345,7 +352,9 @@ export class EpisodeService {
         message: `Paciente ${episode.patientTraceNumber} transferido a portal principal. Acceso disponible en: ${outpatientUrl}`,
       };
     } catch (error) {
-      console.error('[Episode] Error in virtual transfer:', error);
+      const transferErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const transferHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('EpisodeVirtualTransfer', transferErrorCode, transferHasMessage);
       
       // ✅ Security audit: Log error
       const AuditLogger = await getAuditLogger();
@@ -404,7 +413,9 @@ export class EpisodeService {
 
       return true;
     } catch (error) {
-      console.error('[Episode] Error marking discharged:', error);
+      const dischargeErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const dischargeHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('EpisodeDischarge', dischargeErrorCode, dischargeHasMessage);
       return false;
     }
   }
@@ -431,7 +442,9 @@ export class EpisodeService {
 
       return true;
     } catch (error) {
-      console.error('[Episode] Error adding note to episode:', error);
+      const addNoteErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const addNoteHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('EpisodeAddNote', addNoteErrorCode, addNoteHasMessage);
       return false;
     }
   }
@@ -468,11 +481,12 @@ export class EpisodeService {
 
       return episodes;
     } catch (error) {
-      console.error('[Episode] Error getting patient episodes:', error);
+      const patientEpisodesErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const patientEpisodesHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('EpisodePatientEpisodes', patientEpisodesErrorCode, patientEpisodesHasMessage);
       return [];
     }
   }
 }
 
 export default EpisodeService;
-

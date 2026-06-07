@@ -4,6 +4,7 @@ import { collection, query, where, orderBy, getDocs, Timestamp } from 'firebase/
 import { db } from '@/lib/firebase';
 import { AsyncState } from '../../command-center/hooks/useUserProfile';
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '@/utils/safeLogger';
 
 export interface PatientVisit {
   id: string;
@@ -88,7 +89,7 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
             orderBy('timestamp', 'desc')
           );
           const sessionsSnapshot = await getDocs(sessionsQuery);
-          logger.info('[usePatientVisits][WO-DASHBOARD-01] sessions loaded', { count: sessionsSnapshot.size, patientId });
+          safeLogger.identifierOperation('patient_visits_sessions', String(sessionsSnapshot.size));
           const sessionVisits: (PatientVisit & { _missingSessionType?: boolean })[] = [];
           sessionsSnapshot.forEach((docSnap) => {
             const data = docSnap.data();
@@ -153,7 +154,9 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           const isPermissionDenied = error?.code === 'permission-denied' ||
             error?.message?.includes('permission-denied');
           if (!isPermissionDenied) {
-            console.error('[usePatientVisits][WO-DASHBOARD-01] Error fetching sessions (index may be missing)', error);
+            const sessionsFetchErrorCode = error?.code ?? 'unknown';
+            const sessionsFetchHasMessage = Boolean(error?.message);
+            safeLogger.errorOccurred('PatientVisitsSessionsFetch', sessionsFetchErrorCode, sessionsFetchHasMessage);
           }
         }
 
@@ -213,7 +216,9 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           const isPermissionDenied = error?.code === 'permission-denied' ||
             error?.message?.includes('permission-denied');
           if (!isPermissionDenied) {
-            console.error('[usePatientVisits] Error fetching consultations:', error);
+            const consultationsFetchErrorCode = error?.code ?? 'unknown';
+            const consultationsFetchHasMessage = Boolean(error?.message);
+            safeLogger.errorOccurred('PatientVisitsConsultationsFetch', consultationsFetchErrorCode, consultationsFetchHasMessage);
           }
         }
 
@@ -299,7 +304,9 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
           const isPermissionDenied = error?.code === 'permission-denied' ||
             error?.message?.includes('permission-denied');
           if (!isPermissionDenied) {
-            console.error('[usePatientVisits] Error fetching encounters:', error);
+            const encountersFetchErrorCode = error?.code ?? 'unknown';
+            const encountersFetchHasMessage = Boolean(error?.message);
+            safeLogger.errorOccurred('PatientVisitsEncountersFetch', encountersFetchErrorCode, encountersFetchHasMessage);
           }
         }
 
@@ -359,7 +366,9 @@ export function usePatientVisits(patientId: string | null): AsyncState<PatientVi
         filteredVisits.sort((leftVisit, rightVisit) => rightVisit.date.getTime() - leftVisit.date.getTime());
         setState({ loading: false, data: filteredVisits });
       } catch (error: any) {
-        console.error('[usePatientVisits] Error:', error);
+        const patientVisitsErrorCode = error?.code ?? 'unknown';
+        const patientVisitsHasMessage = Boolean(error?.message);
+        safeLogger.errorOccurred('PatientVisits', patientVisitsErrorCode, patientVisitsHasMessage);
         setState({
           loading: false,
           error: error instanceof Error ? error : new Error('Unknown error')

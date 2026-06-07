@@ -33,6 +33,7 @@ import { normalizeProfessionOther } from '../config/vocabularies/professionOther
 import { getPilotConsentContent, getLanguageFromCountry } from '../utils/pilotConsent';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '@/utils/safeLogger';
 
 interface OnboardingStep {
   id: string;
@@ -73,10 +74,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       // WO-13: Usar isProfileComplete como fuente única de verdad (NO usar registrationStatus directamente)
       if (isProfileComplete(profile)) {
         hasRedirectedRef.current = true;
-        logger.info("[PROFESSIONAL_ONBOARDING] User already has complete profile (WO-13 criteria), redirecting to command-center", {
-          uid: user.uid,
-          registrationStatus: profile?.registrationStatus
-        });
+        safeLogger.profileOperation('professional_onboarding_complete_redirect', Boolean(profile.licenseNumber));
         // ✅ CRITICAL FIX: Redirect immediately without setTimeout to avoid flash
         // The component will unmount before rendering, preventing flash
         navigate('/command-center', { replace: true });
@@ -450,7 +448,7 @@ export const ProfessionalOnboardingPage: React.FC = () => {
         );
 
         authUser = userCredential.user;
-        logger.info('[ONBOARDING] New user account created', { uid: authUser.uid, email: authUser.email });
+        safeLogger.authEvent('professional_onboarding_account_created', Boolean(authUser));
         // Email de verificación se envía una sola vez después de guardar el perfil (más abajo)
       }
 
@@ -542,12 +540,13 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       };
       await saveProfileForUid(authUser.uid, profilePayload);
 
-      logger.info('Professional profile saved successfully in users/{uid}');
+      safeLogger.profileOperation('professional_profile_saved', Boolean(profilePayload.licenseNumber));
 
       // Enviar verificación de email
       const verifyRes = await firebaseAuthService.sendEmailVerification(authUser);
       if (!verifyRes.success) {
-        logger.warn("[ONBOARDING] sendEmailVerification failed", { message: verifyRes.message });
+        const verificationHasMessage = Boolean(verifyRes.message);
+        safeLogger.errorOccurred('ProfessionalOnboardingVerification', 'email_verification_failed', verificationHasMessage);
       }
 
       // WO-ONB-SIGNUP-01: Mostrar estado de éxito antes de redirigir
@@ -572,7 +571,9 @@ export const ProfessionalOnboardingPage: React.FC = () => {
       }, 3000);
 
     } catch (error: unknown) {
-      logger.error('Error saving profile:', error);
+      const saveProfileErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const saveProfileHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('ProfessionalOnboardingSave', saveProfileErrorCode, saveProfileHasMessage);
       const code = (error as { code?: string })?.code;
       if (code === 'auth/email-already-in-use') {
         setError(t('onboarding.errorEmailAlreadyRegistered'));

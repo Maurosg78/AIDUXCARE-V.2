@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '@/utils/safeLogger';
 
 interface PatientData {
   id: string;
@@ -327,7 +328,7 @@ export const ClinicalInfoPage: React.FC = () => {
             <button
               onClick={() => {
                 // Aquí se guardaría en Firestore
-                logger.info('Guardando datos del paciente:', patientData);
+                safeLogger.identifierOperation('patient_clinical_info', 'save_requested');
                 setIsEditing(false);
               }}
               className="px-6 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition-colors"
@@ -341,4 +342,4 @@ export const ClinicalInfoPage: React.FC = () => {
   );
 };
 
-export default ClinicalInfoPage; 
+export default ClinicalInfoPage;

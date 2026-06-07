@@ -14,6 +14,7 @@ import { isSpainPilot } from '@/core/pilotDetection';
 
 import logger from "@/shared/utils/logger";
 import styles from '@/styles/wizard.module.css';
+import { safeLogger } from "@/utils/safeLogger";
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -54,13 +55,13 @@ const LoginPage: React.FC = () => {
     if (isWaitingForProfile && user) {
       // If still loading, wait
       if (profileLoading) {
-        logger.info("[LOGIN] Profile still loading, waiting...");
+        safeLogger.profileOperation('login_profile_loading_wait', false);
         return;
       }
 
       // If profile error, let AuthGuard handle it
       if (profileError) {
-        logger.warn("[LOGIN] Profile error detected, AuthGuard will handle soft-fail");
+        safeLogger.profileOperation('login_profile_error_soft_fail', false);
         hasRedirectedRef.current = false; // Allow retry on error
         setIsWaitingForProfile(false);
         return;
@@ -68,7 +69,7 @@ const LoginPage: React.FC = () => {
 
       // If profile doesn't exist yet, wait for it
       if (!profile) {
-        logger.info("[LOGIN] Profile not loaded yet, waiting for profile...");
+        safeLogger.profileOperation('login_profile_missing_wait', false);
         return;
       }
 
@@ -77,21 +78,13 @@ const LoginPage: React.FC = () => {
       setIsWaitingForProfile(false);
 
       if (isProfileComplete(profile)) {
-        logger.info("[LOGIN] Profile complete (WO-13 criteria), redirecting to command-center", {
-          uid: user?.uid,
-          hasProfile: !!profile,
-          profileComplete: true
-        });
+        safeLogger.profileOperation('login_profile_complete_redirect', Boolean(profile.licenseNumber));
         navigate("/command-center", {
           replace: true,
           state: { from: "login" },
         });
       } else {
-        logger.info("[LOGIN] Profile incomplete (WO-13 criteria), redirecting to professional-onboarding", {
-          uid: user?.uid,
-          hasProfile: !!profile,
-          profileComplete: false
-        });
+        safeLogger.profileOperation('login_profile_incomplete_redirect', Boolean(profile.licenseNumber));
         navigate("/professional-onboarding", {
           replace: true,
           state: { from: "login" },
@@ -123,20 +116,20 @@ const LoginPage: React.FC = () => {
   const handlePostLoginRedirect = () => {
     // ✅ CRITICAL FIX: Don't redirect if profile is still loading
     if (profileLoading) {
-      logger.info("[LOGIN] Profile still loading, deferring redirect decision");
+      safeLogger.profileOperation('login_profile_loading_defer_redirect', false);
       return;
     }
 
     // Si hay error de Firestore (adblock, etc.), NO navegar - AuthGuard mostrará soft-fail
     if (profileError) {
-      logger.warn("[LOGIN] Profile error detected, AuthGuard will handle soft-fail");
+      safeLogger.profileOperation('login_profile_error_soft_fail', false);
       // No navegar - dejar que AuthGuard maneje el error
       return;
     }
 
     // ✅ CRITICAL FIX: If profile is null, don't redirect - let AuthGuard handle it
     if (!profile) {
-      logger.info("[LOGIN] Profile not loaded yet, AuthGuard will handle redirect");
+      safeLogger.profileOperation('login_profile_missing_authguard_redirect', false);
       return;
     }
 
@@ -144,22 +137,14 @@ const LoginPage: React.FC = () => {
     // NO usar emailVerified para routing en piloto
     if (isProfileComplete(profile)) {
       // Perfil completo → Command Center
-      logger.info("[LOGIN] Profile complete (WO-13 criteria), redirecting to command-center", {
-        uid: user?.uid,
-        hasProfile: !!profile,
-        profileComplete: true
-      });
+      safeLogger.profileOperation('login_profile_complete_redirect', Boolean(profile.licenseNumber));
       navigate("/command-center", {
         replace: true,
         state: { from: "login" },
       });
     } else {
       // Perfil incompleto → Onboarding
-      logger.info("[LOGIN] Profile incomplete (WO-13 criteria), redirecting to professional-onboarding", {
-        uid: user?.uid,
-        hasProfile: !!profile,
-        profileComplete: false
-      });
+      safeLogger.profileOperation('login_profile_incomplete_redirect', Boolean(profile.licenseNumber));
       navigate("/professional-onboarding", {
         replace: true,
         state: { from: "login" },
@@ -172,7 +157,7 @@ const LoginPage: React.FC = () => {
 
     // ✅ CRITICAL: Prevent duplicate login attempts
     if (isLoggingIn) {
-      logger.warn("[LOGIN] Login already in progress, ignoring duplicate request");
+      safeLogger.authEvent('login_duplicate_ignored', false);
       return;
     }
 
@@ -201,7 +186,7 @@ const LoginPage: React.FC = () => {
     hasRedirectedRef.current = false; // Reset redirect flag for new login attempt
 
     try {
-      logger.info("[LOGIN] Attempting sign-in", { email });
+      safeLogger.authEvent('login_attempt', true);
       await login(email, password);
 
       const currentUserAfterLogin = auth.currentUser;
@@ -213,9 +198,7 @@ const LoginPage: React.FC = () => {
       const professional = await emailActivationService.getProfessional(email, currentUserAfterLogin?.uid);
 
       if (!professional) {
-        logger.info("[LOGIN] No legacy professional document found in users collection, relying on profile context + onboarding", {
-          email,
-        });
+        safeLogger.profileOperation('legacy_professional_document_missing', false);
         // Do NOT block – let profile loader + onboarding handle new pilot users
       }
 
@@ -227,7 +210,7 @@ const LoginPage: React.FC = () => {
         return;
       }
       if (professional && professional.isActive === false && firebaseEmailVerified) {
-        logger.info("[LOGIN] Legacy isActive=false but Firebase email verified; allowing pilot flow", { email });
+        safeLogger.authEvent('legacy_inactive_email_verified', true);
       }
       setShowPendingActivationResend(false);
 
@@ -238,14 +221,13 @@ const LoginPage: React.FC = () => {
       // ✅ CRITICAL FIX: Always use useEffect to handle redirect
       // This ensures we wait for profile to be fully loaded, not just profileLoading === false
       setIsWaitingForProfile(true);
-      logger.info("[LOGIN] Login successful, waiting for profile to load before redirect", {
-        profileLoading,
-        hasProfile: !!profile,
-        hasUser: !!user
-      });
+      const loginSuccess = Boolean(currentUserAfterLogin);
+      safeLogger.authEvent('login_waiting_for_profile', loginSuccess);
       // useEffect will handle the redirect when profile is ready
     } catch (err) {
-      logger.error("[LOGIN] Authentication error", err);
+      const loginErrorCode = (err as { code?: string })?.code ?? 'unknown';
+      const loginHasMessage = Boolean((err as { message?: string })?.message);
+      safeLogger.errorOccurred('LoginPage', loginErrorCode, loginHasMessage);
       setError(t('login.errorInvalidCredentials'));
       setShowPendingActivationResend(false);
       hasRedirectedRef.current = false; // Reset on error to allow retry

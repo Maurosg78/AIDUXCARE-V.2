@@ -17,6 +17,7 @@ import { getPublicBaseUrl } from '../utils/urlHelpers';
 import { normalizeNameForSMS } from '../utils/textNormalizer';
 import { getCurrentJurisdiction } from '@/core/consent/consentJurisdiction';
 import { buildAuthenticatedJsonHeaders } from './firebaseAuthHeaders';
+import { safeLogger } from '@/utils/safeLogger';
 
 const SMS_COLLECTION = 'pending_sms'; // Audit trail for SMS sends
 
@@ -56,21 +57,9 @@ function resolveConsentSmsJurisdiction(phone: string, explicitJurisdiction?: str
 
 // Log Twilio configuration status (only in development)
 if (import.meta.env.DEV) {
-  console.log('[SMS SERVICE] Provider configuration:', {
-    provider: SMS_PROVIDER,
-    twilio: {
-      accountSid: TWILIO_ACCOUNT_SID ? '✅ Set' : '❌ Missing',
-      authToken: TWILIO_AUTH_TOKEN ? '✅ Set' : '❌ Missing',
-      phoneNumber: TWILIO_PHONE_NUMBER ? `✅ ${TWILIO_PHONE_NUMBER}` : '❌ Missing',
-      enabled: TWILIO_ENABLED ? '✅ Enabled' : '❌ Disabled'
-    },
-    vonage: {
-      apiKey: VONAGE_API_KEY ? '✅ Set' : '❌ Missing',
-      apiSecret: VONAGE_API_SECRET ? '✅ Set' : '❌ Missing',
-      phoneNumber: VONAGE_FROM_NUMBER ? `✅ ${VONAGE_FROM_NUMBER}` : '❌ Missing',
-      enabled: VONAGE_ENABLED ? '✅ Enabled' : '❌ Disabled'
-    }
-  });
+  safeLogger.identifierOperation('sms_provider', SMS_PROVIDER);
+  safeLogger.phoneValidation('twilio_configured', TWILIO_ENABLED);
+  safeLogger.phoneValidation('vonage_configured', VONAGE_ENABLED);
 }
 
 /**
@@ -104,7 +93,8 @@ export class SMSService {
 
       const validation = language === 'es' ? validateSMSTemplateEs(message) : validateSMSTemplate(message);
       if (!validation.isValid) {
-        logger.error('[SMS] Disclosure template validation failed:', validation.errors);
+        const disclosureTemplateErrorCount = validation.errors.length;
+        safeLogger.errorOccurred('SMSDisclosureTemplate', disclosureTemplateErrorCount, true);
         throw new Error(`SMS template validation failed: ${validation.errors.join(', ')}`);
       }
 
@@ -134,11 +124,8 @@ export class SMSService {
         }
 
         const result = await response.json();
-        logger.info('[SMS] Vonage disclosure SMS sent via Cloud Function:', {
-          to: validatedPhone,
-          messageId: result.messageId,
-          remainingBalance: result.remainingBalance
-        });
+        const vonageDisclosureSuccess = Boolean(result.messageId);
+        safeLogger.phoneValidation('vonage_disclosure_sent', vonageDisclosureSuccess);
       } else if (TWILIO_ENABLED) {
         // Twilio implementation (same as sendConsentLink)
         const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
@@ -162,11 +149,8 @@ export class SMSService {
         }
 
         const result = await response.json();
-        logger.info('[SMS] Twilio disclosure SMS sent:', {
-          to: validatedPhone,
-          sid: result.sid,
-          status: result.status
-        });
+        const twilioDisclosureSuccess = Boolean(result.sid);
+        safeLogger.phoneValidation('twilio_disclosure_sent', twilioDisclosureSuccess);
       } else {
         throw new Error('SMS service is not configured');
       }
@@ -182,7 +166,9 @@ export class SMSService {
         createdAt: serverTimestamp(),
       });
     } catch (error: any) {
-      logger.error('[SMS] Error sending disclosure link:', error);
+      const disclosureErrorCode = error?.code ?? 'unknown';
+      const disclosureHasMessage = Boolean(error?.message);
+      safeLogger.errorOccurred('SMSDisclosure', disclosureErrorCode, disclosureHasMessage);
       throw error;
     }
   }
@@ -224,7 +210,8 @@ export class SMSService {
 
       const validation = useEsTemplate ? validateSMSTemplateEs(message) : validateSMSTemplate(message);
       if (!validation.isValid) {
-        logger.error('[SMS] Template validation failed:', validation.errors);
+        const templateErrorCount = validation.errors.length;
+        safeLogger.errorOccurred('SMSTemplate', templateErrorCount, true);
         throw new Error(`SMS template validation failed: ${validation.errors.join(', ')}`);
       }
 
@@ -232,37 +219,37 @@ export class SMSService {
       let validatedPhone = phone.trim();
 
       // Log original phone for debugging
-      logger.info('[SMS] Original phone number:', { original: validatedPhone, length: validatedPhone.length });
+      const originalPhoneIsPresent = validatedPhone.length > 0;
+      safeLogger.phoneValidation('original_phone_received', originalPhoneIsPresent);
 
       // Validate phone number
       if (!SMSService.validatePhoneNumber(validatedPhone)) {
         const formatted = SMSService.formatPhoneNumber(validatedPhone);
         if (!SMSService.validatePhoneNumber(formatted)) {
-          logger.error('[SMS] Phone validation failed:', { original: validatedPhone, formatted });
+          const formattedPhoneIsValid = SMSService.validatePhoneNumber(formatted);
+          safeLogger.phoneValidation('phone_format_failed', formattedPhoneIsValid);
           throw new Error(`Invalid phone number format: ${validatedPhone}. Expected E.164 format (e.g., +14161234567)`);
         }
         validatedPhone = formatted;
-        logger.info('[SMS] Phone number formatted:', { original: phone, formatted: validatedPhone });
+        const formattedPhoneIsValid = SMSService.validatePhoneNumber(validatedPhone);
+        safeLogger.phoneValidation('phone_formatted', formattedPhoneIsValid);
       }
 
       // Final validation: must be E.164 format
       if (!/^\+[1-9]\d{1,14}$/.test(validatedPhone)) {
-        logger.error('[SMS] Phone number does not match E.164 format:', { phone: validatedPhone });
+        safeLogger.phoneValidation('e164_validation', false);
         throw new Error(`Invalid phone number format: ${validatedPhone}. Must be E.164 format (e.g., +14161234567)`);
       }
 
       // Ensure phone number is exactly 12 characters for North American numbers (+1 + 10 digits)
       if (validatedPhone.startsWith('+1') && validatedPhone.length !== 12) {
-        logger.error('[SMS] North American phone number has incorrect length:', {
-          phone: validatedPhone,
-          length: validatedPhone.length,
-          expected: 12
-        });
+        safeLogger.phoneValidation('north_american_length_validation', false);
         throw new Error(`Invalid North American phone number length: ${validatedPhone}. Expected 12 characters (+1 + 10 digits)`);
       }
 
       phone = validatedPhone; // Use validated phone
-      logger.info('[SMS] Final validated phone:', { phone, length: phone.length });
+      const finalPhoneIsValid = SMSService.validatePhoneNumber(phone);
+      safeLogger.phoneValidation('final_phone_validated', finalPhoneIsValid);
 
       // Save to Firestore audit trail BEFORE sending
       const auditRef = await addDoc(collection(db, SMS_COLLECTION), {
@@ -278,15 +265,8 @@ export class SMSService {
         twilioEnabled: TWILIO_ENABLED,
       });
 
-      logger.info('[SMS] Sending consent link:', {
-        phone,
-        phoneLength: phone.length,
-        patientName,
-        consentUrl,
-        jurisdiction,
-        twilioEnabled: TWILIO_ENABLED,
-        note: '⚠️ In Twilio trial accounts, SMS can only be sent to verified phone numbers. Verify numbers in Twilio Console > Phone Numbers > Verified Caller IDs'
-      });
+      safeLogger.identifierOperation('sms_consent_link', jurisdiction);
+      safeLogger.phoneValidation('sms_provider_enabled', TWILIO_ENABLED || VONAGE_ENABLED);
 
       const providerUsed = SMS_PROVIDER === 'vonage' ? 'vonage' : 'twilio';
 
@@ -340,17 +320,9 @@ export class SMSService {
             !TWILIO_PHONE_NUMBER.startsWith('+1905') && !TWILIO_PHONE_NUMBER.startsWith('+1937');
 
           // Log exact values being sent to Twilio
-          logger.info('[SMS] Twilio API Request Details:', {
-            from: TWILIO_PHONE_NUMBER,
-            to: cleanPhoneForTwilio,
-            toLength: cleanPhoneForTwilio.length,
-            toFormatted: cleanPhoneForTwilio,
-            messageLength: message.length,
-            accountSid: TWILIO_ACCOUNT_SID?.substring(0, 10) + '...',
-            isCanadianNumber,
-            isUSNumber,
-            warning: isUSNumber && isCanadianNumber ? '⚠️ US Twilio number sending to Canadian number - may be blocked by domestic-only restriction' : null,
-          });
+          safeLogger.phoneValidation('twilio_target_canadian_number', isCanadianNumber);
+          safeLogger.phoneValidation('twilio_sender_us_number', isUSNumber);
+          safeLogger.vertexResponse(message.length, message.length > 0, 'sms_message_prepared');
 
           // Use Twilio REST API directly (no SDK needed for simple use case)
           const response = await fetch(
@@ -375,35 +347,20 @@ export class SMSService {
             const errorCode = errorData.code;
 
             // Log full error response for debugging
-            logger.error('[SMS] Twilio API Error Response:', {
-              status: response.status,
-              statusText: response.statusText,
-              errorCode,
-              errorMessage,
-              phoneSent: cleanPhoneForTwilio,
-              fullError: errorData,
-            });
+            const twilioErrorCode = errorCode ?? response.status;
+            const twilioHasMessage = Boolean(errorMessage);
+            safeLogger.errorOccurred('SMSTwilioApi', twilioErrorCode, twilioHasMessage);
 
             // Check for common Twilio trial account errors
             if (errorMessage.includes('not a valid') || errorMessage.includes('unverified') || errorCode === 21211) {
-              logger.error('[SMS] Twilio trial account restriction:', {
-                phone: cleanPhoneForTwilio,
-                error: errorMessage,
-                errorCode,
-                solution: 'Verify this phone number in Twilio Console > Phone Numbers > Verified Caller IDs, or upgrade to a paid account'
-              });
+              const trialRestrictionCode = errorCode ?? 'trial_restriction';
+              safeLogger.errorOccurred('SMSTwilioTrialRestriction', trialRestrictionCode, true);
             }
 
             // Check for domestic-only restrictions (US number trying to send to Canada)
             if (errorCode === 21608 || errorMessage.includes('domestic') || errorMessage.includes('not allowed')) {
-              logger.error('[SMS] Twilio domestic-only restriction detected:', {
-                fromNumber: TWILIO_PHONE_NUMBER,
-                toNumber: cleanPhoneForTwilio,
-                error: errorMessage,
-                errorCode,
-                issue: 'US Twilio number (+1 229 267 3348) may only send to US domestic numbers. Canadian numbers (+1 647) may be blocked.',
-                solution: 'Purchase a Canadian Twilio number or use a Twilio number that supports international SMS to Canada'
-              });
+              const domesticRestrictionCode = errorCode ?? 'domestic_restriction';
+              safeLogger.errorOccurred('SMSTwilioDomesticRestriction', domesticRestrictionCode, true);
             }
 
             throw new Error(`Twilio API error: ${errorMessage} (Code: ${errorCode || 'N/A'})`);
@@ -412,15 +369,8 @@ export class SMSService {
           const result = await response.json();
 
           // Log successful response details
-          logger.info('[SMS] Twilio API Success Response:', {
-            sid: result.sid,
-            status: result.status,
-            to: result.to,
-            from: result.from,
-            dateCreated: result.date_created,
-            price: result.price,
-            priceUnit: result.price_unit,
-          });
+          const twilioSuccess = Boolean(result.sid);
+          safeLogger.phoneValidation('twilio_api_success', twilioSuccess);
 
           // Update audit trail with success
           await addDoc(collection(db, SMS_COLLECTION), {
@@ -441,28 +391,12 @@ export class SMSService {
             auditRefId: auditRef.id,
           });
 
-          console.log('✅ [SMS] Message sent successfully:', {
-            to: cleanPhoneForTwilio,
-            toOriginal: phone,
-            patient: patientName,
-            twilioSid: result.sid,
-            status: result.status,
-            messageStatus: result.status,
-            price: result.price,
-            priceUnit: result.price_unit,
-          });
-
-          logger.info('[SMS] Consent SMS sent via Twilio:', {
-            phone: cleanPhoneForTwilio,
-            phoneOriginal: phone,
-            patientName,
-            twilioSid: result.sid,
-            status: result.status,
-            dateCreated: result.date_created,
-          });
+          safeLogger.phoneValidation('consent_sms_sent_twilio', twilioSuccess);
 
         } catch (twilioError: any) {
-          console.error('❌ [SMS] Twilio send failed:', twilioError);
+          const twilioSendErrorCode = twilioError?.code ?? 'unknown';
+          const twilioSendHasMessage = Boolean(twilioError?.message);
+          safeLogger.errorOccurred('SMSTwilioSend', twilioSendErrorCode, twilioSendHasMessage);
 
           // Update audit trail with error
           await addDoc(collection(db, SMS_COLLECTION), {
@@ -479,14 +413,14 @@ export class SMSService {
             auditRefId: auditRef.id,
           });
 
-          logger.error('[SMS] Twilio send error:', twilioError);
+          safeLogger.errorOccurred('SMSTwilioSendAudit', twilioSendErrorCode, twilioSendHasMessage);
 
           // Re-throw to allow caller to handle (e.g., show manual fallback)
           throw new Error(`Failed to send SMS via Twilio: ${twilioError.message}`);
         }
       } else {
         // Twilio not configured - save as pending for manual sending
-        console.warn('⚠️ [SMS] Twilio not configured, saving to queue for manual sending');
+        safeLogger.phoneValidation('twilio_configured', false);
 
         await addDoc(collection(db, SMS_COLLECTION), {
           phone,
@@ -502,17 +436,15 @@ export class SMSService {
           note: 'Twilio not configured - requires manual sending',
         });
 
-        logger.warn('[SMS] Twilio not configured, message queued for manual sending:', {
-          phone,
-          patientName,
-        });
+        safeLogger.identifierOperation('sms_consent_link', 'queued_manual_send');
 
         throw new Error('SMS service is not configured. Message queued for manual sending.');
       }
 
     } catch (error) {
-      console.error('❌ [SMS] Error sending consent link:', error);
-      logger.error('[SMS] Failed to send consent link:', error);
+      const consentLinkErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const consentLinkHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('SMSConsentLink', consentLinkErrorCode, consentLinkHasMessage);
       throw error;
     }
   }
@@ -547,10 +479,7 @@ export class SMSService {
     const FUNCTION_URL = import.meta.env.VITE_SMS_FUNCTION_URL ||
       `https://${FUNCTION_REGION}-${PROJECT_ID}.cloudfunctions.net/sendConsentSMS`;
 
-    logger.info('[SMS] Calling Cloud Function for Vonage SMS:', {
-      functionUrl: FUNCTION_URL,
-      to: phone,
-    });
+    safeLogger.identifierOperation('sms_vonage_function', 'calling');
 
     // Call Cloud Function instead of Vonage directly (avoids CORS)
     const headers = await buildAuthenticatedJsonHeaders();
@@ -569,19 +498,14 @@ export class SMSService {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok || !data.ok) {
-      logger.error('[SMS] Cloud Function error:', {
-        status: response.status,
-        error: data.error,
-        message: data.message,
-      });
+      const vonageFunctionErrorCode = data.error ?? response.status;
+      const vonageFunctionHasMessage = Boolean(data.message);
+      safeLogger.errorOccurred('SMSVonageFunction', vonageFunctionErrorCode, vonageFunctionHasMessage);
       throw new Error(data.message || `SMS function error: ${data.error || 'Unknown error'}`);
     }
 
-    logger.info('[SMS] Vonage SMS sent via Cloud Function:', {
-      to: phone,
-      messageId: data.messageId,
-      remainingBalance: data.remainingBalance,
-    });
+    const vonageSendSuccess = Boolean(data.messageId);
+    safeLogger.phoneValidation('vonage_sms_sent', vonageSendSuccess);
 
     await addDoc(collection(db, SMS_COLLECTION), {
       phone,
@@ -633,34 +557,39 @@ export class SMSService {
       // Validate template (ensure no Spanish content)
       const validation = validateSMSTemplate(message);
       if (!validation.isValid) {
-        logger.error('[SMS Activation] Template validation failed:', validation.errors);
+        const activationTemplateErrorCount = validation.errors.length;
+        safeLogger.errorOccurred('SMSActivationTemplate', activationTemplateErrorCount, true);
         throw new Error(`SMS template validation failed: ${validation.errors.join(', ')}`);
       }
 
       // Validate and format phone number
       let validatedPhone = phone.trim();
 
-      logger.info('[SMS Activation] Original phone number:', { original: validatedPhone, length: validatedPhone.length });
+      const activationOriginalPhoneIsPresent = validatedPhone.length > 0;
+      safeLogger.phoneValidation('activation_original_phone_received', activationOriginalPhoneIsPresent);
 
       // Validate phone number
       if (!SMSService.validatePhoneNumber(validatedPhone)) {
         const formatted = SMSService.formatPhoneNumber(validatedPhone);
         if (!SMSService.validatePhoneNumber(formatted)) {
-          logger.error('[SMS Activation] Phone validation failed:', { original: validatedPhone, formatted });
+          const activationFormattedPhoneIsValid = SMSService.validatePhoneNumber(formatted);
+          safeLogger.phoneValidation('activation_phone_format_failed', activationFormattedPhoneIsValid);
           throw new Error(`Invalid phone number format: ${validatedPhone}. Expected E.164 format (e.g., +14161234567)`);
         }
         validatedPhone = formatted;
-        logger.info('[SMS Activation] Phone number formatted:', { original: phone, formatted: validatedPhone });
+        const activationFormattedPhoneIsValid = SMSService.validatePhoneNumber(validatedPhone);
+        safeLogger.phoneValidation('activation_phone_formatted', activationFormattedPhoneIsValid);
       }
 
       // Final validation: must be E.164 format
       if (!/^\+[1-9]\d{1,14}$/.test(validatedPhone)) {
-        logger.error('[SMS Activation] Phone number does not match E.164 format:', { phone: validatedPhone });
+        safeLogger.phoneValidation('activation_e164_validation', false);
         throw new Error(`Invalid phone number format: ${validatedPhone}. Must be E.164 format (e.g., +34600123456)`);
       }
 
       phone = validatedPhone;
-      logger.info('[SMS Activation] Final validated phone:', { phone, length: phone.length });
+      const activationFinalPhoneIsValid = SMSService.validatePhoneNumber(phone);
+      safeLogger.phoneValidation('activation_final_phone_validated', activationFinalPhoneIsValid);
 
       // Send SMS via Vonage Cloud Function (preferred) or Twilio
       const providerUsed = SMS_PROVIDER === 'vonage' ? 'vonage' : 'twilio';
@@ -676,10 +605,7 @@ export class SMSService {
         const FUNCTION_URL = import.meta.env.VITE_SMS_FUNCTION_URL ||
           `https://${FUNCTION_REGION}-${PROJECT_ID}.cloudfunctions.net/sendConsentSMS`;
 
-        logger.info('[SMS Activation] Calling Cloud Function for Vonage SMS:', {
-          functionUrl: FUNCTION_URL,
-          to: phone,
-        });
+        safeLogger.identifierOperation('sms_activation_vonage_function', 'calling');
 
         // Call Cloud Function
         const headers = await buildAuthenticatedJsonHeaders();
@@ -698,19 +624,14 @@ export class SMSService {
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok || !data.ok) {
-          logger.error('[SMS Activation] Cloud Function error:', {
-            status: response.status,
-            error: data.error,
-            message: data.message,
-          });
+          const activationVonageErrorCode = data.error ?? response.status;
+          const activationVonageHasMessage = Boolean(data.message);
+          safeLogger.errorOccurred('SMSActivationVonageFunction', activationVonageErrorCode, activationVonageHasMessage);
           throw new Error(data.message || `SMS function error: ${data.error || 'Unknown error'}`);
         }
 
-        logger.info('[SMS Activation] Vonage SMS sent via Cloud Function:', {
-          to: phone,
-          messageId: data.messageId,
-          remainingBalance: data.remainingBalance,
-        });
+        const activationVonageSuccess = Boolean(data.messageId);
+        safeLogger.phoneValidation('activation_vonage_sms_sent', activationVonageSuccess);
 
         // Log to Firestore audit trail (async, don't wait)
         addDoc(collection(db, SMS_COLLECTION), {
@@ -728,17 +649,16 @@ export class SMSService {
           createdAt: serverTimestamp(),
           type: 'professional_activation',
         }).catch((error) => {
-          logger.error('[SMS Activation] Error logging to Firestore:', error);
+          const activationAuditErrorCode = error?.code ?? 'unknown';
+          const activationAuditHasMessage = Boolean(error?.message);
+          safeLogger.errorOccurred('SMSActivationAudit', activationAuditErrorCode, activationAuditHasMessage);
         });
 
       } else if (TWILIO_ENABLED) {
         // Use Twilio REST API directly
         const cleanPhoneForTwilio = phone.replace(/\s/g, '');
 
-        logger.info('[SMS Activation] Sending via Twilio:', {
-          from: TWILIO_PHONE_NUMBER,
-          to: cleanPhoneForTwilio,
-        });
+        safeLogger.identifierOperation('sms_activation_twilio', 'sending');
 
         const response = await fetch(
           `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
@@ -759,21 +679,16 @@ export class SMSService {
         if (!response.ok) {
           const errorData = await response.json();
           const errorMessage = errorData.message || response.statusText;
-          logger.error('[SMS Activation] Twilio API Error:', {
-            status: response.status,
-            errorMessage,
-            phone: cleanPhoneForTwilio,
-          });
+          const activationTwilioErrorCode = errorData.code ?? response.status;
+          const activationTwilioHasMessage = Boolean(errorMessage);
+          safeLogger.errorOccurred('SMSActivationTwilioApi', activationTwilioErrorCode, activationTwilioHasMessage);
           throw new Error(`Twilio API error: ${errorMessage}`);
         }
 
         const result = await response.json();
 
-        logger.info('[SMS Activation] Twilio SMS sent successfully:', {
-          to: cleanPhoneForTwilio,
-          twilioSid: result.sid,
-          status: result.status,
-        });
+        const activationTwilioSuccess = Boolean(result.sid);
+        safeLogger.phoneValidation('activation_twilio_sms_sent', activationTwilioSuccess);
 
         // Log to Firestore audit trail (async, don't wait)
         addDoc(collection(db, SMS_COLLECTION), {
@@ -791,7 +706,9 @@ export class SMSService {
           createdAt: serverTimestamp(),
           type: 'professional_activation',
         }).catch((error) => {
-          logger.error('[SMS Activation] Error logging to Firestore:', error);
+          const activationTwilioAuditErrorCode = error?.code ?? 'unknown';
+          const activationTwilioAuditHasMessage = Boolean(error?.message);
+          safeLogger.errorOccurred('SMSActivationTwilioAudit', activationTwilioAuditErrorCode, activationTwilioAuditHasMessage);
         });
 
       } else {
@@ -799,8 +716,9 @@ export class SMSService {
       }
 
     } catch (error) {
-      console.error('❌ [SMS Activation] Error sending activation link:', error);
-      logger.error('[SMS Activation] Failed to send activation link:', error);
+      const activationLinkErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const activationLinkHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('SMSActivationLink', activationLinkErrorCode, activationLinkHasMessage);
       throw error;
     }
   }

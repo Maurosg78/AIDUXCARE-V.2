@@ -16,6 +16,7 @@ import { LocationDataStep } from "../components/wizard/LocationDataStep";
 import logger from '@/shared/utils/logger';
 import { emailActivationService } from "../services/emailActivationService";
 import styles from '@/styles/wizard.module.css';
+import { safeLogger } from "@/utils/safeLogger";
 
 type WizardData = {
   personal: Partial<PersonalData>;
@@ -49,10 +50,7 @@ export default function OnboardingPage() {
     
     if (currentUser?.uid) {
       // Usuario ya autenticado - redirigir a professional onboarding
-      logger.info("[ONBOARDING] User already authenticated, redirecting to professional onboarding", {
-        uid: currentUser.uid,
-        email: currentUser.email
-      });
+      safeLogger.authEvent('onboarding_authenticated_redirect', true);
       navigate('/professional-onboarding', { replace: true });
       return;
     }
@@ -231,9 +229,7 @@ export default function OnboardingPage() {
     const currentUser = auth.currentUser;
     
     if (currentUser?.uid) {
-      logger.warn("[ONBOARDING] Attempted registration with active session, redirecting", {
-        uid: currentUser.uid
-      });
+      safeLogger.authEvent('onboarding_active_session_redirect', true);
       navigate('/professional-onboarding', { replace: true });
       return;
     }
@@ -307,14 +303,18 @@ export default function OnboardingPage() {
       }, payload.password);
 
       if (result.success) {
-        logger.info("[ONBOARDING] Professional registered", { email: payload.email });
+        const registrationSuccess = Boolean(result.success);
+        safeLogger.authEvent('onboarding_professional_registered', registrationSuccess);
         setCompletionState('success');
       } else {
-        logger.error("[ONBOARDING] Registration failed", { message: result.message });
+        const registrationHasMessage = Boolean(result.message);
+        safeLogger.errorOccurred('OnboardingRegistration', 'registration_failed', registrationHasMessage);
         setSubmissionError(result.message || "We could not complete your registration. Please try again.");
       }
     } catch (error) {
-      logger.error("[ONBOARDING] Registration error", error);
+      const onboardingErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const onboardingHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('OnboardingRegistration', onboardingErrorCode, onboardingHasMessage);
       setSubmissionError("We could not complete your registration. Please try again.");
     } finally {
       setSubmitting(false);

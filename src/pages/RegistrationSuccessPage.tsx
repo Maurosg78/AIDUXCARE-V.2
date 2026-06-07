@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '@/utils/safeLogger';
 
 export const RegistrationSuccessPage: React.FC = () => {
   const location = useLocation();
@@ -12,12 +13,15 @@ export const RegistrationSuccessPage: React.FC = () => {
   const handleResendVerification = async () => {
     try {
       // Aquí iría la lógica para reenviar verificación
-      logger.info('Reenviando verificación a:', email);
+      const hasVerificationEmail = Boolean(email);
+      safeLogger.authEvent('registration_verification_resend_requested', hasVerificationEmail);
       
       // Simular envío exitoso
       alert('Email de verificación reenviado. Revisa tu bandeja de entrada.');
     } catch (err) {
-      logger.error('Error reenviando verificación:', err);
+      const resendErrorCode = (err as { code?: string })?.code ?? 'unknown';
+      const resendHasMessage = Boolean((err as { message?: string })?.message);
+      safeLogger.errorOccurred('RegistrationVerificationResend', resendErrorCode, resendHasMessage);
       alert('Error al reenviar el email de verificación');
     }
   };

@@ -6,6 +6,7 @@ import { TranscriptionSegment } from '../core/audio/AudioCaptureService';
 import { WebSpeechSTTService } from '../services/WebSpeechSTTService';
 import { checkConsentViaServer } from '../services/consentServerService'; // ✅ WO-CONSENT-CLEANUP-03: Server-side only
 import VerbalConsentService from '../services/verbalConsentService'; // ✅ PHIPA compliance (verbal)
+import { safeLogger } from '@/utils/safeLogger';
 
 interface RealTimeAudioCaptureProps {
   onCaptureComplete?: (segments: TranscriptionSegment[]) => void;
@@ -119,7 +120,7 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
         if (!hasVerbalConsent && !hasLegacyConsent) {
           setErrorMessage('Consentimiento verbal requerido antes de grabar. Por favor obtenga el consentimiento primero.');
           setCaptureStatus('error');
-          console.warn('[AUDIO CAPTURE] Recording blocked: No verbal consent', { patientId });
+          safeLogger.identifierOperation('audio_capture', 'blocked_no_verbal_consent');
           
           // Trigger consent modal (if callback provided)
           if (onConsentRequired) {
@@ -128,19 +129,18 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
           
           return; // Block recording
         }
-        console.log('[AUDIO CAPTURE] Consent verified, proceeding with recording', { 
-          patientId, 
-          hasVerbalConsent, 
-          hasLegacyConsent 
-        });
+        const consentIsValid = Boolean(hasVerbalConsent || hasLegacyConsent);
+        safeLogger.authEvent('audio_capture_consent_verified', consentIsValid);
       } catch (error) {
-        console.error('[AUDIO CAPTURE] Error checking consent:', error);
+        const consentErrorCode = (error as { code?: string })?.code ?? 'unknown';
+        const consentHasMessage = Boolean((error as { message?: string })?.message);
+        safeLogger.errorOccurred('AudioCaptureConsent', consentErrorCode, consentHasMessage);
         setErrorMessage('No se pudo verificar el consentimiento. Grabación bloqueada por seguridad.');
         setCaptureStatus('error');
         return; // Block recording on error (fail-safe)
       }
     } else {
-      console.warn('[AUDIO CAPTURE] No patientId provided, consent check skipped');
+      safeLogger.identifierOperation('audio_capture', 'consent_check_skipped_no_patient');
     }
 
     try {
@@ -428,4 +428,4 @@ const RealTimeAudioCapture: React.FC<RealTimeAudioCaptureProps> = ({
   );
 };
 
-export default RealTimeAudioCapture; 
+export default RealTimeAudioCapture;

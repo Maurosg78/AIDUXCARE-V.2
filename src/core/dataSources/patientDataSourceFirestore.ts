@@ -4,6 +4,7 @@ import { db } from '../firebase/firebaseClient';
 import { Patient, PatientSchema } from '../domain/patientType';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '@/utils/safeLogger';
 
 const patientsCollection = collection(db, 'patients');
 
@@ -25,7 +26,9 @@ export class PatientDataSourceFirestore {
           updated_at: data.updated_at?.toDate ? data.updated_at.toDate().toISOString() : data.updated_at
         }));
       } catch (e) {
-        console.error(`Validation error for patient ${docSnap.id}:`, e);
+        const listValidationErrorCode = (e as { code?: string })?.code ?? 'unknown';
+        const listValidationHasMessage = Boolean((e as { message?: string })?.message);
+        safeLogger.errorOccurred('PatientDataSourceListValidation', listValidationErrorCode, listValidationHasMessage);
       }
     });
     return patients;
@@ -47,7 +50,9 @@ export class PatientDataSourceFirestore {
         updated_at: data.updated_at?.toDate ? data.updated_at.toDate().toISOString() : data.updated_at
       });
     } catch (e) {
-      console.error(`Validation error for patient ${patientId}:`, e);
+      const patientValidationErrorCode = (e as { code?: string })?.code ?? 'unknown';
+      const patientValidationHasMessage = Boolean((e as { message?: string })?.message);
+      safeLogger.errorOccurred('PatientDataSourceGetValidation', patientValidationErrorCode, patientValidationHasMessage);
       return null;
     }
   }
@@ -69,7 +74,9 @@ export class PatientDataSourceFirestore {
         updated_at: data.updated_at?.toDate ? data.updated_at.toDate().toISOString() : data.updated_at
       });
     } catch (e) {
-      console.error(`Validation error for patient with user_id ${userId}:`, e);
+      const userPatientValidationErrorCode = (e as { code?: string })?.code ?? 'unknown';
+      const userPatientValidationHasMessage = Boolean((e as { message?: string })?.message);
+      safeLogger.errorOccurred('PatientDataSourceUserValidation', userPatientValidationErrorCode, userPatientValidationHasMessage);
       return null;
     }
   }
@@ -120,4 +127,4 @@ export class PatientDataSourceFirestore {
 }
 
 // Exportar una instancia singleton para uso en toda la aplicación
-export const patientDataSourceFirestore = new PatientDataSourceFirestore(); 
+export const patientDataSourceFirestore = new PatientDataSourceFirestore();

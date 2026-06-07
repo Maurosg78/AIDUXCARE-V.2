@@ -35,4 +35,28 @@ export const safeLogger = {
   attachmentEligibility(status: string, eligible: boolean): void {
     console.log('[AttachmentSafety] eligibility status:', status, 'eligible:', eligible);
   },
+
+  authEvent(eventType: string, success: boolean): void {
+    console.log('[Auth]', eventType, 'success:', success);
+  },
+
+  identifierOperation(entityType: string, operation: string): void {
+    console.log('[DataOp]', entityType, operation);
+  },
+
+  phoneValidation(step: string, isValid: boolean): void {
+    console.log('[SMS]', step, 'valid:', isValid);
+  },
+
+  storageOperation(operation: string, pathDepth: number): void {
+    console.log('[Storage]', operation, 'path_depth:', pathDepth);
+  },
+
+  profileOperation(operation: string, hasLicense: boolean): void {
+    console.log('[Profile]', operation, 'has_license:', hasLicense);
+  },
+
+  errorOccurred(service: string, errorCode: string | number, hasMessage: boolean): void {
+    console.error('[Error]', service, 'code:', errorCode, 'has_message:', hasMessage);
+  },
 };

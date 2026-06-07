@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AiDuxCareLogo } from '../components/branding/AiDuxCareLogo';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '@/utils/safeLogger';
 
 const OnboardingConfirmationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,7 +34,8 @@ const OnboardingConfirmationPage: React.FC = () => {
   const handleEmailVerification = async (verificationToken: string) => {
     try {
       // Aquí iría la lógica de verificación con el backend
-      logger.info('Verificando email con token:', verificationToken);
+      const hasVerificationToken = Boolean(verificationToken);
+      safeLogger.authEvent('email_verification_token_received', hasVerificationToken);
       
       // Simulación de verificación exitosa
       setTimeout(() => {
@@ -46,7 +48,9 @@ const OnboardingConfirmationPage: React.FC = () => {
         });
       }, 2000);
     } catch (error) {
-      logger.error('Error verificando email:', error);
+      const verificationErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const verificationHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('OnboardingEmailVerification', verificationErrorCode, verificationHasMessage);
     }
   };
 
@@ -54,7 +58,8 @@ const OnboardingConfirmationPage: React.FC = () => {
     setIsResending(true);
     try {
       // Aquí iría la lógica para reenviar el email
-      logger.info('Reenviando email de verificación a:', email);
+      const hasResendEmail = Boolean(email);
+      safeLogger.authEvent('email_verification_resend_requested', hasResendEmail);
       
       // Simulación de reenvío
       setTimeout(() => {
@@ -62,7 +67,9 @@ const OnboardingConfirmationPage: React.FC = () => {
         alert('Email de verificación reenviado exitosamente.');
       }, 2000);
     } catch (error) {
-      logger.error('Error reenviando email:', error);
+      const resendErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const resendHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('OnboardingEmailResend', resendErrorCode, resendHasMessage);
       setIsResending(false);
     }
   };
@@ -176,4 +183,4 @@ const OnboardingConfirmationPage: React.FC = () => {
   );
 };
 
-export default OnboardingConfirmationPage; 
+export default OnboardingConfirmationPage;

@@ -13,6 +13,7 @@ import { auth } from '../lib/firebase';
 import { trackUserLogin, trackUserLogout, trackUserSignup } from "@/services/analytics/AnalyticsEvents";
 import logger from '@/shared/utils/logger';
 import { firebaseAuthService } from '@/services/firebaseAuthService';
+import { safeLogger } from '@/utils/safeLogger';
 
 export interface RegisterData {
   email: string;
@@ -67,7 +68,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       setUser(userCredential.user);
 
-      logger.info('Login exitoso:', userCredential.user.email);
+      const loginSuccess = Boolean(userCredential.user);
+      safeLogger.authEvent('login', loginSuccess);
 
       // Track login
       await trackUserLogin({
@@ -90,7 +92,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);
       setError(errorMessage);
-      logger.error('Error en login:', authError);
+      const loginErrorCode = authError.code ?? 'unknown';
+      const loginHasMessage = Boolean(authError.message);
+      safeLogger.errorOccurred('AuthLogin', loginErrorCode, loginHasMessage);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -105,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await signOut(auth);
       setUser(null);
 
-      logger.info('Logout exitoso');
+      safeLogger.authEvent('logout', true);
 
       // Track logout
       await trackUserLogout({
@@ -120,7 +124,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);
       setError(errorMessage);
-      logger.error('Error en logout:', authError);
+      const logoutErrorCode = authError.code ?? 'unknown';
+      const logoutHasMessage = Boolean(authError.message);
+      safeLogger.errorOccurred('AuthLogout', logoutErrorCode, logoutHasMessage);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -135,7 +141,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       setUser(userCredential.user);
 
-      logger.info('Registro exitoso:', userCredential.user.email);
+      const registerSuccess = Boolean(userCredential.user);
+      safeLogger.authEvent('register', registerSuccess);
 
       // Track signup
       await trackUserSignup({
@@ -146,7 +153,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);
       setError(errorMessage);
-      logger.error('Error en registro:', authError);
+      const registerErrorCode = authError.code ?? 'unknown';
+      const registerHasMessage = Boolean(authError.message);
+      safeLogger.errorOccurred('AuthRegister', registerErrorCode, registerHasMessage);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -159,14 +168,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError(null);
 
       const result = await firebaseAuthService.sendPasswordResetEmail(email);
-      logger.info("[AUTH] Password reset requested", { ok: result.success, message: result.message });
-
-      logger.info('Email de recuperación enviado a:', email);
+      const passwordResetSuccess = Boolean(result.success);
+      safeLogger.authEvent('password_reset_requested', passwordResetSuccess);
     } catch (error) {
       const authError = error as AuthError;
       const errorMessage = getAuthErrorMessage(authError.code);
       setError(errorMessage);
-      logger.error('Error en recuperación de contraseña:', authError);
+      const passwordResetErrorCode = authError.code ?? 'unknown';
+      const passwordResetHasMessage = Boolean(authError.message);
+      safeLogger.errorOccurred('AuthPasswordReset', passwordResetErrorCode, passwordResetHasMessage);
       throw new Error(errorMessage);
     } finally {
       setLoading(false);
@@ -191,14 +201,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false);
 
         if (currentUser) {
-          logger.info('Usuario autenticado:', currentUser.email);
+          safeLogger.authEvent('auth_state_authenticated', true);
         } else {
-          logger.info('Usuario no autenticado');
+          safeLogger.authEvent('auth_state_authenticated', false);
         }
       },
       async (error) => {
         // Handler robusto para errores de refresh token (403/securetoken)
-        logger.warn('Auth state change error:', error);
+        const authStateError = error as { code?: string; message?: string };
+        const authStateErrorCode = authStateError.code ?? 'unknown';
+        const authStateHasMessage = Boolean(authStateError.message);
+        safeLogger.errorOccurred('AuthStateChange', authStateErrorCode, authStateHasMessage);
 
         const authError = error as { code?: string; message?: string };
         if (authError.code === 'auth/network-request-failed' ||
@@ -206,12 +219,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           authError.message?.includes('403') ||
           authError.message?.includes('securetoken')) {
 
-          console.info('Detectado error de refresh token, limpiando estado...');
+          safeLogger.authEvent('refresh_token_cleanup', true);
           try {
             await signOut(auth);
             setUser(null);
           } catch (signOutError) {
-            logger.warn('Error al limpiar estado:', signOutError);
+            const signOutErrorCode = (signOutError as { code?: string })?.code ?? 'unknown';
+            const signOutHasMessage = Boolean((signOutError as { message?: string })?.message);
+            safeLogger.errorOccurred('AuthStateCleanup', signOutErrorCode, signOutHasMessage);
           }
         }
 

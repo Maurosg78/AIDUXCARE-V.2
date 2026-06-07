@@ -16,6 +16,7 @@ import {
   getVerbalConsentText,
   normalizeConsentJurisdiction,
 } from '../services/verbalConsentService';
+import { safeLogger } from '@/utils/safeLogger';
 
 export default function DisclosurePage() {
   const { patientId } = useParams<{ patientId: string }>();
@@ -59,7 +60,8 @@ export default function DisclosurePage() {
   useEffect(() => {
     // Track view for audit (optional - could write to patient_disclosures)
     if (patientId) {
-      console.log('[Disclosure] Patient viewed disclosure document:', { patientId });
+      const hasDisclosurePatientId = Boolean(patientId);
+      safeLogger.identifierOperation('disclosure', hasDisclosurePatientId ? 'viewed_with_patient' : 'viewed_without_patient');
     }
   }, [patientId]);
 

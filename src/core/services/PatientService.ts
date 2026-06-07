@@ -28,6 +28,7 @@ import {
 import { encryptMetadata, decryptMetadata } from '../security/encryption';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '@/utils/safeLogger';
 
 export class PatientService {
   private static collectionName = 'patients';
@@ -88,11 +89,13 @@ export class PatientService {
         }
       });
 
-      console.log('✅ Paciente creado exitosamente:', patientId);
+      safeLogger.identifierOperation('patient', 'created');
       return patientId;
 
     } catch (error) {
-      console.error('❌ Error al crear paciente:', error);
+      const createPatientErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const createPatientHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('PatientCreate', createPatientErrorCode, createPatientHasMessage);
       throw new Error(`Failed to create patient: ${error}`);
     }
   }
@@ -130,7 +133,9 @@ export class PatientService {
       return decryptedPatient as Patient;
 
     } catch (error) {
-      console.error('❌ Error al obtener paciente:', error);
+      const getPatientErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const getPatientHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('PatientGet', getPatientErrorCode, getPatientHasMessage);
       throw new Error(`Failed to get patient: ${error}`);
     }
   }
@@ -200,7 +205,9 @@ export class PatientService {
       return patients;
 
     } catch (error) {
-      console.error('❌ Error al obtener pacientes por profesional:', error);
+      const getProfessionalPatientsErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const getProfessionalPatientsHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('PatientGetByProfessional', getProfessionalPatientsErrorCode, getProfessionalPatientsHasMessage);
       throw new Error(`Failed to get patients by professional: ${error}`);
     }
   }
@@ -239,7 +246,9 @@ export class PatientService {
       return filteredPatients;
 
     } catch (error) {
-      console.error('❌ Error al buscar pacientes:', error);
+      const searchPatientsErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const searchPatientsHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('PatientSearch', searchPatientsErrorCode, searchPatientsHasMessage);
       throw new Error(`Failed to search patients: ${error}`);
     }
   }
@@ -298,10 +307,12 @@ export class PatientService {
         }
       });
 
-      console.log('✅ Paciente actualizado exitosamente:', patientId);
+      safeLogger.identifierOperation('patient', 'updated');
 
     } catch (error) {
-      console.error('❌ Error al actualizar paciente:', error);
+      const updatePatientErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const updatePatientHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('PatientUpdate', updatePatientErrorCode, updatePatientHasMessage);
       throw new Error(`Failed to update patient: ${error}`);
     }
   }
@@ -359,11 +370,13 @@ export class PatientService {
         }
       });
 
-      console.log('✅ Visita clínica agregada exitosamente:', visitId);
+      safeLogger.identifierOperation('clinical_visit', 'added');
       return visitId;
 
     } catch (error) {
-      console.error('❌ Error al agregar visita clínica:', error);
+      const addVisitErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const addVisitHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('ClinicalVisitAdd', addVisitErrorCode, addVisitHasMessage);
       throw new Error(`Failed to add clinical visit: ${error}`);
     }
   }
@@ -398,7 +411,9 @@ export class PatientService {
       return patientsNeedingFollowUp;
 
     } catch (error) {
-      console.error('❌ Error al obtener pacientes que necesitan seguimiento:', error);
+      const followUpPatientsErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const followUpPatientsHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('PatientFollowUpQuery', followUpPatientsErrorCode, followUpPatientsHasMessage);
       throw new Error(`Failed to get patients needing follow-up: ${error}`);
     }
   }
@@ -511,8 +526,10 @@ export class PatientService {
       return auditPatient;
 
     } catch (error) {
-      console.error('❌ Error al exportar paciente para auditoría:', error);
+      const exportPatientErrorCode = (error as { code?: string })?.code ?? 'unknown';
+      const exportPatientHasMessage = Boolean((error as { message?: string })?.message);
+      safeLogger.errorOccurred('PatientAuditExport', exportPatientErrorCode, exportPatientHasMessage);
       throw new Error(`Failed to export patient for audit: ${error}`);
     }
   }
-} 
+}
