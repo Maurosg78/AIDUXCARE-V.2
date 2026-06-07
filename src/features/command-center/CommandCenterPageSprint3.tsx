@@ -537,6 +537,16 @@ export const CommandCenterPageSprint3: React.FC = () => {
       const rightTime = getOpenResponsibilitySortTime(rightSession);
       return rightTime - leftTime;
     });
+  const openResponsibilityPatientIds = new Set(
+    openClinicalResponsibilities.map((session) => session.patientId)
+  );
+  const resolvedClinicalDayRows = clinicalDayRows.filter((row) => {
+    if (!openResponsibilityPatientIds.has(row.patientId)) {
+      return true;
+    }
+
+    return row.status !== PatientWorkflowStatus.SCHEDULED;
+  });
 
   // withPatientRequired implementation
   const withPatientRequired = async (
@@ -797,18 +807,18 @@ export const CommandCenterPageSprint3: React.FC = () => {
     [addToListSafe, navigate, selectedDate, trackPendingTodayQuickItem, user?.uid]
   );
 
-  const summaryAwaitingDocumentationRows = clinicalDayRows.filter(
+  const summaryAwaitingDocumentationRows = resolvedClinicalDayRows.filter(
     (row) => row.status === PatientWorkflowStatus.DOCUMENTED_DRAFT
   );
-  const summaryInProgressRows = clinicalDayRows.filter(
+  const summaryInProgressRows = resolvedClinicalDayRows.filter(
     (row) =>
       row.status === PatientWorkflowStatus.IN_PROGRESS ||
       row.status === PatientWorkflowStatus.ABANDONED
   );
-  const summaryToSeeRows = clinicalDayRows.filter(
+  const summaryToSeeRows = resolvedClinicalDayRows.filter(
     (row) => row.status === PatientWorkflowStatus.SCHEDULED
   );
-  const summarySeenTodayRows = clinicalDayRows.filter(
+  const summarySeenTodayRows = resolvedClinicalDayRows.filter(
     (row) => row.status === PatientWorkflowStatus.DOCUMENTED_FINAL
   );
   const clinicalQueueGroupRefs = {
@@ -940,7 +950,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
               selectedPatient={selectedPatient}
               onSelectPatient={setSelectedPatient}
               todayQuickList={todayQuickList}
-              clinicalDayRows={clinicalDayRows}
+              clinicalDayRows={resolvedClinicalDayRows}
               clinicalQueueGroupRefs={clinicalQueueGroupRefs}
               highlightedClinicalGroup={
                 highlightedSummaryTarget === 'seenToday' ? null : highlightedSummaryTarget
