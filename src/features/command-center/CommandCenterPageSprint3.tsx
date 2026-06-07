@@ -540,12 +540,16 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const openResponsibilityPatientIds = new Set(
     openClinicalResponsibilities.map((session) => session.patientId)
   );
+  const statusesHiddenWhenOpenResponsibility = new Set<PatientWorkflowStatus>([
+    PatientWorkflowStatus.SCHEDULED,
+    PatientWorkflowStatus.IN_PROGRESS,
+  ]);
   const resolvedClinicalDayRows = clinicalDayRows.filter((row) => {
     if (!openResponsibilityPatientIds.has(row.patientId)) {
       return true;
     }
 
-    return row.status !== PatientWorkflowStatus.SCHEDULED;
+    return !statusesHiddenWhenOpenResponsibility.has(row.status);
   });
 
   // withPatientRequired implementation
