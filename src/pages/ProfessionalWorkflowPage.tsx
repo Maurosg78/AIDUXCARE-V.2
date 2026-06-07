@@ -152,6 +152,7 @@ import {
   buildSoapReviewMetadata,
   buildValueMetricsEvent,
 } from "@/features/workflow/finalization/finalizationAnalytics";
+import { safeLogger } from '../utils/safeLogger';
 
 // ✅ ISO COMPLIANCE: Lazy load heavy components for better performance and memory management
 const AnalysisTab = lazy(() => import("../components/workflow/tabs/AnalysisTab").then(m => ({ default: m.default })));
@@ -2067,10 +2068,7 @@ const ProfessionalWorkflowPage = () => {
           // ✅ WO-FIX-DATA-PERSISTENCE: Protection - don't clear if user has important data
           const shouldClearData = () => {
             if (patientChangedDuringInitial) {
-              console.warn('[WORKFLOW] Initial evaluation patient changed, forcing cleanup to prevent cross-patient state reuse', {
-                previousPatient: previousInitialPatientId,
-                currentPatient: currentInitialPatientId,
-              });
+              safeLogger.identifierOperation('patient', 'switch');
               return true;
             }
 
@@ -2505,10 +2503,8 @@ const ProfessionalWorkflowPage = () => {
           setSessionId(nextStateSessionId);
         }
 
-        console.log('[AutoSave] Transcript guardado en Firestore:', {
-          sessionId: activeDocIdForRead,
-          transcriptLength: transcript.length,
-        });
+        safeLogger.identifierOperation('session', 'autosave');
+        console.log('[AutoSave] transcript_length:', transcript.length);
       } catch (error) {
         console.warn('[AutoSave] No se pudo guardar transcript en Firestore:', error);
       }
@@ -2591,10 +2587,7 @@ const ProfessionalWorkflowPage = () => {
       null;
 
     if (patientId && sharedStatePatientId && sharedStatePatientId !== patientId) {
-      console.warn('[PHASE2] sharedState patient mismatch, clearing before load', {
-        patientId,
-        sharedStatePatientId,
-      });
+      safeLogger.identifierOperation('patient', 'mismatch_clear');
       resetSharedWorkflowState();
       setEvaluationTests([]);
       setPhysicalTestAssistanceChoice(null);
@@ -2668,7 +2661,8 @@ const ProfessionalWorkflowPage = () => {
 
             // For manual/custom tests, check region match
             if (test.region && test.region !== detectedCaseRegion) {
-              console.warn(`[PHASE2] Filtering out manual test "${test.name}" (${test.region}) - wrong region for case (${detectedCaseRegion})`);
+              const testLogged = Boolean(test.name);
+              console.warn('[Workflow] clinical_test_region_mismatch logged:', testLogged);
               return false;
             }
             return true;
@@ -2703,10 +2697,7 @@ const ProfessionalWorkflowPage = () => {
 
     // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Reset state when patient changes
     if (consentCheckRef.current !== currentPatientId) {
-      console.log('[WORKFLOW] Patient changed - resetting consent state', {
-        previousPatient: consentCheckRef.current,
-        newPatient: currentPatientId
-      });
+      safeLogger.identifierOperation('patient', 'change');
 
       // Reset consent state for new patient
       setWorkflowConsentStatus(null);
@@ -3148,7 +3139,8 @@ const ProfessionalWorkflowPage = () => {
 
         // Compare result
         if (currentTest.result !== newTest.result) {
-          console.log(`[PHASE2] Result change detected in test ${newTest.id}: ${currentTest.result} -> ${newTest.result}`);
+          const testResultChanged = true;
+          console.log('[PHASE2] test_result_changed:', testResultChanged);
           return true;
         }
 
@@ -3311,9 +3303,8 @@ const ProfessionalWorkflowPage = () => {
           return currentTests; // Return current state unchanged
         }
 
-        console.log(`[PHASE2] ✅ Adding test "${entry.name}" to evaluationTests`);
         const newTests = [...currentTests, entry];
-        console.log(`[PHASE2] New tests array (${newTests.length} tests):`, newTests.map(t => t.name));
+        console.log('[PHASE2] new_tests_count:', newTests.length);
 
         // ✅ PHASE 2 FIX: Persist immediately with new state using setTimeout to avoid batching issues
         setTimeout(() => {
@@ -5175,8 +5166,9 @@ const ProfessionalWorkflowPage = () => {
         organized.context.homeProgramPrescribed = homeProgramItems.map((i) => i.label);
       }
 
-      // Log data summary for debugging
-      console.log('[Workflow] Clinical data organization summary:', createDataSummary(organized));
+      const summaryGenerated = Boolean(organized);
+      const sectionCount = organized ? Object.keys(organized).length : 0;
+      console.log('[Workflow] summary_generated:', summaryGenerated, 'section_count:', sectionCount);
 
       // Step 4: Generate SOAP using organized context
       // ✅ WORKFLOW OPTIMIZATION: Pass analysisLevel from workflowRoute
@@ -5285,9 +5277,9 @@ const ProfessionalWorkflowPage = () => {
       );
 
       if (!objectiveValidation.isValid) {
-        console.warn('[SOAP Validation] Objective section violations:', objectiveValidation);
-        // Log violations but don't block - flag for review
-        // The requiresReview flag will ensure clinician reviews this
+        const validationPassed = false;
+        const errorCount = objectiveValidation?.violations?.length ?? 0;
+        console.warn('[SOAP Validation] objective_validation_passed:', validationPassed, 'error_count:', errorCount);
       }
 
       // ✅ DÍA 2: Marcar como requiere review (CPO requirement: AI-generated content must be reviewed)
@@ -6143,10 +6135,8 @@ const ProfessionalWorkflowPage = () => {
               persistedNoteStatus,
             }
           );
-          console.warn('[SOAP-VERSION] Note forked to draft — requires explicit acceptance', {
-            noteId: result.noteId,
-            persistedNoteStatus,
-          });
+          safeLogger.identifierOperation('note', 'forked_to_draft');
+          console.warn('[SOAP-VERSION] Note forked to draft — requires explicit acceptance', { persistedNoteStatus });
           setAnalysisError(forkWarningMessage);
           return;
         }
@@ -6159,13 +6149,12 @@ const ProfessionalWorkflowPage = () => {
             soapNoteId: result.noteId,
           }
         );
+        safeLogger.identifierOperation('note', 'linked');
         console.log('[Workflow] ✅ SOAP note saved to Clinical Vault:', {
-          noteId: result.noteId,
           hasPatientId: Boolean(patientId),
           hasSessionId: Boolean(activeSessionId),
           retries: result.retries,
           usedBackup: result.usedBackup,
-          timestamp: new Date().toISOString()
         });
         const subjectiveLength = soapDataToSave.subjective?.length || 0;
         const objectiveLength = soapDataToSave.objective?.length || 0;

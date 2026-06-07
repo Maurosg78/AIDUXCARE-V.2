@@ -155,13 +155,9 @@ class GeolocationServiceImpl {
         try {
           const position = await this.getCurrentPosition();
           const { latitude, longitude } = position.coords;
-          
-          console.log('Coordenadas obtenidas:', { latitude, longitude });
-          
+
           // Usar servicio de reverse geocoding
           const locationData = await this.reverseGeocode(latitude, longitude);
-          
-          console.log('Datos de ubicación obtenidos:', locationData);
           
           // Verificar que se obtuvo provincia
           if (!locationData.region && locationData.country) {
@@ -180,7 +176,7 @@ class GeolocationServiceImpl {
             timestamp: new Date()
           };
 
-          console.log('Ubicación detectada exitosamente:', this.cachedData);
+          console.log('[Geolocation] location_resolved:', Boolean(this.cachedData));
           return this.cachedData;
         } catch (geoError) {
           const geolocationError = geoError as GeolocationPositionError;
@@ -495,7 +491,6 @@ Consentimiento granular y derecho al olvido garantizados.`
 
   private async reverseGeocode(lat: number, lng: number): Promise<Partial<GeolocationData>> {
     try {
-      console.log('Iniciando reverse geocoding para:', { lat, lng });
       
       // Usar servicio gratuito de reverse geocoding
       const response = await fetch(
@@ -503,7 +498,7 @@ Consentimiento granular y derecho al olvido garantizados.`
       );
       const data = await response.json();
       
-      console.log('Respuesta del servicio de geocoding:', data);
+      const geocodingResponseReceived = Boolean(data);
       
       // Verificar que data.address existe antes de acceder a sus propiedades
       if (!data.address) {
@@ -519,8 +514,7 @@ Consentimiento granular y derecho al olvido garantizados.`
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       };
       
-      console.log('Datos de ubicación procesados:', locationData);
-      
+      console.log('[Geolocation] location_resolved:', geocodingResponseReceived);
       return locationData;
     } catch (error) {
       console.log('Error en reverse geocoding:', error);

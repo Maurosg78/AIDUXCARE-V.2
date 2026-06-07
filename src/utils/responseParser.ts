@@ -157,8 +157,10 @@ function extractPartialData(text: string): any {
     emptyPayload.biopsychosocial_factors.patient_strengths = extractBiopsychosocialArray('patient_strengths');
     emptyPayload.biopsychosocial_factors.legal_or_employment_context = extractBiopsychosocialArray('legal_or_employment_context');
     
-    console.log('[Parser] Partial payload extracted:', emptyPayload);
-    console.log('[Parser] Biopsychosocial factors extracted:', emptyPayload.biopsychosocial_factors);
+    const payloadKeys = Object.keys(emptyPayload);
+    console.log('[Parser] empty_payload_keys:', payloadKeys);
+    const hasBiopsychosocial = Boolean(emptyPayload.biopsychosocial_factors);
+    console.log('[Parser] has_biopsychosocial:', hasBiopsychosocial);
     return emptyPayload;
   } catch (err) {
     console.error('[Parser] Error extracting partial payload:', err);

@@ -31,6 +31,7 @@ import {
 } from 'firebase/firestore';
 import bcrypt from 'bcryptjs';
 import { CryptoService } from './CryptoService';
+import { safeLogger } from '../utils/safeLogger';
 // ✅ FIX: Lazy import to prevent circular dependencies and build issues
 let FirestoreAuditLogger: typeof import('../core/audit/FirestoreAuditLogger').FirestoreAuditLogger | null = null;
 
@@ -293,7 +294,7 @@ export class HospitalPortalService {
       if (episodeId) {
         try {
           await EpisodeService.addNoteToEpisode(episodeId, noteId);
-          console.log(`[HospitalPortal] Note ${noteId} added to episode ${episodeId}`);
+          safeLogger.identifierOperation('note', 'added_to_episode');
         } catch (err) {
           console.warn('[HospitalPortal] Error adding note to episode:', err);
           // Continue even if episode update fails
@@ -324,7 +325,7 @@ export class HospitalPortalService {
         },
       });
 
-      console.log(`[HospitalPortal] Secure note created: ${noteCode}`);
+      safeLogger.identifierOperation('note', 'secure_created');
 
       return { noteCode, noteId };
     } catch (error) {
@@ -788,7 +789,9 @@ export class HospitalPortalService {
         });
       }
       
-      console.log(`[HospitalPortal] Note deleted: ${noteCode} (reason: ${reason || 'unknown'})`);
+      const hasReason = Boolean(reason);
+      safeLogger.identifierOperation('note', 'deleted');
+      console.log('[HospitalPortal] note_deleted has_reason:', hasReason);
       return true;
     } catch (error) {
       console.error('[HospitalPortal] Error deleting note:', error);

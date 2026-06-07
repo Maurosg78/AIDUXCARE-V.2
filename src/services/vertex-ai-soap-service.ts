@@ -510,7 +510,8 @@ export async function generateSOAPNote(
     // Phase 2 does NOT document modalities - user can add them manually in Phase 3
     const hallucinationValidation = validateSOAPAgainstDocumentation(soapNote, context);
     if (hallucinationValidation.warnings.length > 0) {
-      console.warn('[SOAP Service] Anti-Hallucination warnings (for debugging only):', hallucinationValidation.warnings);
+      const warningCount = hallucinationValidation.warnings.length;
+      console.warn('[SOAP Service] hallucination_warnings_count:', warningCount);
       // ✅ CRITICAL: Do NOT modify plan - user can add modalities manually in Phase 3
       // Plan remains as generated - user has full control to edit and add modalities
     }
@@ -528,7 +529,8 @@ export async function generateSOAPNote(
 
     // Only truncate if VERY excessive (exceeds warning threshold)
     if (!validation.isValid) {
-      console.warn('[SOAP Service] SOAP note is very lengthy, condensing:', validation.errors);
+      const validationErrorCount = validation.errors?.length ?? 0;
+      console.warn('[SOAP Service] validation_error_count:', validationErrorCount);
 
       // Truncate only if truly excessive
       soapNote = truncateSOAPToLimits(soapNote);
@@ -536,17 +538,20 @@ export async function generateSOAPNote(
       // Re-validate after truncation
       const revalidation = validateSOAP(soapNote);
       if (!revalidation.isValid) {
-        console.error('[SOAP Service] SOAP note still very lengthy after truncation:', revalidation.errors);
+        const revalidationErrorCount = revalidation.errors?.length ?? 0;
+        console.log('[SoapService] revalidation_error_count:', revalidationErrorCount);
       }
     }
 
     // Log warnings for quality issues (guidelines exceeded, repetition)
     if (validation.warnings.length > 0) {
-      console.log('[SOAP Service] Quality guidelines:', validation.warnings);
+      const qualityWarningsCount = validation.warnings.length;
+      console.log('[SOAP Service] quality_warnings_count:', qualityWarningsCount);
     }
 
     if (validation.repetitionCheck.hasRepetition) {
-      console.warn('[SOAP Service] Repetition detected - consider editing:', validation.repetitionCheck.repeatedPhrases);
+      const phraseCount = validation.repetitionCheck.repeatedPhrases?.length ?? 0;
+      console.warn('[SOAP Service] repeated_phrases_count:', phraseCount);
     }
 
     const secondaryMemorySource = {

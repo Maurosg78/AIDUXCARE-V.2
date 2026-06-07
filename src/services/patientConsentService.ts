@@ -13,6 +13,7 @@
 
 import { collection, doc, setDoc, getDoc, query, where, getDocs, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
+import { safeLogger } from '../utils/safeLogger';
 
 const redactConsentToken = (token: string): string => {
   if (!token) {
@@ -343,21 +344,13 @@ export class PatientConsentService {
       }
 
       const consentRef = doc(db, CONSENT_COLLECTION, `${tokenData.patientId}_${Date.now()}`);
-      console.log('[PATIENT CONSENT] Attempting to create consent record:', {
-        hasPatientId: Boolean(tokenData.patientId),
-        scope,
-        consented,
-        consentId: consentRef.id,
-      });
+      safeLogger.identifierOperation('consent', 'create_attempt');
+      console.log('[PATIENT CONSENT] Attempting to create consent record:', { scope, consented });
       
       await setDoc(consentRef, consentRecord);
 
-      console.log('[PATIENT CONSENT] ✅ Consent recorded successfully:', {
-        hasPatientId: Boolean(tokenData.patientId),
-        scope,
-        consented,
-        consentId: consentRef.id,
-      });
+      safeLogger.identifierOperation('consent', 'created');
+      console.log('[PATIENT CONSENT] ✅ Consent recorded successfully:', { scope, consented });
     } catch (error: any) {
       console.error('❌ [PATIENT CONSENT] Error recording consent:', error);
       console.error('❌ [PATIENT CONSENT] Error details:', {

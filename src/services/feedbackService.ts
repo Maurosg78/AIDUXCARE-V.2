@@ -355,9 +355,12 @@ export class FeedbackService {
       console.log('Priority:', feedback.calculatedPriority);
       console.log('Workflow Step:', feedback.enrichedContext?.workflowStep);
       console.log('Auto Tags:', feedback.autoTags);
-      console.log('Description:', feedback.description);
-      console.log('URL:', feedback.url);
-      console.log('Enriched Context:', feedback.enrichedContext);
+      const descriptionLength = feedback.description?.length ?? 0;
+      console.log('[Feedback] description_length:', descriptionLength);
+      const hasUrl = Boolean(feedback.url);
+      console.log('[Feedback] has_url:', hasUrl);
+      const contextKeys = feedback.enrichedContext ? Object.keys(feedback.enrichedContext) : [];
+      console.log('[Feedback] context_keys:', contextKeys);
       console.groupEnd();
     } catch (error) {
       console.warn('[FEEDBACK] Error notifying team about critical feedback:', error);
