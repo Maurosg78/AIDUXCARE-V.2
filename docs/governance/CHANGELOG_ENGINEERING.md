@@ -1,5 +1,11 @@
 # ENGINEERING.md Changelog
 
+## 2026-06-07 — v1.12.1
+
+- Refuerza §8.4 Deploy a producción: la limpieza remota `rm -rf /var/www/pilot/dist/*` antes de cada `gcloud compute scp` queda como regla obligatoria, no solo como comando sugerido.
+- Documenta el riesgo operacional observado: bundles Vite antiguos pueden persistir en `/var/www/pilot/dist/assets/`, dejando múltiples `index-[hash].js` y comportamiento impredecible por cache/service worker o referencias HTML/assets desalineadas.
+- Añade verificación post-deploy: confirmar que existe un solo bundle principal `index-[hash].js` en el VPS.
+
 ## 2026-05-20 — v1.10
 
 - Creado `PRODUCT_VISION.md` v1.0 en `docs/governance/`.

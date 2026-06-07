@@ -1,8 +1,8 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.12
-**Fecha:** Mayo 2026
+**Versión:** 1.12.1
+**Fecha:** Junio 2026
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
@@ -1226,6 +1226,19 @@ gcloud compute ssh pilot-vps --command="pm2 restart pilot-web"
 
 **Regla:** Nunca buildear en el VPS. Siempre desde Mac local.
 
+**Regla obligatoria de limpieza de deploy:** antes de cada `gcloud compute scp` a
+`/var/www/pilot/dist/`, el directorio remoto debe limpiarse con
+`rm -rf /var/www/pilot/dist/*`. No basta con copiar encima del build anterior:
+Vite genera bundles con hash y los assets antiguos permanecen si no se eliminan.
+Eso puede dejar múltiples `index-[hash].js` en producción y producir
+comportamiento impredecible por cache, service worker o referencias HTML/assets
+desalineadas. Todo deploy a piloto debe terminar verificando que existe un solo
+bundle principal:
+
+```bash
+gcloud compute ssh pilot-vps --command="ls /var/www/pilot/dist/assets/index-*.js"
+```
+
 ### 8.5 Colecciones Firestore principales
 
 | Colección | Propósito | Acceso |
@@ -1347,6 +1360,7 @@ AiduxCare amplifica. Evidencia. Acompaña.
 | 1.10 | 2026-05-20 | Añadido §11 — Norte Estratégico de Producto con referencia a docs/governance/PRODUCT_VISION.md v1.0. Visión del profesional, visión del paciente, app del paciente, interoperabilidad FHIR, límites del producto. Sesión estratégica CEO/CTO. |
 | 1.11 | 2026-05-24 | §6.4 actualizado: SaMD Classification Memo, Risk Management File y DPIA pasan de Pendiente a v0.1 activo. Commit be0ddde. |
 | 1.12 | 2026-05-25 | ADR-010: arquitectura de interoperabilidad — AiduxCare FHIR-aware / Sócrates source-agnostic. ClinicalProvenance, confidenceOfMapping y schemaVersion definidos como canónicos. Referencia: docs/governance/INTEROPERABILITY_ARCHITECTURE.md v1.0. |
+| 1.12.1 | 2026-06-07 | Refuerza §8.4: limpieza remota obligatoria de `/var/www/pilot/dist/*` antes de cada deploy por `gcloud compute scp`, con verificación de un solo bundle principal `index-[hash].js`. |
 
 ---
 
