@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import sessionService from '@/services/sessionService';
 
@@ -27,8 +27,10 @@ export interface InProgressSessionsState {
 export function useInProgressSessions(): InProgressSessionsState {
   const [state, setState] = useState<InProgressSessionsState['data']>([]);
   const [loading, setLoading] = useState(true);
+  const locallyDismissedSessionIdsRef = useRef(new Set<string>());
 
   const optimisticRemove = useCallback((sessionId: string) => {
+    locallyDismissedSessionIdsRef.current.add(sessionId);
     setState((prev) => prev.filter((s) => s.id !== sessionId));
   }, []);
 
@@ -42,7 +44,7 @@ export function useInProgressSessions(): InProgressSessionsState {
     try {
       setLoading(true);
       const sessions = await sessionService.getInProgressSessions(user.uid);
-      setState(sessions);
+      setState(sessions.filter((session) => !locallyDismissedSessionIdsRef.current.has(session.id)));
     } catch {
       setState([]);
     } finally {
@@ -61,7 +63,7 @@ export function useInProgressSessions(): InProgressSessionsState {
       try {
         setLoading(true);
         const sessions = await sessionService.getInProgressSessions(user.uid);
-        setState(sessions);
+        setState(sessions.filter((session) => !locallyDismissedSessionIdsRef.current.has(session.id)));
       } catch {
         setState([]);
       } finally {
