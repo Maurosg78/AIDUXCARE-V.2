@@ -75,6 +75,8 @@ Do you consent to this?`,
 
 El audio de la sesión se procesa mediante un servicio de IA seguro y se almacena en servidores protegidos. Yo siempre reviso y apruebo todas las notas antes de que pasen a formar parte de tu historia clínica.
 
+Quiero informarle de que el audio de esta sesión será transcrito por un servicio externo llamado OpenAI Whisper, ubicado en Estados Unidos, bajo garantías contractuales de protección de datos. El análisis lo realiza Google Vertex AI en la Unión Europea. Ningún proveedor usa sus datos para entrenar sus sistemas. Tiene derecho a reclamar ante la Agencia Española de Protección de Datos si considera que sus datos no se tratan correctamente.
+
 Tu participación es completamente voluntaria. Puedes decir que no o cambiar de opinión en cualquier momento y esto no afectará la calidad de la atención que recibes.
 
 ¿Das tu consentimiento para esto?`,
@@ -91,6 +93,12 @@ Durante tus sesiones de fisioterapia, el profesional puede utilizar una herramie
 Los datos se almacenan en servicios en la nube con medidas de seguridad avanzadas. El fisioterapeuta revisa y aprueba siempre el contenido antes de que se incorpore a tu historia clínica.
 
 Tu participación es voluntaria. Puedes negarte o retirar tu consentimiento en cualquier momento sin que ello afecte a la calidad de la atención que recibes. Tienes derecho a acceder a tu información, solicitar correcciones y, en los casos legalmente previstos, solicitar la eliminación de tus datos.
+
+Sus datos de audio son transcritos mediante OpenAI Whisper API, servicio de OpenAI Ireland Ltd., que puede implicar procesamiento en servidores ubicados en Estados Unidos. Esta transferencia internacional está amparada por las garantías contractuales vigentes conforme al Capítulo V del RGPD. El análisis clínico se realiza mediante Google Vertex AI, con infraestructura en la Unión Europea. Ninguno de estos proveedores utiliza sus datos para entrenar modelos de inteligencia artificial.
+
+El tratamiento de sus datos de salud se realiza conforme al artículo 9.2.h del RGPD (prestación de asistencia sanitaria) y al consentimiento que usted otorga mediante este documento.
+
+Puede ejercer sus derechos de acceso, rectificación, supresión, limitación y portabilidad contactando con su fisioterapeuta. Tiene derecho a presentar reclamación ante la Agencia Española de Protección de Datos en www.aepd.es.
 
 He leído y comprendido la información anterior y:
 
