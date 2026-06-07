@@ -1,6 +1,7 @@
 import type { ProfessionalProfile } from '@/context/ProfessionalProfileContext';
 import { deriveProfessionalCapabilities } from '../capabilities/deriveProfessionalCapabilities';
 import { getPracticeAreaPromptHint } from '@/core/profile/normalizeProfessionalProfile';
+import { safeLogger } from '../../../utils/safeLogger';
 
 export interface ClinicalAttachment {
   fileName: string;
@@ -122,16 +123,17 @@ const buildProfessionalContext = (profile?: ProfessionalProfile | null): string 
   const practiceAreas = profile.practiceAreas && profile.practiceAreas.length > 0 ? profile.practiceAreas : null;
   const techniques = profile.techniques && profile.techniques.length > 0 ? profile.techniques : null;
 
-  console.log('🔍 [PROMPT] Building professional context from profile:', {
-    specialty: profile.specialty,
-    practiceAreasCount: practiceAreas?.length ?? 0,
-    techniquesCount: techniques?.length ?? 0,
-    professionalTitle: profile.professionalTitle,
-    experienceYears: profile.experienceYears,
-    clinic: profile.clinic?.name,
-    workplace: profile.workplace,
-    licenseNumber: profile.licenseNumber,
-  });
+  const profileContextKeys = [
+    profile.specialty ? 'specialty' : null,
+    practiceAreas ? 'practiceAreas' : null,
+    techniques ? 'techniques' : null,
+    profile.professionalTitle ? 'professionalTitle' : null,
+    profile.experienceYears ? 'experienceYears' : null,
+    profile.clinic?.name ? 'clinic' : null,
+    profile.workplace ? 'workplace' : null,
+    profile.licenseNumber ? 'licenseNumber' : null,
+  ].filter((key): key is string => Boolean(key));
+  safeLogger.clinicalContextBuilt(profileContextKeys, 'professional_profile_context_building');
 
   const parts: string[] = [];
 
@@ -181,7 +183,8 @@ const buildProfessionalContext = (profile?: ProfessionalProfile | null): string 
   const context = parts.length > 0 ? `\n[Clinician Profile]\n${joinedParts}\n` : '';
 
   if (context) {
-    console.log('✅ [PROMPT] Professional context added:', context);
+    const professionalContextKeys = parts.map((part) => part.split(':')[0] || 'context');
+    safeLogger.clinicalContextBuilt(professionalContextKeys, 'professional_context_added');
   } else {
     console.log('⚠️ [PROMPT] No professional context data available');
   }

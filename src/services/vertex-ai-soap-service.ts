@@ -20,6 +20,7 @@ import { logRegulatoryLanguageWarnings } from '../utils/regulatoryLanguageGuard'
 import { isSpainPilot } from '@/core/pilotDetection';
 import { getCurrentJurisdiction } from '@/core/consent/consentJurisdiction';
 import { ensureSpanishClinicalText } from '../utils/normalizers/es/ensureSpanishClinicalText';
+import { safeLogger } from '../utils/safeLogger';
 import type { VertexClinicalOutput } from '../core/longitudinal/longitudinalExtraction';
 // ✅ WO-03: Prompt Brain v3 integration
 import { resolvePromptBrainVersion } from "../core/prompts/v3/builders/resolvePromptBrainVersion";
@@ -712,9 +713,9 @@ function parseSOAPResponse(
 
     // If it's an object, serialize it
     if (typeof plan === 'object') {
-      // ✅ FIX: Log the actual structure for debugging
-      console.log('[SOAP Builder] Plan object structure:', JSON.stringify(plan, null, 2));
-      console.log('[SOAP Builder] Plan object keys:', Object.keys(plan));
+      const planSectionKeys = Object.keys(plan);
+      const planHasContent = planSectionKeys.length > 0;
+      safeLogger.soapGenerated(planSectionKeys, planHasContent);
 
       let planText = '';
 

@@ -1,6 +1,7 @@
 import { extractTextFromPDF, isValidPDF, renderPDFPagesAsBase64, SCANNED_PDF_ERROR } from './pdfTextExtractor';
 import { buildAuthenticatedJsonHeaders } from './firebaseAuthHeaders';
 import type { AttachmentPatientIdentityStatus } from './clinicalAttachmentService';
+import { safeLogger } from '../utils/safeLogger';
 
 export interface ProcessedFile {
   fileName: string;
@@ -576,22 +577,24 @@ export class FileProcessorService {
       downloadURL,
     };
 
-    console.log("[FileProcessor] START", file.name, file.type);
-    console.log(`[FileProcessor] Processing: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+    const fileExtension = file.name.split('.').pop() ?? 'unknown';
+    const fileSizeBytes = file.size;
+    safeLogger.fileProcessed(fileExtension, fileSizeBytes, 'start');
+    safeLogger.fileProcessed(fileExtension, fileSizeBytes, 'processing');
 
     // Procesar PDFs
     console.log("[FileProcessor] Checking PDF branch", file.type);
     if (isValidPDF(file)) {
       try {
         console.log("[FileProcessor] Entering PDF branch");
-        console.log(`[FileProcessor] 📄 Extracting text from PDF: ${file.name}`);
+        safeLogger.fileProcessed(fileExtension, fileSizeBytes, 'pdf_text_extraction_started');
         
         const pdfResult = await extractTextFromPDF(file);
         console.log("[FileProcessor] PDF extraction resolved");
         
         if (pdfResult.error) {
           if (pdfResult.error === SCANNED_PDF_ERROR) {
-            console.log(`[FileProcessor] 🔍 Scanned PDF detected — falling back to Gemini Vision OCR: ${file.name}`);
+            safeLogger.fileProcessed(fileExtension, fileSizeBytes, 'scanned_pdf_ocr_fallback_started');
             try {
               const ocrResult = await FileProcessorService.extractScannedPDFWithGemini(file);
               const processedOcrText = truncateClinicalContextText(ocrResult.extractedText, 'Scanned PDF OCR');
@@ -655,7 +658,7 @@ export class FileProcessorService {
 
     // Procesar imágenes con OCR vía Gemini Vision
     if (file.type.startsWith('image/')) {
-      console.log(`[FileProcessor] 📷 Image uploaded: ${file.name}`);
+      safeLogger.fileProcessed(fileExtension, fileSizeBytes, 'image_uploaded');
       try {
         const imageResult = await FileProcessorService.extractImageTextWithGemini(file);
 
@@ -703,7 +706,7 @@ export class FileProcessorService {
     if (file.type.includes('text') || file.name.endsWith('.txt')) {
       try {
         const text = await file.text();
-        console.log(`[FileProcessor] 📝 Text file processed: ${file.name}`);
+        safeLogger.fileProcessed(fileExtension, fileSizeBytes, 'text_file_processed');
         return {
           ...baseResult,
           extractedText: text,
@@ -718,7 +721,7 @@ export class FileProcessorService {
     }
 
     // Otros tipos de archivo (sin procesamiento específico)
-    console.log(`[FileProcessor] 📎 File uploaded without text extraction: ${file.name}`);
+    safeLogger.fileProcessed(fileExtension, fileSizeBytes, 'uploaded_without_text_extraction');
     return baseResult;
   }
 

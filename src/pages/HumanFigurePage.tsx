@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '../utils/safeLogger';
 
 interface PainPoint {
   id: string;
@@ -162,7 +163,9 @@ export const HumanFigurePage: React.FC = () => {
       plan: 'Plan de tratamiento personalizado'
     };
 
-    logger.info('Generando SOAP:', soapData);
+    const soapSectionKeys = Object.keys(soapData);
+    const soapHasContent = soapSectionKeys.length > 0;
+    safeLogger.soapGenerated(soapSectionKeys, soapHasContent);
     // Aquí se enviaría al sistema SOAP
   };
 
@@ -438,4 +441,4 @@ export const HumanFigurePage: React.FC = () => {
   );
 };
 
-export default HumanFigurePage; 
+export default HumanFigurePage;

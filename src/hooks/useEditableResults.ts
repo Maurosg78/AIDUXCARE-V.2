@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { safeLogger } from '../utils/safeLogger';
 
 type MedicationDecisionInput = {
   id: string;
@@ -128,7 +129,9 @@ export const useEditableResults = (initialResults: any) => {
         }
       }
       
-      console.log('[Edit] Item modificado:', id, '→', newText);
+      const editedFieldType = id.split('-')[0] || 'unknown';
+      const editedTextCharCount = newText.length;
+      safeLogger.clinicalTextUpdated(editedFieldType, editedTextCharCount);
       
       return updated;
     });
@@ -199,7 +202,9 @@ export const useEditableResults = (initialResults: any) => {
           break;
       }
       
-      console.log('[Add] Item personalizado agregado:', section, text);
+      const customFieldType = section;
+      const customTextCharCount = text.length;
+      safeLogger.clinicalTextUpdated(customFieldType, customTextCharCount);
       
       return updated;
     });

@@ -5,6 +5,7 @@ import type { ClinicalAnalysis } from '../utils/cleanVertexResponse';
 import { parseVertexResponse } from '../utils/responseParser';
 // Bloque 5E: normalizeVertexResponse para convertir ParsedResponse a ClinicalAnalysis
 import { normalizeVertexResponse } from '../utils/cleanVertexResponse';
+import { safeLogger } from '../utils/safeLogger';
 
 // ✅ CRITICAL FIX: Use shared functions instance from firebase.ts
 let processWithVertexAIFn: ReturnType<typeof httpsCallable> | null = null;
@@ -42,10 +43,10 @@ export async function callVertexAI(prompt: string): Promise<string> {
     const processWithVertexAI = getProcessWithVertexAI();
     const result = await processWithVertexAI({ prompt });
 
-    // Mejor logging para debug
-    console.log('📦 Respuesta raw:', result);
-
     const response = result.data as { text?: string; error?: string; usage?: any };
+    const responseCharCount = response.text?.length ?? 0;
+    const responseHasContent = responseCharCount > 0;
+    safeLogger.vertexResponse(responseCharCount, responseHasContent, 'firebase_function_raw_response');
 
     if (response.error) {
       console.error('❌ Error de Cloud Function:', response.error);
@@ -59,7 +60,7 @@ export async function callVertexAI(prompt: string): Promise<string> {
     }
 
     console.log('✅ Respuesta recibida de Firebase Function');
-    console.log('📄 Texto:', response.text.substring(0, 200));
+    safeLogger.vertexResponse(responseCharCount, responseHasContent, 'firebase_function_text_response');
     return response.text;
   } catch (error) {
     console.error('Error llamando función:', error);
@@ -128,7 +129,8 @@ EVALUACIÓN FÍSICA PROPUESTA:
       const response = await callVertexAI(prompt);
       const parsed = parseVertexResponse(response);
 
-      console.log('📊 Respuesta parseada:', parsed);
+      const parsedContextKeys = parsed.data ? Object.keys(parsed.data) : [];
+      safeLogger.clinicalContextBuilt(parsedContextKeys, 'vertex_response_parsed');
 
       // Bloque 5E: Mapear ParsedResponse a ClinicalAnalysisResponse
       // Si parsed.success es false o no tiene data, retornar estructura vacía
@@ -245,4 +247,4 @@ function parseSoapResponse(text: string): SOAPNote | null {
     console.error('Error parsing SOAP response:', err);
     return null;
   }
-}    
+}

@@ -10,6 +10,7 @@ import OrganizationNavigation from '../../components/OrganizationNavigation';
 import { DataSovereigntyBadge } from '../../components/transparency/DataSovereigntyBadge';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '../../utils/safeLogger';
 
 const Layout = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -69,11 +70,25 @@ const Layout = () => {
         return (
           <EnhancedAudioCapture
             onTranscriptionComplete={(segments) => {
-              logger.info('Transcripción completada:', segments);
+              const segmentCount = Array.isArray(segments) ? segments.length : 0;
+              const totalChars = Array.isArray(segments)
+                ? segments.reduce((sum, segment) => {
+                    const segmentTextLength = String(segment?.text ?? segment ?? '').length;
+                    return sum + segmentTextLength;
+                  }, 0)
+                : 0;
+              safeLogger.transcriptProcessed(segmentCount, totalChars);
               // Aquí se puede integrar con el sistema de notas o historial
             }}
             onTranscriptionUpdate={(segments) => {
-              logger.info('Transcripción actualizada:', segments);
+              const segmentCount = Array.isArray(segments) ? segments.length : 0;
+              const totalChars = Array.isArray(segments)
+                ? segments.reduce((sum, segment) => {
+                    const segmentTextLength = String(segment?.text ?? segment ?? '').length;
+                    return sum + segmentTextLength;
+                  }, 0)
+                : 0;
+              safeLogger.transcriptProcessed(segmentCount, totalChars);
             }}
             className="h-full"
           />
@@ -395,4 +410,4 @@ const Layout = () => {
   );
 };
 
-export default Layout; 
+export default Layout;

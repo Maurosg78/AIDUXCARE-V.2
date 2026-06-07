@@ -8,6 +8,7 @@
  */
 
 import pdfWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { safeLogger } from "../utils/safeLogger";
 
 export interface PDFExtractionResult {
     text: string;
@@ -79,9 +80,10 @@ export function isValidPDF(file: File): boolean {
  * Extracts text content from a PDF file
  */
 export async function extractTextFromPDF(file: File): Promise<PDFExtractionResult> {
-    const fileLabel = file.name;
-    console.log("[PDFExtractor] START", fileLabel);
-    console.log(`[PDFExtractor] Starting extraction from: ${fileLabel}`);
+    const fileExtension = file.name.split('.').pop() ?? 'unknown';
+    const fileSizeBytes = file.size;
+    safeLogger.fileProcessed(fileExtension, fileSizeBytes, 'pdf_extractor_start');
+    safeLogger.fileProcessed(fileExtension, fileSizeBytes, 'pdf_extraction_started');
 
     try {
         const pdfjsModule = await import("pdfjs-dist");

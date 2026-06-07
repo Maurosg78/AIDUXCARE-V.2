@@ -1,6 +1,7 @@
 import { MCPMemoryBlock } from './schema';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '../../utils/safeLogger';
 /**
  * 
  * 🧬 AiDuxCare - RAG Medical MCP
@@ -335,7 +336,8 @@ export class RAGMedicalMCP {
     const startTime = Date.now();
     
     try {
-      console.log(`🔍 Buscando conocimiento médico para: "${clinicalQuery}"`);
+      const clinicalQueryCharCount = clinicalQuery.length;
+      safeLogger.vertexResponse(clinicalQueryCharCount, clinicalQueryCharCount > 0, 'rag_medical_query');
       
       // 1. Buscar en PubMed
       const documents = await PubMedSearchService.searchArticles(clinicalQuery, specialty, maxResults);
@@ -561,4 +563,3 @@ RECOMENDACIÓN: Considerar esta evidencia en el contexto clínico específico de
   }
 }
 
- 

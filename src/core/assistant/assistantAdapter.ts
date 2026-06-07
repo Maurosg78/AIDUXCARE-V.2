@@ -1,5 +1,6 @@
 import { getFunctions } from "firebase/functions";
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '../../utils/safeLogger';
 // import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
 // import { getAuth } from 'firebase/auth';
 
@@ -46,7 +47,8 @@ const mockDataLookup = async (intent: string, _params: Record<string, unknown>):
 };
 
 const mockLLMQuery = async (input: string): Promise<{ ok: boolean; answerMarkdown: string; entities: Record<string, unknown>[] }> => {
-  console.info('[Assistant] Usando mock para LLM query:', input);
+  const queryCharCount = input.length;
+  safeLogger.vertexResponse(queryCharCount, queryCharCount > 0, 'assistant_mock_query');
   
   return {
     ok: true,
@@ -72,4 +74,3 @@ const getFirebaseFunctions = () => {
     console.error("assistantAdapter error:", err);
   }
 }
-

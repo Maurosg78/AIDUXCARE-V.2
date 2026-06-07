@@ -1,6 +1,7 @@
 // src/services/OpenAIWhisperService.ts
 
 import { OPENAI_API_KEY, WHISPER_MODEL, OPENAI_TRANSCRIPT_URL } from "../config/env";
+import { safeLogger } from "../utils/safeLogger";
 
 export type WhisperSupportedLanguage = "auto" | "en" | "es" | "fr" | "pt";
 export type WhisperMode = "live" | "dictation";
@@ -153,7 +154,9 @@ export class OpenAIWhisperService {
       const errorMsg = !text
         ? "No se recibió texto transcrito desde Whisper. El audio puede estar vacío o ser inaudible."
         : `Transcripción muy corta (${text.length} caracteres). Por favor, grabe hablando más claramente durante al menos 3 segundos.`;
-      console.error('[Whisper] Empty or very short transcript:', { textLength: text?.length || 0, text });
+      const transcriptCharCount = text?.length || 0;
+      const transcriptHasContent = transcriptCharCount > 0;
+      safeLogger.vertexResponse(transcriptCharCount, transcriptHasContent, 'whisper_short_transcript');
       throw new Error(errorMsg);
     }
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, FileText, AlertCircle, CheckCircle, Info, Loader2 } from 'lucide-react';
 import type { ClinicalAttachment } from '../services/clinicalAttachmentService';
+import { safeLogger } from '../utils/safeLogger';
 
 interface ClinicalAttachmentCardProps {
   attachment: ClinicalAttachment;
@@ -37,7 +38,9 @@ export function ClinicalAttachmentCard({
 }: ClinicalAttachmentCardProps) {
   // WO-PDF-STUCK-001: instrumental logs (temporary)
   if (attachment.processingComplete !== true && !attachment.extractedText && !attachment.error) {
-    console.log("[AttachmentCard] Upload triggered", attachment.name, attachment.contentType);
+    const attachmentExtension = attachment.name.split('.').pop() ?? 'unknown';
+    const attachmentSizeBytes = attachment.size;
+    safeLogger.fileProcessed(attachmentExtension, attachmentSizeBytes, 'attachment_upload_triggered');
   }
 
   const formatSize = (bytes: number) => {

@@ -9,6 +9,7 @@ import { lookupEvidence } from '@/core/clinical-evidence/evidenceService';
 import { matchDiagnosis } from '@/core/clinical-evidence/diagnosisMatcher';
 import { prioritizeEvidence } from '@/core/clinical-reasoning/prioritizeEvidence';
 import { applyImagingScopeGuard } from '@/core/clinical-safety/imagingScopeGuard';
+import { safeLogger } from '../utils/safeLogger';
 
 type NiagaraProxyPayload = {
   text: string;
@@ -59,9 +60,14 @@ export const useNiagaraProcessor = () => {
       
       // Log attachments for debugging
       if (attachments && attachments.length > 0) {
-        console.log(`[NiagaraProcessor] Including ${attachments.length} attachments in prompt`);
+        console.log('[NiagaraProcessor] attachments_included count:', attachments.length);
         attachments.forEach(att => {
-          console.log(`  - ${att.fileName}: ${att.extractedText ? `${att.extractedText.length} chars` : 'no text'}`);
+          const attachmentExtension = att.fileName.split('.').pop() ?? 'unknown';
+          const attachmentSizeBytes = 0;
+          const attachmentTextCharCount = att.extractedText?.length ?? 0;
+          const attachmentHasText = attachmentTextCharCount > 0;
+          safeLogger.fileProcessed(attachmentExtension, attachmentSizeBytes, 'niagara_attachment_included');
+          safeLogger.vertexResponse(attachmentTextCharCount, attachmentHasText, 'attachment_text_available');
         });
       }
       
@@ -75,8 +81,9 @@ export const useNiagaraProcessor = () => {
         attachments: attachments,
         market: resolvedMarket.market,
       });
-      console.log("Response from Vertex:", response);
-      console.log("Response text:", response?.text);
+      const vertexResponseCharCount = response?.text?.length ?? 0;
+      const vertexResponseHasContent = vertexResponseCharCount > 0;
+      safeLogger.vertexResponse(vertexResponseCharCount, vertexResponseHasContent, 'niagara_raw_response');
       const normalized = normalizeVertexResponse(response, { market: resolvedMarket.market });
       const guarded = applyImagingScopeGuard(normalized, attachments);
       if (import.meta.env.DEV && (guarded.removedImagingItems > 0 || guarded.rescuedMedications > 0)) {
@@ -100,7 +107,8 @@ export const useNiagaraProcessor = () => {
 
       const shouldForceSpanish = resolvedMarket.market === 'ES';
       const cleaned = shouldForceSpanish ? ensureSpanishClinicalAnalysis(guarded.analysis) : guarded.analysis;
-      console.log("Cleaned response:", cleaned);
+      const cleanedResponseKeys = Object.keys(cleaned ?? {});
+      safeLogger.clinicalContextBuilt(cleanedResponseKeys, 'niagara_cleaned_response');
       setNiagaraResults(cleaned);
       return cleaned;
     } catch (error) {

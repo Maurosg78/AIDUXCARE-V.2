@@ -1,6 +1,7 @@
 import { MCPContext, MCPContextSchema } from './schema';
 
 import logger from '@/shared/utils/logger';
+import { safeLogger } from '../../utils/safeLogger';
 
 /**
  * Tipo para los datos de memoria utilizados internamente
@@ -34,7 +35,8 @@ export function buildMCPContext(
   
   if (!validationResult.success) {
     console.warn("[MCP] Zod validation failed:", validationResult.error.format());
-    console.debug("[MCP] Invalid data received:", JSON.stringify(context, null, 2));
+    const contextKeys = Object.keys(context ?? {});
+    safeLogger.clinicalContextBuilt(contextKeys, 'mcp_validation_failed');
     
     // Intentamos devolver el contexto original aunque tenga errores
     // para evitar pérdida silenciosa de datos
