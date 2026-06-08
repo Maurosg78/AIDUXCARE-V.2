@@ -27,6 +27,7 @@ import VerbalConsentService, {
 // ✅ WO-CONSENT-VERBAL-01-LANG: Multi-jurisdiction support
 import { getCurrentJurisdiction } from '../../core/consent/consentJurisdiction';
 import PatientService, { requiresRepresentativeConsent } from '../../services/patientService';
+import { isAgeUnknown, isMinorForConsentGate } from '@/utils/ageUtils';
 
 type RepresentativeAuthorityBasis = 'minor_parent_guardian' | 'legal_guardian' | 'other';
 
@@ -84,6 +85,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   const consentText = getVerbalConsentText(consentTextVersion);
   const representativeConsentRequired =
     forceRepresentativeConsent ||
+    isMinorForConsentGate(patientDateOfBirth) ||
     requiresRepresentativeConsent(
       patientDateOfBirth,
       effectiveJurisdiction
@@ -91,6 +93,7 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   const representativeConsentRequiredMessage = forceRepresentativeConsent
     ? 'Este paciente es menor de edad. El consentimiento debe ser otorgado por su representante legal.'
     : 'Este paciente es menor de 16 años. Según la Ley 41/2002 art. 9, el consentimiento debe ser otorgado por su representante legal.';
+  const patientAgeIsUnknown = isAgeUnknown(patientDateOfBirth);
 
   useEffect(() => {
     if (!isOpen || !patientId) {
@@ -101,10 +104,13 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     let cancelled = false;
 
     PatientService.getPatientById(patientId)
-      .then((patient) => {
+      .then((reloadedPatient) => {
         if (cancelled) return;
 
-        setPatientDateOfBirth(patient?.dateOfBirth || null);
+        const patientDateOfBirth = reloadedPatient?.dateOfBirth ?? null;
+        const patientBirthDate = (reloadedPatient as { birthDate?: string | null } | null)?.birthDate ?? null;
+        const dobForGate = patientDateOfBirth ?? patientBirthDate;
+        setPatientDateOfBirth(dobForGate);
       })
       .catch(() => {
         if (cancelled) return;
@@ -125,6 +131,11 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
   };
 
   const handleResponseSelect = (response: 'authorized' | 'authorized_by_representative' | 'denied' | 'unable_to_respond') => {
+    if (patientAgeIsUnknown && (response === 'authorized' || response === 'authorized_by_representative')) {
+      setError('Fecha de nacimiento obligatoria antes de registrar consentimiento.');
+      return;
+    }
+
     if (representativeConsentRequired && response === 'authorized') {
       setPatientResponse('authorized_by_representative');
       setStep('confirm');
@@ -150,6 +161,11 @@ export const VerbalConsentModal: React.FC<VerbalConsentModalProps> = ({
     }
 
     if (finalResponse === 'authorized' || finalResponse === 'authorized_by_representative') {
+      if (patientAgeIsUnknown) {
+        setError('Fecha de nacimiento obligatoria antes de registrar consentimiento.');
+        return;
+      }
+
       // ✅ WO-CONSENT-VERBAL-01: Require all confirmations including physiotherapist checkbox
       if (!patientUnderstood || !voluntarilyGiven || !physiotherapistConfirmed) {
         setError(t('consent.verbal.errorConfirmAll'));

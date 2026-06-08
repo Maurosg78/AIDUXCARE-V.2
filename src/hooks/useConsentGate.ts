@@ -29,6 +29,7 @@ export interface UseConsentGateResult {
     status: string | null;
     consentMethod: string | null;
     declineReasons?: string[];
+    blockReason?: string;
   } | null;
   showGate: boolean;
   showDeclined: boolean;
@@ -49,6 +50,7 @@ export function useConsentGate(options: UseConsentGateOptions): UseConsentGateRe
     const resolution = resolveConsentChannel({
       hasValidConsent: result.hasValidConsent,
       isDeclined: result.isDeclined,
+      blockReason: result.blockReason,
       jurisdiction: getCurrentJurisdiction(),
       isFirstSession,
     });
@@ -59,6 +61,7 @@ export function useConsentGate(options: UseConsentGateOptions): UseConsentGateRe
       status: result.status,
       consentMethod: result.consentMethod,
       declineReasons: result.declineReasons,
+      blockReason: result.blockReason,
     });
     if (result.isDeclined) setStatus('declined');
     else if (result.hasValidConsent) setStatus('granted');

@@ -9,10 +9,14 @@ export interface ResolveConsentInput {
   isDeclined?: boolean;
   jurisdiction?: string;
   isFirstSession?: boolean;
+  blockReason?:
+    | 'minor_requires_representative'
+    | 'age_unknown_dob_required'
+    | 'age_unknown_confirmation_required';
 }
 
 export interface ConsentResolution {
-  channel: 'none' | 'sms' | 'blocked';
+  channel: 'none' | 'sms' | 'blocked' | 'insufficient';
   hardBlock?: boolean;
   blockReason?: string;
   allowedActions?: Record<string, boolean>;
@@ -23,13 +27,38 @@ export interface ConsentResolution {
  * so the UI unmounts the ConsentGate and allows clinical workflow (including attachments).
  */
 export function resolveConsentChannel(input: ResolveConsentInput): ConsentResolution {
-  const { hasValidConsent, isDeclined } = input;
+  const { hasValidConsent, isDeclined, blockReason } = input;
 
   if (isDeclined === true) {
     return {
       channel: 'blocked',
       hardBlock: true,
       blockReason: 'Patient declined consent',
+    };
+  }
+
+  if (blockReason === 'age_unknown_dob_required') {
+    return {
+      channel: 'blocked',
+      hardBlock: true,
+      blockReason,
+      allowedActions: { view: false, record: false, upload: false },
+    };
+  }
+
+  if (blockReason === 'minor_requires_representative') {
+    return {
+      channel: 'insufficient',
+      blockReason,
+      allowedActions: { view: false, record: false, upload: false },
+    };
+  }
+
+  if (blockReason === 'age_unknown_confirmation_required') {
+    return {
+      channel: 'insufficient',
+      blockReason,
+      allowedActions: { view: false, record: false, upload: false },
     };
   }
 

@@ -454,6 +454,11 @@ const ProfessionalWorkflowPage = () => {
     status?: string | null;
     consentMethod?: string | null;
     declineReasons?: string[];
+    channel?: 'none' | 'sms' | 'blocked' | 'insufficient';
+    blockReason?:
+      | 'minor_requires_representative'
+      | 'age_unknown_dob_required'
+      | 'age_unknown_confirmation_required';
   } | null>(null);
 
   // ✅ CRITICAL FIX: Initialize tab and visit type based on URL parameter. Follow-up always starts on Analysis (conversation + red-flag flow).
@@ -1693,7 +1698,8 @@ const ProfessionalWorkflowPage = () => {
         // ✅ WO-CONSENT-VERBAL-01-LANG: Pass jurisdiction to validation
         const { getCurrentJurisdiction } = await import('../core/consent/consentJurisdiction');
         const jurisdiction = getCurrentJurisdiction();
-        const hasValid = await VerbalConsentService.hasValidConsent(patientIdFromUrl, user.uid, jurisdiction);
+        const consentResult = await checkConsentViaServer(patientIdFromUrl);
+        const hasValid = consentResult.hasValidConsent;
 
         if (!hasValid) {
           console.log('[WORKFLOW] ❌ No valid consent (verbal or digital) - blocking ALL clinical UI', { jurisdiction });
@@ -1705,7 +1711,9 @@ const ProfessionalWorkflowPage = () => {
             hasValidConsent: false,
             isDeclined: false, // Not declined, just missing
             status: null,
-            consentMethod: null
+            consentMethod: null,
+            channel: consentResult.channel,
+            blockReason: consentResult.blockReason
           });
         } else {
           console.log('[WORKFLOW] ✅ Valid consent found - workflow unlocked', { jurisdiction });
@@ -1716,8 +1724,9 @@ const ProfessionalWorkflowPage = () => {
           setWorkflowConsentStatus({
             hasValidConsent: true,
             isDeclined: false,
-            status: 'ongoing',
-            consentMethod: 'verbal' // VerbalConsentService indicates verbal consent
+            status: consentResult.status || 'ongoing',
+            consentMethod: consentResult.consentMethod || 'verbal',
+            channel: consentResult.channel
           });
         }
 
@@ -2819,7 +2828,9 @@ const ProfessionalWorkflowPage = () => {
             isDeclined: true,
             status: 'declined',
             consentMethod: consentResult.consentMethod || null,
-            declineReasons: consentResult.declineReasons || undefined
+            declineReasons: consentResult.declineReasons || undefined,
+            channel: consentResult.channel,
+            blockReason: consentResult.blockReason
           });
           setConsentCheckComplete(true);
           // ❌ NO iniciar polling - declined es permanente
@@ -2833,7 +2844,9 @@ const ProfessionalWorkflowPage = () => {
           isDeclined: Boolean(consentResult.isDeclined),
           status: consentResult.status || null,
           consentMethod: consentResult.consentMethod || null,
-          declineReasons: consentResult.declineReasons || undefined
+          declineReasons: consentResult.declineReasons || undefined,
+          channel: consentResult.channel,
+          blockReason: consentResult.blockReason
         });
 
         // ✅ WO-CONSENT-SINGLE-SOURCE-OF-TRUTH-05: Mark as granted if true (irreversible)
@@ -3024,7 +3037,9 @@ const ProfessionalWorkflowPage = () => {
             isDeclined: true,
             status: 'declined',
             consentMethod: consentResult.consentMethod || null,
-            declineReasons: consentResult.declineReasons || undefined
+            declineReasons: consentResult.declineReasons || undefined,
+            channel: consentResult.channel,
+            blockReason: consentResult.blockReason
           });
 
           // Stop polling immediately
@@ -3046,7 +3061,9 @@ const ProfessionalWorkflowPage = () => {
           isDeclined: false, // Explicit false if not declined
           status: consentResult.status || null,
           consentMethod: consentResult.consentMethod || null,
-          declineReasons: undefined // Only set if declined
+          declineReasons: undefined, // Only set if declined
+          channel: consentResult.channel,
+          blockReason: consentResult.blockReason
         });
 
         // ✅ Regla 2: Se cancela inmediatamente al tener consentimiento
@@ -5007,6 +5024,7 @@ const ProfessionalWorkflowPage = () => {
       const isFirstSession = true; // TODO: Pass as prop when available
       const currentResolution = resolveConsentChannel({
         hasValidConsent: consentCheck.hasValidConsent,
+        blockReason: consentCheck.blockReason,
         jurisdiction,
         isFirstSession,
       });
@@ -6669,6 +6687,7 @@ const ProfessionalWorkflowPage = () => {
       hasValidConsent: workflowConsentStatus.hasValidConsent,
       // ✅ WO-CONSENT-DECLINED-HARD-BLOCK-01: Pass declined status to domain
       isDeclined: workflowConsentStatus.isDeclined === true,
+      blockReason: workflowConsentStatus.blockReason,
       jurisdiction,
       isFirstSession,
     });
@@ -6734,7 +6753,9 @@ const ProfessionalWorkflowPage = () => {
                   isDeclined: false,
                   status: consentResult.status || 'ongoing',
                   consentMethod: consentResult.consentMethod || null,
-                  declineReasons: undefined
+                  declineReasons: undefined,
+                  channel: consentResult.channel,
+                  blockReason: consentResult.blockReason
                 });
                 // ✅ WO-CONSENT-DECLINED-REVERSAL-01: Update consentStatus to remove "Consent Required" banner
                 setConsentStatus(consentResult.status || 'ongoing');
@@ -6816,7 +6837,9 @@ const ProfessionalWorkflowPage = () => {
               isDeclined: true,
               status: 'declined',
               consentMethod: consentResult.consentMethod || null,
-              declineReasons: consentResult.declineReasons || undefined
+              declineReasons: consentResult.declineReasons || undefined,
+              channel: consentResult.channel,
+              blockReason: consentResult.blockReason
             });
 
             // Stop polling immediately
@@ -8004,6 +8027,7 @@ const ProfessionalWorkflowPage = () => {
         const isFirstSession = visitType === 'initial';
         const currentResolution = resolveConsentChannel({
           hasValidConsent: workflowConsentStatus.hasValidConsent,
+          blockReason: workflowConsentStatus.blockReason,
           jurisdiction,
           isFirstSession,
         });

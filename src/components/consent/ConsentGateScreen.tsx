@@ -3,6 +3,7 @@
  * Three options: canonical form (in-clinic), SMS link, verbal consent.
  */
 import React, { useState } from 'react';
+import { doc, setDoc } from 'firebase/firestore';
 import { Shield, MessageCircle, FileText, Smartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { VerbalConsentModal } from './VerbalConsentModal';
@@ -16,6 +17,7 @@ import {
 import { isSpainPilot } from '@/core/pilotDetection';
 import { useAuth } from '@/hooks/useAuth';
 import { isMinorForConsentGate } from '@/utils/ageUtils';
+import { db } from '@/lib/firebase';
 import type { ConsentResolution } from '@/domain/consent/resolveConsentChannel';
 
 export interface ConsentGateScreenProps {
@@ -55,6 +57,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
   const [formOpened, setFormOpened] = useState(false);
   const [smsLoading, setSmsLoading] = useState(false);
   const [smsError, setSmsError] = useState<string | null>(null);
+  const [adultConfirmLoading, setAdultConfirmLoading] = useState(false);
   const normalizedJurisdiction = normalizeConsentJurisdiction(consentJurisdiction);
   const consentLanguage = getConsentLanguageForJurisdiction(normalizedJurisdiction);
   const consentTextVersion = getConsentVersionForPortal(normalizedJurisdiction);
@@ -64,6 +67,12 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
   const tokenLanguage = tokenJurisdiction === 'ES-ES' ? 'es' : 'en';
   const tokenConsentTextVersion = tokenJurisdiction === 'ES-ES' ? 'v1-es-ES-written' : 'v2-en-CA';
   const patientIsMinor = isMinorForConsentGate(patientDateOfBirth);
+  const ageUnknownBlocked = consentResolution.blockReason === 'age_unknown_dob_required';
+  const ageUnknownConfirmationRequired =
+    consentResolution.blockReason === 'age_unknown_confirmation_required';
+  const representativeConsentInsufficient =
+    consentResolution.channel === 'insufficient' ||
+    consentResolution.blockReason === 'minor_requires_representative';
 
   const handleConsentObtained = async (consentId: string) => {
     console.log('[ConsentGate] ✅ Verbal consent recorded', { consentId: consentId ? '***' : '' });
@@ -147,7 +156,106 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
     }
   };
 
-  if (patientIsMinor) {
+  const handleConfirmAdultForExistingPatient = async () => {
+    if (!physiotherapistId) return;
+
+    setAdultConfirmLoading(true);
+    setSmsError(null);
+
+    try {
+      const consentStatusRef = doc(db, 'patients', patientId, 'consent_status', 'latest');
+      const adultConfirmedByClinicianAt = new Date().toISOString();
+      const adultConfirmedByClinician = physiotherapistId;
+      await setDoc(
+        consentStatusRef,
+        {
+          adultConfirmedByClinicianAt,
+          adultConfirmedByClinician,
+        },
+        { merge: true }
+      );
+
+      if (onConsentGranted) {
+        await onConsentGranted();
+      }
+    } catch (err) {
+      setSmsError(err instanceof Error ? err.message : 'No se pudo registrar la confirmación.');
+    } finally {
+      setAdultConfirmLoading(false);
+    }
+  };
+
+  if (ageUnknownBlocked) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 flex flex-col items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-xl border border-red-200 p-8">
+          <div className="mx-auto mb-4 w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+            <Shield className="w-7 h-7 text-red-700" />
+          </div>
+          <div role="alert" className="text-center">
+            <h2 className="text-xl font-semibold text-red-900 mb-2">Fecha de nacimiento requerida</h2>
+            <p className="text-slate-700 text-sm mb-6">
+              No es posible iniciar la sesión. La fecha de nacimiento del paciente es obligatoria para verificar si requiere consentimiento de representante.
+            </p>
+          </div>
+
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="w-full py-2 text-sm text-slate-500 hover:text-primary-purple transition-colors"
+            >
+              {t('consent.cancelReturnToCommandCenter')}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (ageUnknownConfirmationRequired) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 flex flex-col items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-xl border border-amber-200 p-8">
+          <div className="mx-auto mb-4 w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+            <Shield className="w-7 h-7 text-amber-700" />
+          </div>
+          <div role="alert" className="text-center">
+            <h2 className="text-xl font-semibold text-amber-900 mb-2">Confirmación de edad requerida</h2>
+            <p className="text-slate-700 text-sm mb-6">
+              La fecha de nacimiento de este paciente no está registrada. Por favor confirma que es mayor de edad para continuar.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleConfirmAdultForExistingPatient}
+            disabled={!physiotherapistId || adultConfirmLoading}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-primary-purple to-fuchsia-600 text-white rounded-lg font-medium hover:from-primary-purple-hover hover:to-fuchsia-700 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Shield className="w-4 h-4" />
+            {adultConfirmLoading ? 'Registrando confirmación...' : 'Confirmo que el paciente es mayor de edad'}
+          </button>
+
+          {smsError && (
+            <p className="mt-3 text-sm text-red-600">{smsError}</p>
+          )}
+
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="mt-4 w-full py-2 text-sm text-slate-500 hover:text-primary-purple transition-colors"
+            >
+              {t('consent.cancelReturnToCommandCenter')}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (patientIsMinor || representativeConsentInsufficient) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-fuchsia-50 flex flex-col items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-xl shadow-xl border border-amber-200 p-8">
@@ -157,7 +265,7 @@ const ConsentGateScreenComponent: React.FC<ConsentGateScreenProps> = ({
           <div role="alert" className="text-center">
             <h2 className="text-xl font-semibold text-amber-900 mb-2">Consentimiento con representante requerido</h2>
             <p className="text-slate-700 text-sm mb-6">
-              Este paciente es menor de edad. El consentimiento estándar para adultos no aplica. Continúa únicamente a través del flujo de consentimiento con representante legal.
+              Este paciente es menor de edad. Se requiere consentimiento del representante legal (padre, madre o tutor).
             </p>
           </div>
 
