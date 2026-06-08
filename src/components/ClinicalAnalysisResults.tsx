@@ -588,6 +588,34 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             </div>
           </div>
 
+          {reviewableMeds.length > 0 && (
+            <div>
+              <h4 className="font-medium text-sm text-slate-700 mb-2">{ui.currentMedicationTitle}</h4>
+              <div className="space-y-1">
+                {identifiedMeds.map((entity) => (
+                  <EditableCheckbox
+                    key={entity.id}
+                    id={entity.id}
+                    text={getMedicationDisplayName(entity)}
+                    checked={selectedIds.includes(entity.id)}
+                    onToggle={handleToggle}
+                    onTextChange={handleTextChange}
+                  />
+                ))}
+                {clarificationMeds.map((entity) => (
+                  <EditableCheckbox
+                    key={entity.id}
+                    id={entity.id}
+                    text={`${getMedicationDisplayName(entity)} [por confirmar]`}
+                    checked={selectedIds.includes(entity.id)}
+                    onToggle={handleToggle}
+                    onTextChange={handleTextChange}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
