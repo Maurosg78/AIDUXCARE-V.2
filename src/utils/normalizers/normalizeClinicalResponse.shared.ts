@@ -1,5 +1,6 @@
 import { parseVertexResponse, validateClinicalSchema } from "../responseParser";
 import type { EvidenceRecommendation } from "../../core/clinical-reasoning/prioritizeEvidence";
+import { safeLogger } from "../../utils/safeLogger";
 
 export type LegalExposure = "low" | "moderate" | "high";
 
@@ -118,6 +119,7 @@ const DEFAULT_RESULT: ClinicalAnalysis = {
   contexto_ocupacional: [],
   contexto_psicosocial: [],
   medicacion_actual: [],
+  adverseDrugReactions: [],
   antecedentes_medicos: [],
   diagnosticos_probables: [],
   red_flags: [],
@@ -393,6 +395,37 @@ const mergePreExtractedMajorMedicalHistory = (
   };
 };
 
+const logClinicalExtractionCounts = (normalizedResult: ClinicalAnalysis): void => {
+  const medicationCount = normalizedResult.medicacion_actual?.length ?? 0;
+  const adverseReactionCount = normalizedResult.adverseDrugReactions?.length ?? 0;
+  const medicalHistoryCount = normalizedResult.antecedentes_medicos?.length ?? 0;
+  const redFlagCount = normalizedResult.red_flags?.length ?? 0;
+  const extractionCountKeys = [
+    'medication_count',
+    'adverse_reaction_count',
+    'medical_history_count',
+    'red_flag_count',
+  ];
+  const extractionCountStage =
+    `extraction_counts: meds=${medicationCount} adr=${adverseReactionCount} history=${medicalHistoryCount} flags=${redFlagCount}`;
+
+  safeLogger.clinicalContextBuilt(extractionCountKeys, extractionCountStage);
+};
+
+const finalizeClinicalAnalysis = (
+  analysis: ClinicalAnalysis,
+  raw: any,
+  transformText: TextTransform,
+  shouldLogCounts: boolean
+): ClinicalAnalysis => {
+  const normalizedResult = mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+  if (shouldLogCounts) {
+    logClinicalExtractionCounts(normalizedResult);
+  }
+
+  return normalizedResult;
+};
+
 const mapLegacyPayload = (payload: any, transformText: TextTransform): ClinicalAnalysis => {
   const clone = { ...DEFAULT_RESULT };
   clone.motivo_consulta = transformText(String(payload?.motivo_consulta || ""));
@@ -419,26 +452,30 @@ const mapLegacyPayload = (payload: any, transformText: TextTransform): ClinicalA
 
 export const identityTextTransform = (value: string): string => value;
 
-export const normalizeVertexResponseWithTransform = (raw: any, transformText: TextTransform): ClinicalAnalysis => {
+export const normalizeVertexResponseWithTransform = (
+  raw: any,
+  transformText: TextTransform,
+  shouldLogCounts = true
+): ClinicalAnalysis => {
   if (raw?.candidates?.[0]?.content?.parts) {
     const part = raw.candidates[0].content.parts.find((item: any) => item?.text || item?.functionCall?.args?.text || item?.inlineData);
     if (part?.text) {
-      const analysis = normalizeVertexResponseWithTransform(part.text, transformText);
-      return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+      const analysis = normalizeVertexResponseWithTransform(part.text, transformText, false);
+      return finalizeClinicalAnalysis(analysis, raw, transformText, shouldLogCounts);
     }
     if (part?.functionCall?.args?.text) {
-      const analysis = normalizeVertexResponseWithTransform(part.functionCall.args.text, transformText);
-      return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+      const analysis = normalizeVertexResponseWithTransform(part.functionCall.args.text, transformText, false);
+      return finalizeClinicalAnalysis(analysis, raw, transformText, shouldLogCounts);
     }
   }
 
   if (raw?.output_text) {
-    const analysis = normalizeVertexResponseWithTransform(raw.output_text, transformText);
-    return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+    const analysis = normalizeVertexResponseWithTransform(raw.output_text, transformText, false);
+    return finalizeClinicalAnalysis(analysis, raw, transformText, shouldLogCounts);
   }
   if (raw?.candidates?.[0]?.content?.parts?.[0]?.text) {
-    const analysis = normalizeVertexResponseWithTransform(raw.candidates[0].content.parts[0].text, transformText);
-    return mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+    const analysis = normalizeVertexResponseWithTransform(raw.candidates[0].content.parts[0].text, transformText, false);
+    return finalizeClinicalAnalysis(analysis, raw, transformText, shouldLogCounts);
   }
 
   const parseResult = parseVertexResponse(raw);
@@ -448,7 +485,7 @@ export const normalizeVertexResponseWithTransform = (raw: any, transformText: Te
   const schemaIsValid = validateClinicalSchema(parsed);
   if (schemaIsValid) {
     const structuredAnalysis = mapStructuredPayload(parsed as StructuredPayload, transformText);
-    return mergePreExtractedMajorMedicalHistory(structuredAnalysis, raw, transformText);
+    return finalizeClinicalAnalysis(structuredAnalysis, raw, transformText, shouldLogCounts);
   }
 
   console.warn(
@@ -459,5 +496,5 @@ export const normalizeVertexResponseWithTransform = (raw: any, transformText: Te
   );
 
   const legacyAnalysis = mapLegacyPayload(parsed, transformText);
-  return mergePreExtractedMajorMedicalHistory(legacyAnalysis, raw, transformText);
+  return finalizeClinicalAnalysis(legacyAnalysis, raw, transformText, shouldLogCounts);
 };
