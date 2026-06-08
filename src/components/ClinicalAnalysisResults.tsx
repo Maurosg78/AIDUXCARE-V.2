@@ -34,6 +34,7 @@ interface StructuredMedicationData {
   normalized_name?: string;
   confidence?: MedicationConfidence;
   requires_review?: boolean;
+  suggested_name?: string;
 }
 
 interface ClinicalEntity {
@@ -613,16 +614,34 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                     onTextChange={handleTextChange}
                   />
                 ))}
-                {clarificationMeds.map((entity) => (
-                  <EditableCheckbox
-                    key={entity.id}
-                    id={entity.id}
-                    text={`${getMedicationDisplayName(entity)} [por confirmar]`}
-                    checked={selectedIds.includes(entity.id)}
-                    onToggle={handleToggle}
-                    onTextChange={handleTextChange}
-                  />
-                ))}
+                {clarificationMeds.map((entity) => {
+                  const suggestion = entity.medication_data?.suggested_name;
+                  const currentName = getMedicationDisplayName(entity);
+                  return (
+                    <div key={entity.id}>
+                      <EditableCheckbox
+                        id={entity.id}
+                        text={`${currentName} [por confirmar]`}
+                        checked={selectedIds.includes(entity.id)}
+                        onToggle={handleToggle}
+                        onTextChange={handleTextChange}
+                      />
+                      {suggestion && currentName !== suggestion && (
+                        <div className="ml-6 mt-0.5 flex items-center gap-1 text-xs text-slate-400">
+                          <span>¿Quiso decir:</span>
+                          <button
+                            type="button"
+                            onClick={() => handleTextChange(entity.id, suggestion)}
+                            className="font-medium text-indigo-600 hover:underline"
+                          >
+                            {suggestion}
+                          </button>
+                          <span>?</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

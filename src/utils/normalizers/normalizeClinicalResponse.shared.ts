@@ -423,6 +423,7 @@ const mergePreExtractedMedications = (
     if (!originalText || existingTexts.has(originalText.toLowerCase())) continue;
     const dose = String((item as any).dose || '').trim();
     const frequency = String((item as any).frequency || '').trim();
+    const suggestedName = String((item as any).suggested_name || '').trim();
     newMeds.push({
       text: transformText(originalText),
       medication_data: {
@@ -434,6 +435,7 @@ const mergePreExtractedMedications = (
         dose,
         frequency,
         duration: '',
+        ...(suggestedName ? { suggested_name: suggestedName } : {}),
       },
     });
     existingTexts.add(originalText.toLowerCase());

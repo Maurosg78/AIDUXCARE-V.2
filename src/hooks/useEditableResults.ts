@@ -36,6 +36,7 @@ export const useEditableResults = (initialResults: any) => {
             typeof entity.medication_data === 'object'
               ? {
                   ...entity.medication_data,
+                  original_text: newText,
                   normalized_name: newText,
                   confidence: 'high',
                   requires_review: false,

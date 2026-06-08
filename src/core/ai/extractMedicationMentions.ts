@@ -22,14 +22,22 @@ REGLAS DE FORMATO:
 - Si no hay medicación real del paciente, devuelve array vacío.
 - NO inventes ni infieras medicación no mencionada explícitamente.
 
+CORRECCIÓN ORTOGRÁFICA (solo cuando sea evidente):
+Si original_text parece un error fonético de transcripción de un medicamento conocido
+(ej. "llanumet" → "Janumet 50/1000", "omeprazon" → "omeprazol", "orfidal" → "Orfidal"),
+añade "suggested_name" con el nombre correcto.
+Requisito: similitud fonética alta Y el contexto clínico confirma ese medicamento.
+Si hay cualquier duda, omite "suggested_name" completamente.
+
 Devuelve SOLO un JSON válido con este formato exacto:
-{"medications": [{"original_text": "nombre exacto", "dose": "dosis", "frequency": "frecuencia"}]}
+{"medications": [{"original_text": "nombre exacto", "dose": "dosis", "frequency": "frecuencia", "suggested_name": ""}]}
 `;
 
 export type MedicationMention = {
   original_text: string;
   dose: string;
   frequency: string;
+  suggested_name?: string;
 };
 
 type MedicationExtractionResponse = {
@@ -61,10 +69,12 @@ const toMedicationArray = (value: unknown): MedicationMention[] => {
     const record = item as Record<string, unknown>;
     const originalText = String(record.original_text || '').trim();
     if (!originalText) continue;
+    const suggestedName = String(record.suggested_name || '').trim();
     items.push({
       original_text: originalText,
       dose: String(record.dose || '').trim(),
       frequency: String(record.frequency || '').trim(),
+      ...(suggestedName ? { suggested_name: suggestedName } : {}),
     });
   }
   return items;
