@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { isSpainPilot } from '@/core/pilotDetection';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -73,11 +74,11 @@ const VisitRecordCard: React.FC<VisitRecordCardProps> = ({ visit, patientId, sum
         </div>
       )}
 
-      {/* Sugerencias integradas */}
-      {suggestions.length > 0 && (
+      {/* Observaciones IA registradas — oculto en Spain pilot (isSpainPilot gate → TD-011) */}
+      {!isSpainPilot() && suggestions.length > 0 && (
         <div>
           <h4 className="text-sm font-medium text-gray-700 mb-2">
-            Sugerencias IA Integradas
+            Observaciones IA Registradas
           </h4>
           <div className="space-y-2">
             {suggestions.map((suggestion, index) => (

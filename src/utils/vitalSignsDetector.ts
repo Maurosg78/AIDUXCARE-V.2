@@ -82,7 +82,7 @@ export const ALERT_THRESHOLDS = {
       diastolic: { min: 100 },
       severity: 'critical' as const,
       message: '🚨 HIPERTENSIÓN GRADO 2 - Referencia médica urgente',
-      recommendation: 'Evaluación médica inmediata recomendada. Considerar ajuste de medicación.',
+      recommendation: 'Se documentaron hallazgos que requieren valoración médica. El fisioterapeuta determinará los ajustes necesarios.',
     },
     hypotension: {
       systolic: { max: 90 },
@@ -146,7 +146,7 @@ export const ALERT_THRESHOLDS = {
       min: 39.0,
       severity: 'critical' as const,
       message: '🚨 FIEBRE ALTA - Evaluación médica recomendada',
-      recommendation: 'Fiebre alta detectada. Evaluación médica recomendada.',
+      recommendation: 'Se documentó fiebre alta. Requiere valoración médica.',
     },
   },
 };
@@ -456,7 +456,7 @@ export function detectPostSurgicalAlerts(text: string): MedicalAlert[] {
       severity: 'critical',
       category: 'possible_infection',
       message: '🚨 SIGNOS DE INFECCIÓN DETECTADOS - Evaluación médica requerida',
-      recommendation: 'Se detectaron signos de posible infección en herida quirúrgica. Evaluación médica inmediata recomendada.',
+      recommendation: 'Se documentaron signos de posible infección en herida quirúrgica. Requiere valoración médica inmediata.',
       detectedAt: 0,
     });
   } else if (woundKeywordsFound.length > 0 && concernKeywordsFound.length > 0) {

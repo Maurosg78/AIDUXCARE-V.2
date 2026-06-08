@@ -1,4 +1,5 @@
 import React from 'react';
+import { isSpainPilot } from '@/core/pilotDetection';
 
 interface SuggestionLog {
   visit_id: string;
@@ -14,7 +15,9 @@ interface VisitIndicatorsProps {
 }
 
 const VisitIndicators: React.FC<VisitIndicatorsProps> = ({ suggestions }) => {
-  // Calcular total de sugerencias
+  if (isSpainPilot()) return null;
+
+  // Calcular total de observaciones
   const totalSuggestions = suggestions.length;
 
   // Calcular campos más impactados
@@ -43,7 +46,7 @@ const VisitIndicators: React.FC<VisitIndicatorsProps> = ({ suggestions }) => {
         {/* Total de sugerencias */}
         <div className="flex items-center space-x-2">
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            {totalSuggestions} sugerencias integradas
+            {totalSuggestions} observaciones registradas
           </span>
         </div>
 
@@ -55,7 +58,7 @@ const VisitIndicators: React.FC<VisitIndicatorsProps> = ({ suggestions }) => {
                 key={field}
                 className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
               >
-                {field}: {fieldCounts[field]} sugerencias
+                {field}: {fieldCounts[field]} observaciones
               </span>
             ))}
           </div>

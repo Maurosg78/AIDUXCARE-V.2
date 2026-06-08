@@ -20,8 +20,8 @@ export const explainSuggestion = (suggestion: AgentSuggestion): Promise<string> 
           resolve(
             `Esta recomendación se basa en las mejores prácticas clínicas para el escenario descrito. ` +
             `El agente ha identificado un patrón en los datos del paciente que sugiere la necesidad de ` +
-            `tomar la acción recomendada. Los estudios clínicos muestran que seguir este tipo de ` +
-            `recomendaciones mejora los resultados en pacientes con condiciones similares.`
+            `tomar la acción documentada. Los estudios clínicos muestran que seguir este tipo de ` +
+            `criterios mejora los resultados en pacientes con condiciones similares.`
           );
           break;
         case 'warning':
@@ -29,7 +29,7 @@ export const explainSuggestion = (suggestion: AgentSuggestion): Promise<string> 
             `Esta advertencia se ha generado porque el agente ha detectado un posible factor de riesgo ` +
             `o una situación que requiere atención especial. Ignorar esta advertencia podría llevar a ` +
             `complicaciones como deterioro clínico, interacciones medicamentosas adversas o errores en ` +
-            `el tratamiento. Se recomienda evaluar cuidadosamente la situación.`
+            `el tratamiento. Se documenta la necesidad de evaluar cuidadosamente la situación.`
           );
           break;
         case 'info':

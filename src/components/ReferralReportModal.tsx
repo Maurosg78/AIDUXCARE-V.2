@@ -149,13 +149,13 @@ export const ReferralReportModal: React.FC<ReferralReportModalProps> = ({
           )}
 
           <section className="space-y-1">
-            <h3 className="text-sm font-semibold text-slate-800">Acción Recomendada</h3>
+            <h3 className="text-sm font-semibold text-slate-800">Acción Documentada</h3>
             <p className="text-sm text-slate-700">
               {hasUrgentFlags ? (
                 <>
                   {reportData.redFlags.some((f) => f.decision === 'referral_stop')
-                    ? 'Se recomienda evaluación médica inmediata. Tratamiento fisioterapéutico suspendido hasta respuesta del especialista.'
-                    : 'Se recomienda evaluación médica. La fisioterapia continúa solo con modalidades seguras.'}
+                    ? 'Se documentaron indicadores clínicos para valoración de derivación inmediata. Tratamiento fisioterapéutico suspendido hasta respuesta del especialista.'
+                    : 'Se documentaron indicadores clínicos para valoración de derivación. La fisioterapia continúa solo con modalidades seguras.'}
                 </>
               ) : (
                 'No se registró una decisión explícita de derivación con suspensión en este informe.'

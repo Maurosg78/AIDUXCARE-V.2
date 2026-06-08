@@ -1,7 +1,7 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.12.1
+**Versión:** 1.13
 **Fecha:** Junio 2026
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
@@ -1170,6 +1170,7 @@ La deuda técnica no documentada es el mayor riesgo de mantenibilidad en softwar
 | **TD-008** | Pre-población de tests desde transcripción no implementada | Alta (feature) | Roadmap | Implementar `extracted_measurements` en prompt de análisis + binding en `EvaluationTab` |
 | **TD-009** | `ClinicalAnalysisResults.tsx` mantiene `any` sin comentario justificativo | Media | Histórico | Tipar `ClinicalAnalysisResults` y entidades derivadas o añadir justificación explícita por campo |
 | **TD-010** | `ClinicalAnalysisResults.tsx` tiene `useEffect` sin cleanup explícito | Baja | Histórico | Confirmar que no registra listeners/timers o documentar cleanup/no-op explícito |
+| **TD-011** | Gates `!isSpainPilot()` en `VisitIndicators`, `VisitRecordCard`, `AnalyticsDashboard` deben reemplazarse por `isSocratesEnabled()` cuando exista el módulo Sócrates V2 | Media | MVO Spain mode | Implementar `isSocratesEnabled()` con lógica de mercado + feature flag; migrar todos los `!isSpainPilot()` añadidos en commit MVO-Spain-mode |
 
 ### 7.2 Deuda de producto (no código)
 
@@ -1361,6 +1362,7 @@ AiduxCare amplifica. Evidencia. Acompaña.
 | 1.11 | 2026-05-24 | §6.4 actualizado: SaMD Classification Memo, Risk Management File y DPIA pasan de Pendiente a v0.1 activo. Commit be0ddde. |
 | 1.12 | 2026-05-25 | ADR-010: arquitectura de interoperabilidad — AiduxCare FHIR-aware / Sócrates source-agnostic. ClinicalProvenance, confidenceOfMapping y schemaVersion definidos como canónicos. Referencia: docs/governance/INTEROPERABILITY_ARCHITECTURE.md v1.0. |
 | 1.12.1 | 2026-06-07 | Refuerza §8.4: limpieza remota obligatoria de `/var/www/pilot/dist/*` antes de cada deploy por `gcloud compute scp`, con verificación de un solo bundle principal `index-[hash].js`. |
+| 1.13 | 2026-06-08 | MVO Spain mode: TD-011 registrado. Gates `!isSpainPilot()` en componentes de sugerencias IA (`VisitIndicators`, `VisitRecordCard`, `AnalyticsDashboard`). Audit copy SaMD: reemplazo de lenguaje de recomendación clínica por lenguaje documental en 8 archivos. |
 
 ---
 

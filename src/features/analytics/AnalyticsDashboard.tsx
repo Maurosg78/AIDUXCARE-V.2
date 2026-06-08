@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { analyticsService, type DashboardMetrics } from '../../services/analyticsService';
+import { isSpainPilot } from '@/core/pilotDetection';
 
 import logger from '@/shared/utils/logger';
 
@@ -115,7 +116,8 @@ export const AnalyticsDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Suggestions Acceptance Rate */}
+          {/* Suggestions Acceptance Rate — oculto en Spain pilot (TD-011) */}
+          {!isSpainPilot() && (
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -124,13 +126,14 @@ export const AnalyticsDashboard: React.FC = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Aceptación Sugerencias</p>
+                <p className="text-sm font-medium text-gray-600">Observaciones Documentadas</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {metrics.suggestionsMetrics.acceptanceRate.toFixed(1)}%
                 </p>
               </div>
             </div>
           </div>
+          )}
 
           {/* Time Saved */}
           <div className="bg-white rounded-lg shadow p-6">
@@ -208,9 +211,10 @@ export const AnalyticsDashboard: React.FC = () => {
 
         {/* Detailed Metrics */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Suggestions Metrics */}
+          {/* Suggestions Metrics — oculto en Spain pilot (TD-011) */}
+          {!isSpainPilot() && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Métricas de Sugerencias</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Métricas de Documentación</h3>
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">Aceptadas</span>
@@ -222,6 +226,7 @@ export const AnalyticsDashboard: React.FC = () => {
               </div>
             </div>
           </div>
+          )}
 
           {/* Time Metrics */}
           <div className="bg-white rounded-lg shadow p-6">

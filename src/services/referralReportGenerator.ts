@@ -208,7 +208,7 @@ export class ReferralReportGenerator {
 
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('ACCIÓN RECOMENDADA', 14, yPos);
+    doc.text('ACCIÓN DOCUMENTADA', 14, yPos);
     yPos += 6;
 
     doc.setFontSize(10);
@@ -217,10 +217,10 @@ export class ReferralReportGenerator {
     let recommendedActionText = '';
     if (hasReferralStop) {
       recommendedActionText =
-        'Se recomienda evaluación médica inmediata. Tratamiento fisioterapéutico suspendido hasta respuesta del especialista.';
+        'Se documentaron indicadores clínicos para valoración de derivación inmediata. Tratamiento fisioterapéutico suspendido hasta respuesta del especialista.';
     } else if (hasReferralContinuePartial) {
       recommendedActionText =
-        'Se recomienda evaluación médica. La fisioterapia continúa solo con modalidades seguras.';
+        'Se documentaron indicadores clínicos para valoración de derivación. La fisioterapia continúa solo con modalidades seguras.';
     } else {
       recommendedActionText =
         'Puede considerarse revisión médica según el contexto clínico. No se registró una decisión explícita de suspensión por derivación.';

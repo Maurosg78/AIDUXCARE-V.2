@@ -30,7 +30,7 @@ const CaptureWorkspace: React.FC<CaptureWorkspaceProps> = ({ children }) => {
         {children}
       </div>
 
-      {/* Columna derecha - Preguntas sugeridas */}
+      {/* Columna derecha - Preguntas de apoyo */}
       <div style={{ 
         border: '1px dashed #ccc', 
         borderRadius: '0.5rem', 
@@ -40,7 +40,7 @@ const CaptureWorkspace: React.FC<CaptureWorkspaceProps> = ({ children }) => {
         justifyContent: 'center',
         color: '#666'
       }}>
-        [Preguntas Sugeridas]
+        [Preguntas de Apoyo]
       </div>
     </div>
   );
