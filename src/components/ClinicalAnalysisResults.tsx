@@ -374,6 +374,13 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     return requiresReview;
   };
 
+  const isGenericMedicationCategory = (value: string): boolean => {
+    const normalizedValue = value.trim().toLowerCase();
+    const genericCategoryPattern = /^(medicamento|medicamentos|medicacion|medicación)\s+para\b/;
+    const isGenericCategory = genericCategoryPattern.test(normalizedValue);
+    return isGenericCategory;
+  };
+
   const getMedicationDisplayName = (entity: ClinicalEntity): string => {
     const medicationData = entity.medication_data;
     const rawEntityText = entity.text;
@@ -388,10 +395,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
       : '';
     const editedText = typeof rawEntityText === 'string'
       ? rawEntityText
-      : entityTextNormalizedName || entityTextOriginalText;
+      : entityTextOriginalText || entityTextNormalizedName;
     const normalizedName = medicationData?.normalized_name || '';
     const originalText = medicationData?.original_text || '';
-    const rawDisplayName = editedText || normalizedName || originalText;
+    const safeEditedText = isGenericMedicationCategory(editedText) ? '' : editedText;
+    const safeNormalizedName = isGenericMedicationCategory(normalizedName) ? '' : normalizedName;
+    const rawDisplayName = originalText || safeEditedText || safeNormalizedName || normalizedName;
     const displayName = stripTechnicalSuffix(rawDisplayName);
     return displayName;
   };
@@ -412,8 +421,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
       : '';
     const editedText = typeof rawEntityText === 'string'
       ? rawEntityText
-      : entityTextNormalizedName || entityTextOriginalText;
-    const rawDisplayName = normalizedName || originalText || editedText;
+      : entityTextOriginalText || entityTextNormalizedName;
+    const safeEditedText = isGenericMedicationCategory(editedText) ? '' : editedText;
+    const safeNormalizedName = isGenericMedicationCategory(normalizedName) ? '' : normalizedName;
+    const rawDisplayName = originalText || safeEditedText || safeNormalizedName || normalizedName;
     const displayName = stripTechnicalSuffix(rawDisplayName);
     return displayName;
   };

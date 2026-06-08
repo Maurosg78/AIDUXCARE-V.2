@@ -3758,7 +3758,7 @@ const ProfessionalWorkflowPage = () => {
         const medicationData = hasStructuredMedication ? medication.medication_data : null;
         const normalizedName = medicationData?.normalized_name || "";
         const originalText = medicationData?.original_text || "";
-        const displayName = normalizedName || originalText || String(medication || "");
+        const displayName = originalText || normalizedName || String(medication || "");
 
         return {
           id: `medication-${index}`,

@@ -53,7 +53,7 @@ describe('normalizeClinicalResponse market isolation', () => {
     expect(result.red_flags[0]).toContain('Recomendar revisión/derivación médica según red flags.');
     expect(typeof result.medicacion_actual[0]).toBe('object');
     expect(result.medicacion_actual[0]).toMatchObject({
-      text: 'Metamizol',
+      text: 'Metamizol 575 mg cada 12 horas si dolor',
       medication_data: expect.objectContaining({
         normalized_name: 'Metamizol',
         original_text: 'Metamizol 575 mg cada 12 horas si dolor',
@@ -70,7 +70,7 @@ describe('normalizeClinicalResponse market isolation', () => {
     expect(result.red_flags[0]).not.toContain('Preocupación clínica:');
     expect(typeof result.medicacion_actual[0]).toBe('object');
     expect(result.medicacion_actual[0]).toMatchObject({
-      text: 'Metamizol',
+      text: 'Metamizol 575 mg cada 12 horas si dolor',
       medication_data: expect.objectContaining({
         normalized_name: 'Metamizol',
         original_text: 'Metamizol 575 mg cada 12 horas si dolor',
@@ -95,6 +95,48 @@ describe('normalizeClinicalResponse market isolation', () => {
 
     expect(typeof result.medicacion_actual[0]).toBe('string');
     expect(result.medicacion_actual[0]).toContain('cada 12 horas');
+  });
+
+  it('preserves dictated medication text over generic normalized categories', () => {
+    const payloadWithGenericMedication = {
+      ...responsePayload,
+      conversation_highlights: {
+        ...responsePayload.conversation_highlights,
+        medications: [
+          {
+            original_text: 'MedicinaX 50 mg',
+            normalized_name: 'Medicamento para condición Y',
+            confidence: 'low',
+            requires_review: true,
+          },
+          {
+            original_text: 'AnsiolíticoX 1 mg',
+            normalized_name: 'Medicamento para ansiedad',
+            confidence: 'low',
+            requires_review: true,
+          },
+        ],
+      },
+    };
+
+    const result = normalizeClinicalResponse(payloadWithGenericMedication, { market: 'ES' });
+
+    expect(result.medicacion_actual[0]).toMatchObject({
+      text: 'MedicinaX 50 mg',
+      medication_data: expect.objectContaining({
+        normalized_name: 'Medicamento para condición Y',
+        original_text: 'MedicinaX 50 mg',
+        requires_review: true,
+      }),
+    });
+    expect(result.medicacion_actual[1]).toMatchObject({
+      text: 'AnsiolíticoX 1 mg',
+      medication_data: expect.objectContaining({
+        normalized_name: 'Medicamento para ansiedad',
+        original_text: 'AnsiolíticoX 1 mg',
+        requires_review: true,
+      }),
+    });
   });
 
   it('merges pre-extracted major medical history before model-returned history', () => {

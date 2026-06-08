@@ -341,7 +341,7 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
       const isStructured = firstItem && typeof firstItem === 'object' && 'original_text' in firstItem;
       if (isStructured) {
         return meds.map((med: any) => ({
-          text: med.normalized_name || med.original_text || '',
+          text: med.original_text || med.normalized_name || '',
           medication_data: med,
         }));
       }
