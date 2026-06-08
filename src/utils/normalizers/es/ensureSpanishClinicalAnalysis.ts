@@ -1,4 +1,4 @@
-import type { ClinicalAnalysis } from '../normalizeClinicalResponse.shared';
+import type { ClinicalAnalysis, AdverseDrugReaction } from '../normalizeClinicalResponse.shared';
 import { ensureSpanishClinicalText } from './ensureSpanishClinicalText';
 
 const normalizeStringArray = (items: string[] | undefined): string[] => {
@@ -75,6 +75,8 @@ export const ensureSpanishClinicalAnalysis = (analysis: ClinicalAnalysis): Clini
   const functionalLimitations = normalizeStringArray(analysis.biopsychosocial_functional_limitations);
   const strengths = normalizeStringArray(analysis.biopsychosocial_patient_strengths);
   const physicalTests = normalizePhysicalTests(analysis.evaluaciones_fisicas_sugeridas);
+  const preservedAdverseDrugReactions: AdverseDrugReaction[] =
+    analysis.adverseDrugReactions ?? [];
 
   normalizedAnalysis.motivo_consulta = chiefComplaint;
   normalizedAnalysis.hallazgos_clinicos = keyFindings;
@@ -97,6 +99,7 @@ export const ensureSpanishClinicalAnalysis = (analysis: ClinicalAnalysis): Clini
   normalizedAnalysis.biopsychosocial_functional_limitations = functionalLimitations;
   normalizedAnalysis.biopsychosocial_patient_strengths = strengths;
   normalizedAnalysis.evaluaciones_fisicas_sugeridas = physicalTests;
+  normalizedAnalysis.adverseDrugReactions = preservedAdverseDrugReactions;
 
   return normalizedAnalysis;
 };
