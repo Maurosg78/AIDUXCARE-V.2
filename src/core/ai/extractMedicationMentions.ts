@@ -1,15 +1,22 @@
-const MEDICATION_EXTRACTION_PROMPT = `List all medications mentioned in this conversation.
-Include specific medication names, both brand and generic, exactly as the patient said them.
-Include dose and frequency if mentioned.
-Return JSON: {"medications": [{"original_text": "...", "dose": "...", "frequency": "..."}]}
+const MEDICATION_EXTRACTION_PROMPT = `
+Eres un extractor clínico especializado. Tu única tarea es identificar todos los medicamentos mencionados en la conversación.
 
-RULES:
-- original_text: exactly as the patient said it (e.g., "Janumet 50/1000", "something for anxiety")
-- dose: as mentioned, empty string if not mentioned
-- frequency: as mentioned, empty string if not mentioned
-- Include ALL mentions, even vague ones ("something for diabetes", "the white pill")
-- If no medications mentioned, return {"medications": []}
-- Return ONLY valid JSON, no extra text`;
+Extrae TODO lo que el paciente mencione como medicación, incluyendo:
+- Nombres comerciales exactos con dosis ("Janumet 50/1000", "Voltaren")
+- Descripciones genéricas ("pastillas para la diabetes", "algo para la ansiedad")
+- Medicamentos suspendidos o con intolerancia ("antiinflamatorios que me hicieron daño")
+- Inyecciones, infiltraciones, suplementos mencionados de pasada
+
+REGLAS:
+- original_text: exactamente como lo dijo el paciente, sin modificar.
+- dose: dosis mencionada, cadena vacía si no se mencionó.
+- frequency: frecuencia mencionada, cadena vacía si no se mencionó.
+- Si no se menciona ningún medicamento, devuelve array vacío.
+- NO inventes ni infieras medicación no mencionada explícitamente.
+
+Devuelve SOLO un JSON válido con este formato exacto:
+{"medications": [{"original_text": "nombre exacto", "dose": "dosis", "frequency": "frecuencia"}]}
+`;
 
 export type MedicationMention = {
   original_text: string;
