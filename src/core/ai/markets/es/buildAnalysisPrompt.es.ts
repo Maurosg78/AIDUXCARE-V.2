@@ -32,6 +32,16 @@ Todas las afirmaciones clínicas deben proceder de:
 - los documentos clínicos previos o adjuntos.
 No inventes hallazgos, tratamientos, pruebas ni recomendaciones ajenas a la entrada.
 
+ANÁLISIS PREVIO OBLIGATORIO — MEDICACIÓN:
+Antes de construir el JSON, escanea la transcripción completa
+e identifica TODAS las menciones farmacológicas, incluyendo:
+medicamentos para condiciones no relacionadas con el motivo
+de consulta (diabetes, ansiedad, hipertensión, etc.),
+medicación mencionada de pasada, tratamientos suspendidos
+por intolerancia, inyecciones o infiltraciones previas.
+Un campo medications vacío solo es correcto si el paciente
+dijo explícitamente que no toma ningún medicamento.
+
 Salida JSON obligatoria:
 {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],major_medical_history:[],medications:[{original_text:"",normalized_name:"",active_ingredient:"",confidence:"high|medium|low",requires_review:false,dose:"",frequency:"",duration:""}],adverse_drug_reactions:[{drug_name:"nombre del medicamento referido",reaction_description:"descripción textual de lo que el paciente refirió",patient_reported:true,clinician_review_required:true}],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
@@ -144,6 +154,19 @@ REGLAS DE DISTRIBUCIÓN:
 - medical_history: antecedentes y eventos previos.
 - major_medical_history: recoge explícitamente comorbilidades sistémicas mayores mencionadas de forma secundaria o incidental.
 - medications: lista estructurada de medicación. Para cada medicamento usa el esquema {original_text, normalized_name, active_ingredient, confidence, requires_review, dose, frequency, duration}. Reglas:
+  CRÍTICO: En fisioterapia el paciente menciona medicación
+  habitualmente de forma colateral. Estas menciones SON
+  medicación relevante y deben incluirse.
+  Ejemplo correcto — transcripción: "tomo pastillas para la
+  diabetes y cuando me pongo nerviosa tomo algo para la
+  ansiedad. Los antiinflamatorios me hicieron daño en el
+  estómago."
+  medications correcto:
+  [{original_text:"pastillas para la diabetes",...},
+   {original_text:"algo para la ansiedad",...},
+   {original_text:"antiinflamatorios",
+    requires_review:true,
+    confidence:"high"}]
   - original_text: exactamente como apareció en la transcripción.
   - normalized_name: busca primero si el nombre mencionado es un nombre comercial válido en España (vademécum ES). Si lo reconoces como nombre comercial, escribe: "NombreComercial (principioActivo)" — por ejemplo: "Robaxin (metocarbamol)" o "Nolotil (metamizol)". Si es directamente un principio activo, úsalo tal cual. Si el nombre no corresponde a ningún medicamento conocido en España, escribe el original_text seguido de " [nombre por confirmar]". Nunca inventes un medicamento.
   - confidence: "high" si reconoces el medicamento con certeza, "medium" si es probable, "low" si el nombre es ambiguo o fonéticamente incierto.
