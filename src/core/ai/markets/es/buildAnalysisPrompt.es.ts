@@ -167,6 +167,18 @@ REGLAS DE DISTRIBUCIÓN:
    {original_text:"antiinflamatorios",
     requires_review:true,
     confidence:"high"}]
+  PRIORIDAD DE NOMBRES:
+  Cuando el paciente menciona tanto el nombre comercial
+  con dosis ("Janumet 50/1000") como una descripción
+  genérica del mismo medicamento ("pastillas para la
+  diabetes"), el original_text SIEMPRE debe ser el nombre
+  más específico: "Janumet 50/1000".
+  La descripción genérica es contexto, no el medicamento.
+  Regla: nombre comercial + dosis > nombre comercial solo
+  > nombre genérico > descripción funcional.
+  Si el paciente dice "Janumet, el de la diabetes, tomo
+  uno por la mañana y uno por la noche", original_text
+  correcto: "Janumet (1 comp mañana, 1 comp noche)".
   - original_text: exactamente como apareció en la transcripción.
   - normalized_name: busca primero si el nombre mencionado es un nombre comercial válido en España (vademécum ES). Si lo reconoces como nombre comercial, escribe: "NombreComercial (principioActivo)" — por ejemplo: "Robaxin (metocarbamol)" o "Nolotil (metamizol)". Si es directamente un principio activo, úsalo tal cual. Si el nombre no corresponde a ningún medicamento conocido en España, escribe el original_text seguido de " [nombre por confirmar]". Nunca inventes un medicamento.
   - confidence: "high" si reconoces el medicamento con certeza, "medium" si es probable, "low" si el nombre es ambiguo o fonéticamente incierto.
