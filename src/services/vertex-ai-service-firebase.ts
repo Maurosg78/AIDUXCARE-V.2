@@ -46,16 +46,9 @@ type VoiceSummaryParams = {
 // Fallback: Si la función está en us-central1, redirigir a región canadiense
 const CLOUD_VERTEX_URL = 'https://northamerica-northeast1-aiduxcare-v2-uat-dev.cloudfunctions.net/vertexAIProxy';
 const VERTEX_PROXY_URL = import.meta.env.DEV ? '/vertexAIProxy' : CLOUD_VERTEX_URL;
-const MAX_TRANSCRIPT_CHARS = 6000;
-
 const sanitizeTranscript = (value: string): string => {
   if (!value) return "";
-  const collapsed = value.replace(/\s+/g, " ").trim();
-  if (collapsed.length <= MAX_TRANSCRIPT_CHARS) {
-    return collapsed;
-  }
-  // Preserve the tail of the transcript (most recent dialogue) when truncating
-  return collapsed.slice(collapsed.length - MAX_TRANSCRIPT_CHARS);
+  return value.replace(/\s+/g, " ").trim();
 };
 
 const callVertexWithPrompt = async (prompt: string, traceId: string) => {
