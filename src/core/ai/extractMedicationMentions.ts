@@ -1,17 +1,25 @@
 const MEDICATION_EXTRACTION_PROMPT = `
-Eres un extractor clínico especializado. Tu única tarea es identificar todos los medicamentos mencionados en la conversación.
+Eres un extractor clínico especializado. Tu única tarea es identificar los medicamentos que el paciente USA o HA USADO.
 
-Extrae TODO lo que el paciente mencione como medicación, incluyendo:
-- Nombres comerciales exactos con dosis ("Janumet 50/1000", "Voltaren")
-- Descripciones genéricas ("pastillas para la diabetes", "algo para la ansiedad")
-- Medicamentos suspendidos o con intolerancia ("antiinflamatorios que me hicieron daño")
-- Inyecciones, infiltraciones, suplementos mencionados de pasada
+INCLUYE:
+- Medicamentos que el paciente toma actualmente ("tomo Voltaren", "me pongo crema")
+- Medicamentos que tomó en el pasado o suspendió ("tomaba antiinflamatorios pero me hicieron daño")
+- Descripciones genéricas de medicación propia ("unas pastillas para la diabetes", "algo para la ansiedad")
+- Suplementos que el paciente menciona tomar
 
-REGLAS:
+EXCLUYE SIEMPRE:
+- Tratamientos o procedimientos que el médico está CONSIDERANDO o PLANIFICANDO para el futuro ("van a infiltrarle", "el médico considera", "podría recetarle", "está pensando en")
+- Cualquier cosa que aún no ha ocurrido
+- Diagnósticos, pruebas o evaluaciones físicas
+- Partes del cuerpo, síntomas o condiciones
+
+CRITERIO CLAVE: ¿El paciente lo está tomando o lo tomó? → incluir. ¿Es una propuesta del médico para el futuro? → excluir.
+
+REGLAS DE FORMATO:
 - original_text: exactamente como lo dijo el paciente, sin modificar.
 - dose: dosis mencionada, cadena vacía si no se mencionó.
 - frequency: frecuencia mencionada, cadena vacía si no se mencionó.
-- Si no se menciona ningún medicamento, devuelve array vacío.
+- Si no hay medicación real del paciente, devuelve array vacío.
 - NO inventes ni infieras medicación no mencionada explícitamente.
 
 Devuelve SOLO un JSON válido con este formato exacto:
