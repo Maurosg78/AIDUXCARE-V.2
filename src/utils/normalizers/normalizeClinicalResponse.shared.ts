@@ -395,6 +395,60 @@ const mergePreExtractedMajorMedicalHistory = (
   };
 };
 
+const mergePreExtractedMedications = (
+  analysis: ClinicalAnalysis,
+  raw: any,
+  transformText: TextTransform
+): ClinicalAnalysis => {
+  const preExtracted = raw?.pre_extracted_medications;
+  if (!Array.isArray(preExtracted) || preExtracted.length === 0) {
+    return analysis;
+  }
+
+  const existingTexts = new Set<string>();
+  const currentMeds = (analysis.medicacion_actual ?? []) as any[];
+  for (const med of currentMeds) {
+    if (typeof med === 'string') {
+      existingTexts.add(med.toLowerCase().trim());
+    } else if (med && typeof med === 'object') {
+      const originalText = (med as any).medication_data?.original_text || (med as any).text || '';
+      if (originalText) existingTexts.add(String(originalText).toLowerCase().trim());
+    }
+  }
+
+  const newMeds: any[] = [];
+  for (const item of preExtracted) {
+    if (!item || typeof item !== 'object') continue;
+    const originalText = String((item as any).original_text || '').trim();
+    if (!originalText || existingTexts.has(originalText.toLowerCase())) continue;
+    const dose = String((item as any).dose || '').trim();
+    const frequency = String((item as any).frequency || '').trim();
+    newMeds.push({
+      text: transformText(originalText),
+      medication_data: {
+        original_text: originalText,
+        normalized_name: '',
+        active_ingredient: '',
+        confidence: 'low' as const,
+        requires_review: true,
+        dose,
+        frequency,
+        duration: '',
+      },
+    });
+    existingTexts.add(originalText.toLowerCase());
+  }
+
+  if (newMeds.length === 0) {
+    return analysis;
+  }
+
+  return {
+    ...analysis,
+    medicacion_actual: [...currentMeds, ...newMeds] as any,
+  };
+};
+
 const logClinicalExtractionCounts = (normalizedResult: ClinicalAnalysis): void => {
   const medicationCount = normalizedResult.medicacion_actual?.length ?? 0;
   const adverseReactionCount = normalizedResult.adverseDrugReactions?.length ?? 0;
@@ -418,12 +472,13 @@ const finalizeClinicalAnalysis = (
   transformText: TextTransform,
   shouldLogCounts: boolean
 ): ClinicalAnalysis => {
-  const normalizedResult = mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+  const withHistory = mergePreExtractedMajorMedicalHistory(analysis, raw, transformText);
+  const withMedications = mergePreExtractedMedications(withHistory, raw, transformText);
   if (shouldLogCounts) {
-    logClinicalExtractionCounts(normalizedResult);
+    logClinicalExtractionCounts(withMedications);
   }
 
-  return normalizedResult;
+  return withMedications;
 };
 
 const mapLegacyPayload = (payload: any, transformText: TextTransform): ClinicalAnalysis => {
