@@ -66,9 +66,17 @@ export const extractMedicationMentions = async (
   transcript: string,
   callVertex: (prompt: string) => Promise<string>
 ): Promise<MedicationMention[]> => {
-  const prompt = `${MEDICATION_EXTRACTION_PROMPT}\n\nConversation:\n${transcript}`;
+  const prompt = `${MEDICATION_EXTRACTION_PROMPT}\n\nConversación:\n${transcript}`;
   const raw = await callVertex(prompt);
+  console.log('[MedicationMentions] Raw response preview:', raw?.slice(0, 300));
   const jsonText = extractJsonObject(raw);
-  const parsed = JSON.parse(jsonText) as MedicationExtractionResponse;
-  return toMedicationArray(parsed.medications);
+  try {
+    const parsed = JSON.parse(jsonText) as MedicationExtractionResponse;
+    const result = toMedicationArray(parsed.medications);
+    console.log('[MedicationMentions] Parsed medications:', result.length, result);
+    return result;
+  } catch (e) {
+    console.error('[MedicationMentions] JSON.parse failed. jsonText:', jsonText?.slice(0, 300), 'error:', e);
+    throw e;
+  }
 };
