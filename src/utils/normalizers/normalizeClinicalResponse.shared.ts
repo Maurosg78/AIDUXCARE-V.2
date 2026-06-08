@@ -10,6 +10,7 @@ export interface ClinicalAnalysis {
   contexto_ocupacional: string[];
   contexto_psicosocial: string[];
   medicacion_actual: string[];
+  adverseDrugReactions?: AdverseDrugReaction[];
   antecedentes_medicos: string[];
   diagnosticos_probables: string[];
   red_flags: string[];
@@ -29,6 +30,13 @@ export interface ClinicalAnalysis {
   evidence_recommendations?: EvidenceRecommendation[] | null;
 }
 
+export interface AdverseDrugReaction {
+  drugName: string;
+  reactionDescription: string;
+  patientReported: boolean;
+  clinicianReviewRequired: boolean;
+}
+
 type StructuredPayload = {
   pre_extracted_major_medical_history?: unknown;
   medicolegal_alerts?: {
@@ -43,6 +51,7 @@ type StructuredPayload = {
     medical_history?: unknown;
     major_medical_history?: unknown;
     medications?: unknown;
+    adverse_drug_reactions?: unknown;
     summary?: unknown;
   };
   recommended_physical_tests?: unknown;
@@ -55,6 +64,47 @@ type StructuredPayload = {
     patient_strengths?: unknown;
     legal_or_employment_context?: unknown;
   };
+};
+
+const mapAdverseDrugReaction = (reaction: unknown, transformText: TextTransform): AdverseDrugReaction | null => {
+  if (!reaction || typeof reaction !== "object") {
+    return null;
+  }
+
+  const reactionRecord = reaction as Record<string, unknown>;
+  const drugNameRaw = reactionRecord.drug_name;
+  const reactionDescriptionRaw = reactionRecord.reaction_description;
+  const patientReportedRaw = reactionRecord.patient_reported;
+  const clinicianReviewRequiredRaw = reactionRecord.clinician_review_required;
+  const drugName = transformText(String(drugNameRaw || ""));
+  const reactionDescription = transformText(String(reactionDescriptionRaw || ""));
+  const patientReported = patientReportedRaw === undefined ? true : Boolean(patientReportedRaw);
+  const clinicianReviewRequired =
+    clinicianReviewRequiredRaw === undefined ? true : Boolean(clinicianReviewRequiredRaw);
+
+  if (!drugName && !reactionDescription) {
+    return null;
+  }
+
+  return {
+    drugName,
+    reactionDescription,
+    patientReported,
+    clinicianReviewRequired,
+  };
+};
+
+const mapAdverseDrugReactions = (
+  adverseDrugReactions: unknown,
+  transformText: TextTransform
+): AdverseDrugReaction[] => {
+  if (!Array.isArray(adverseDrugReactions)) {
+    return [];
+  }
+
+  return adverseDrugReactions
+    .map((reaction) => mapAdverseDrugReaction(reaction, transformText))
+    .filter((reaction): reaction is AdverseDrugReaction => Boolean(reaction));
 };
 
 type TextTransform = (value: string) => string;
@@ -273,6 +323,8 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
     if (flagTextSet.has(normalized)) return false;
     return true;
   });
+  const rawAdverseReactions = highlights.adverse_drug_reactions ?? [];
+  const adverseDrugReactions = mapAdverseDrugReactions(rawAdverseReactions, transformText);
 
   return {
     motivo_consulta: transformText(String(highlights.chief_complaint || highlights.summary || "")),
@@ -293,6 +345,7 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
       }
       return transformArray(ensureStringArray(meds), transformText);
     })() as any,
+    adverseDrugReactions,
     antecedentes_medicos: mergeUnique(
       preExtractedMajorMedicalHistory,
       transformArray(ensureStringArray(highlights.major_medical_history), transformText),
@@ -348,6 +401,10 @@ const mapLegacyPayload = (payload: any, transformText: TextTransform): ClinicalA
   clone.contexto_ocupacional = transformArray(ensureStringArray(payload?.contexto_ocupacional), transformText);
   clone.contexto_psicosocial = transformArray(ensureStringArray(payload?.contexto_psicosocial), transformText);
   clone.medicacion_actual = transformArray(ensureStringArray(payload?.medicacion_actual), transformText);
+  clone.adverseDrugReactions = mapAdverseDrugReactions(
+    payload?.adverseDrugReactions ?? payload?.adverse_drug_reactions,
+    transformText
+  );
   clone.antecedentes_medicos = transformArray(ensureStringArray(payload?.antecedentes_medicos), transformText);
   clone.diagnosticos_probables = ensureStringArray(payload?.diagnosticos_probables);
   clone.red_flags = transformArray(cleanFlags(ensureStringArray(payload?.red_flags)), transformText);

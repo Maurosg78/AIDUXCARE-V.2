@@ -33,7 +33,7 @@ Todas las afirmaciones clínicas deben proceder de:
 No inventes hallazgos, tratamientos, pruebas ni recomendaciones ajenas a la entrada.
 
 Salida JSON obligatoria:
-{medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],major_medical_history:[],medications:[{original_text:"",normalized_name:"",active_ingredient:"",confidence:"high|medium|low",requires_review:false,dose:"",frequency:"",duration:""}],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
+{medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],major_medical_history:[],medications:[{original_text:"",normalized_name:"",active_ingredient:"",confidence:"high|medium|low",requires_review:false,dose:"",frequency:"",duration:""}],adverse_drug_reactions:[{drug_name:"nombre del medicamento referido",reaction_description:"descripción textual de lo que el paciente refirió",patient_reported:true,clinician_review_required:true}],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
 REGLAS DE REDACCIÓN:
 - Español clínico formal (es-ES).
@@ -167,6 +167,7 @@ REGLAS DE DISTRIBUCIÓN:
     - En normalized_name pon el nombre tal como lo dijo el paciente, sin especular.
     - INCORRECTO: normalized_name: "Rivotril/clonazepam", confidence: "medium"
     - CORRECTO: normalized_name: "ribotrín", requires_review: true, confidence: "low"
+- adverse_drug_reactions: captura cualquier mención del paciente sobre efectos adversos, intolerancias o problemas con medicamentos previos o actuales, aunque sea colateral o incidental. Documenta textualmente lo que el paciente refirió. No evalúes ni clasifiques la gravedad — eso corresponde al fisioterapeuta. Ejemplo: si el paciente dice "los antiinflamatorios me hicieron daño en el estómago", registrar drug_name: "antiinflamatorios (AINEs)", reaction_description: "el paciente refiere daño gástrico asociado al uso de antiinflamatorios". Este campo debe estar presente aunque esté vacío.
 - yellow_flags: incluir yellow flag automático si se mencionan AINEs (ibuprofeno, naproxeno, diclofenaco, aspirina, ketorolaco) sin dosis especificada por más de 5 días, con texto: "Medicación AINE sin dosis especificada — verificar gramaje con el paciente y monitorizar tolerancia gastrointestinal."
 - summary: síntesis breve sin repetir todo lo anterior.`;
 

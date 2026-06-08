@@ -67,6 +67,7 @@ function extractPartialData(text: string): any {
       medical_history: [],
       major_medical_history: [],
       medications: [],
+      adverse_drug_reactions: [],
       summary: ""
     },
     recommended_physical_tests: [],

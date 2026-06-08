@@ -7,7 +7,7 @@
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  */
 
-import type { ClinicalAnalysis } from "../../utils/cleanVertexResponse";
+import type { AdverseDrugReaction, ClinicalAnalysis } from "../../utils/cleanVertexResponse";
 import type { PhysicalExamResult } from "../../types/vertex-ai";
 
 export type VisitType = 'initial' | 'follow-up';
@@ -19,6 +19,7 @@ export interface SOAPContext {
     redFlags: string[];
     yellowFlags: string[];
     medications: string[];
+    adverseDrugReactions: string[];
     chiefComplaint?: string;
     keyFindings: string[];
     medicalHistory: string[];
@@ -71,6 +72,30 @@ type StructuredMedication = {
     frequency?: string;
     duration?: string;
   };
+};
+
+const formatAdverseDrugReactionForSOAP = (reaction: AdverseDrugReaction): string | null => {
+  const drugName = reaction.drugName?.trim() || '';
+  const reactionDescription = reaction.reactionDescription?.trim() || '';
+
+  if (!drugName && !reactionDescription) {
+    return null;
+  }
+
+  const reactionLabel = drugName || 'Medicamento no especificado';
+  const reactionDetail = reactionDescription || 'Reacción referida sin descripción adicional';
+
+  return `${reactionLabel}: ${reactionDetail} (referido por el paciente — requiere verificación del fisioterapeuta)`;
+};
+
+const buildSOAPAdverseReactionList = (adverseDrugReactions: unknown): string[] => {
+  if (!Array.isArray(adverseDrugReactions)) {
+    return [];
+  }
+
+  return adverseDrugReactions
+    .map((reaction) => formatAdverseDrugReactionForSOAP(reaction as AdverseDrugReaction))
+    .filter((reaction): reaction is string => Boolean(reaction));
 };
 
 const formatMedicationForSOAP = (medication: unknown): string | null => {
@@ -193,6 +218,7 @@ export function buildSOAPContext(
       redFlags: analysis?.red_flags || [],
       yellowFlags: analysis?.yellow_flags || [],
       medications: buildSOAPMedicationList(analysis?.medicacion_actual || []),
+      adverseDrugReactions: buildSOAPAdverseReactionList(analysis?.adverseDrugReactions || []),
       chiefComplaint: analysis?.motivo_consulta || undefined,
       keyFindings: analysis?.hallazgos_clinicos || [],
       medicalHistory: analysis?.antecedentes_medicos || [],

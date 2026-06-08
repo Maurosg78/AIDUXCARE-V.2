@@ -93,6 +93,13 @@ export function buildInitialAssessmentPrompt(
     : `- Terminology: Use Canadian physiotherapy terminology and abbreviations (ROM, B/L, R/L, /10)`;
   const rolePhrase = getSOAPRolePhrase(options?.professionalProfile);
   const professionalContextBlock = buildProfessionalContextBlock(options?.professionalProfile);
+  const adverseReactions = context.analysis.adverseDrugReactions;
+  const adverseReactionsBlock =
+    adverseReactions.length > 0
+      ? adverseReactions.map((reaction) => `- ${reaction}`).join('\n')
+      : null;
+  const adverseReactionsPromptBlock =
+    adverseReactionsBlock || 'Ninguna referida en sesión';
   const prompt = `You are a clinical documentation assistant for ${rolePhrase} in ${activeLocale.jurisdiction}. Generate a SOAP note for an INITIAL ASSESSMENT visit.${professionalContextBlock}
 ROLE:
 - You assist with documentation, you do NOT diagnose
@@ -133,7 +140,7 @@ You are creating professional SOAP documentation for EMR transfer. Follow clinic
 ✅ Use standard medical terminology and abbreviations (ROM, B/L, R/L, /10)
 ✅ Focus on CLINICAL SIGNIFICANCE - Include what matters for patient care
 ✅ EMR-ready format - Ready for professional medical records
-✅ TARGET LENGTH: Total SOAP <1200 characters (ideal 800-1000 chars) - Be concise, professional, clinically appropriate
+✅ TARGET LENGTH: Total SOAP <1350 characters (ideal 950-1150 chars) - Be concise, professional, clinically appropriate
 ✅ CRITICAL: Count characters - this is for EMR efficiency and professional documentation standards
 
 SOAP SECTION PURPOSES - Leverage each section correctly:
@@ -199,14 +206,14 @@ ${documentationStyleParagraph}
 
 OUTPUT FORMAT (JSON):
 {
-  "subjective": "Patient's reported experience: chief complaint, functional limitations, aggravating factors, relevant history. MAX 200 chars. Be concise and focused on what patient reports. Use abbreviations when appropriate.",
+  "subjective": "Patient's reported experience: chief complaint, functional limitations, aggravating factors, relevant history, patient-reported medication intolerance/adverse reaction when documented. MAX 350 chars. Be concise and focused on what patient reports. Use abbreviations when appropriate.",
   "objective": "Measurable clinical findings: key examination results, significant test findings, measurements (ROM degrees, strength grades, pain scales). **MUST INCLUDE KEY FINDINGS from clinical analysis section above (MRI findings, imaging results, lab findings from attachments)**. MAX 350 chars. Use numbers and abbreviations. Focus on clinical significance.",
   "assessment": "Clinical reasoning: clinical impression as documented by the physiotherapist based on S+O findings, brief rationale, key impairments, prognosis. MAX 250 chars. Focus on clinical significance and pattern identification using only clinician-documented information.",
   "plan": "PLAN with exactly two sections:\n\nIN-CLINIC TREATMENT:\n- [item]\n- [item]\n\nHOME EXERCISE PROGRAM (HEP):\n- [item]\n- [item]\n\nUse bullet points only. Do not mix items between sections. MAX 500 chars."
 }
 
 CRITICAL LENGTH REQUIREMENTS:
-- Total SOAP note MUST be <1200 characters (target 800-1000)
+- Total SOAP note MUST be <1350 characters (target 950-1150)
 - Each section has MAX character limits above
 - Count characters carefully - this is for EMR efficiency
 - If transcript is long, extract ONLY the most clinically significant information
@@ -230,6 +237,10 @@ ${context.analysis.medicalHistory.join('\n- ') || 'None documented'}
 
 MEDICATIONS:
 ${context.analysis.medications.join('\n- ') || 'None documented'}
+
+REACCIONES ADVERSAS REFERIDAS POR EL PACIENTE:
+${adverseReactionsPromptBlock}
+(Fuente: relato del paciente. Verificación clínica requerida antes de cualquier decisión terapéutica.)
 
 RED FLAGS:
 ${context.analysis.redFlags.length > 0 ? context.analysis.redFlags.join('\n- ') : 'None identified'}
@@ -279,6 +290,7 @@ CRITICAL RULES:
 - No medical diagnoses (physiotherapists do not diagnose)
 - No prescription of medications (outside scope of practice)
 - If a medication line contains "[nombre de medicación por confirmar]", preserve that uncertainty in the SOAP and do not autocorrect the drug name.
+- Si REACCIONES ADVERSAS REFERIDAS POR EL PACIENTE contiene datos, documéntalos en la sección Subjective del SOAP como parte del antecedente farmacológico del paciente, usando el relato del paciente cuando sea posible. Ejemplo: "Paciente refiere intolerancia gástrica a antiinflamatorios durante tratamiento previo." No evalúes si la reacción es grave o leve — solo documenta lo referido.
 - Scope: Physiotherapy assessment and treatment planning only
 - Language: ${activeLocale.language}, CONCISE, clinically appropriate
 ${terminologyCriticalLine}
