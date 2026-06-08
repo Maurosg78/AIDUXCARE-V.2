@@ -243,8 +243,7 @@ export async function analyzeWithVertexProxy(payload: {
     ]);
     console.log('[MedicationMentions] Pre-extraction result count:', preExtractedMedications.length, preExtractedMedications);
     const majorMedicalHistoryContext = buildPreExtractedMedicalHistoryContext(preExtractedMajorMedicalHistory);
-    const medicationContext = buildPreExtractedMedicationContext(preExtractedMedications);
-    const contextualPatientContext = [contextoPaciente, majorMedicalHistoryContext, medicationContext]
+    const contextualPatientContext = [contextoPaciente, majorMedicalHistoryContext]
       .filter(Boolean)
       .join('\n\n');
     
