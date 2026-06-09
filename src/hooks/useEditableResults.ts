@@ -10,6 +10,54 @@ type MedicationDecisionInput = {
   note?: string;
 };
 
+// Strips spaces and trailing "mg" unit to compare numeric dose equivalence.
+// Handles: "25", "25mg", "25 mg", "25 MG" → all normalize to "25".
+const normalizeDoseStr = (s: string): string =>
+  s.toLowerCase().replace(/\s+/g, '').replace(/mg$/, '');
+
+/** Pure helper — exported for unit testing without React environment. */
+export const applyMedicationSuggestion = (entities: any[], entityId: string): any[] => {
+  const entityIndex = entities.findIndex((e: any) => e.id === entityId);
+  if (entityIndex === -1) return entities;
+
+  const entity = entities[entityIndex];
+  const medData = entity?.medication_data;
+  if (!medData || typeof medData !== 'object') return entities;
+
+  const suggestedName = String(medData.suggested_name || '').trim();
+  if (!suggestedName) return entities;
+
+  const dose = String(medData.dose || '').trim();
+  const doseNorm = normalizeDoseStr(dose);
+  const suggestedNorm = normalizeDoseStr(suggestedName);
+  const doseAlreadyPresent = doseNorm !== '' && suggestedNorm.includes(doseNorm);
+
+  let displayText = suggestedName;
+  if (dose && !doseAlreadyPresent) {
+    displayText = `${suggestedName} ${dose}`;
+  }
+
+  // Explicit preservation: original_text falls back to entity.text if not set in medication_data
+  const preservedOriginalText = medData.original_text ?? entity.text ?? '';
+
+  const updatedEntities = [...entities];
+  updatedEntities[entityIndex] = {
+    ...entity,
+    text: displayText,
+    medication_data: {
+      ...medData,
+      original_text: preservedOriginalText,
+      normalized_name: suggestedName,
+      selected_suggestion: suggestedName,
+      suggestion_status: 'accepted_by_clinician',
+      requires_review: false,
+    },
+    edited: true,
+  };
+
+  return updatedEntities;
+};
+
 export const useEditableResults = (initialResults: any) => {
   const [editedResults, setEditedResults] = useState(initialResults);
 
@@ -135,6 +183,15 @@ export const useEditableResults = (initialResults: any) => {
       safeLogger.clinicalTextUpdated(editedFieldType, editedTextCharCount);
       
       return updated;
+    });
+  }, []);
+
+  const handleAcceptMedicationSuggestion = useCallback((id: string) => {
+    setEditedResults((prev: any) => {
+      if (!prev || !prev.entities) return prev;
+      const updatedEntities = applyMedicationSuggestion(prev.entities, id);
+      if (updatedEntities === prev.entities) return prev;
+      return { ...prev, entities: updatedEntities };
     });
   }, []);
 
@@ -273,6 +330,7 @@ export const useEditableResults = (initialResults: any) => {
   return {
     editedResults: editedResults || initialResults,
     handleTextChange,
+    handleAcceptMedicationSuggestion,
     addCustomItem,
     addMedicationDecisionToResults,
   };

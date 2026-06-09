@@ -43,6 +43,11 @@ interface StructuredMedicationData {
   requires_review?: boolean;
   mention_status?: MedicationMentionStatus;
   suggested_name?: string;
+  dose?: string;
+  frequency?: string;
+  duration?: string;
+  selected_suggestion?: string;
+  suggestion_status?: 'accepted_by_clinician' | 'rejected_by_clinician' | string;
 }
 
 interface ClinicalEntity {
@@ -124,6 +129,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   const {
     editedResults,
     handleTextChange,
+    handleAcceptMedicationSuggestion,
     addCustomItem,
     addMedicationDecisionToResults,
   } = useEditableResults(results);
@@ -392,6 +398,14 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
   const getMedicationDisplayName = (entity: ClinicalEntity): string => {
     const medicationData = entity.medication_data;
+    // Clinician explicitly accepted suggestion — entity.text already holds suggested_name + dose
+    if (
+      medicationData?.suggestion_status === 'accepted_by_clinician' &&
+      typeof entity.text === 'string' &&
+      entity.text
+    ) {
+      return entity.text;
+    }
     const rawEntityText = entity.text;
     const entityTextRecord = typeof rawEntityText === 'object' && rawEntityText !== null
       ? rawEntityText as Record<string, unknown>
@@ -624,27 +638,34 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                 ))}
                 {clarificationMeds.map((entity) => {
                   const suggestion = entity.medication_data?.suggested_name;
+                  const isAccepted = entity.medication_data?.suggestion_status === 'accepted_by_clinician';
                   const currentName = getMedicationDisplayName(entity);
+                  const originalText = entity.medication_data?.original_text;
                   return (
                     <div key={entity.id}>
                       <EditableCheckbox
                         id={entity.id}
-                        text={`${currentName} [por confirmar]`}
+                        text={isAccepted ? currentName : `${currentName} [por confirmar]`}
                         checked={selectedIds.includes(entity.id)}
                         onToggle={handleToggle}
                         onTextChange={handleTextChange}
                       />
-                      {suggestion && currentName !== suggestion && (
-                        <div className="ml-6 mt-0.5 flex items-center gap-1 text-xs text-slate-400">
-                          <span>¿Quiso decir:</span>
+                      {suggestion && !isAccepted && (
+                        <div className="ml-6 mt-0.5 flex items-center gap-1.5 flex-wrap text-xs text-slate-400">
+                          <span>Posible coincidencia:</span>
+                          <span className="font-medium text-slate-600">{suggestion}</span>
                           <button
                             type="button"
-                            onClick={() => handleTextChange(entity.id, suggestion)}
-                            className="font-medium text-indigo-600 hover:underline"
+                            onClick={() => handleAcceptMedicationSuggestion(entity.id)}
+                            className="px-2 py-0.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-medium"
                           >
-                            {suggestion}
+                            Usar sugerencia
                           </button>
-                          <span>?</span>
+                        </div>
+                      )}
+                      {isAccepted && originalText && (
+                        <div className="ml-6 mt-0.5 text-xs text-slate-400">
+                          <span>Texto original: &ldquo;{originalText}&rdquo;</span>
                         </div>
                       )}
                     </div>

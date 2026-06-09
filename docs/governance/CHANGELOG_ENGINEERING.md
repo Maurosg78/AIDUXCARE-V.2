@@ -1,5 +1,15 @@
 # ENGINEERING.md Changelog
 
+## 2026-06-09 — v1.13.1 (UX clínica — aceptación de sugerencia de medicamento)
+
+Cambio observable en UX clínica: el fisioterapeuta puede aceptar una coincidencia de medicamento sugerida sin perder trazabilidad clínica.
+
+- `applyMedicationSuggestion` (pure helper exportado de `useEditableResults.ts`): preserva `original_text ?? entity.text`, `dose`, `frequency`, `duration`, `mention_status`; escribe `selected_suggestion`, `suggestion_status: accepted_by_clinician`, `requires_review: false`.
+- Dedup de dosis normalizado: "25", "25mg", "25 mg", "25 MG" se tratan como equivalentes — no se duplica la dosis en el texto de display.
+- UI `ClinicalAnalysisResults.tsx`: chip "Posible coincidencia / Usar sugerencia" reemplaza "¿Quiso decir?"; chip oculto tras aceptación; traza "Texto original" visible al clinician.
+- `StructuredMedicationData` extendida: `dose`, `frequency`, `duration`, `selected_suggestion`, `suggestion_status`.
+- Tests: 16 tests unitarios sobre `applyMedicationSuggestion` (pure, sin React environment).
+
 ## 2026-06-07 — v1.12.1
 
 - Refuerza §8.4 Deploy a producción: la limpieza remota `rm -rf /var/www/pilot/dist/*` antes de cada `gcloud compute scp` queda como regla obligatoria, no solo como comando sugerido.
