@@ -506,18 +506,24 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     return !isPlaceholder;
   });
 
-  const identifiedMeds = reviewableMeds.filter((entity) => {
+  const topicalOrSupplementMeds = reviewableMeds.filter(
+    (entity) => entity.medication_data?.mention_status === 'topical_or_supplement'
+  );
+
+  const pharmacologicalMeds = reviewableMeds.filter(
+    (entity) => entity.medication_data?.mention_status !== 'topical_or_supplement'
+  );
+
+  const identifiedMeds = pharmacologicalMeds.filter((entity) => {
     const hasHighConfidence = isHighConfidenceMedication(entity);
     const needsReview = requiresMedicationReview(entity);
-    const isIdentified = hasHighConfidence && !needsReview;
-    return isIdentified;
+    return hasHighConfidence && !needsReview;
   });
 
-  const clarificationMeds = reviewableMeds.filter((entity) => {
+  const clarificationMeds = pharmacologicalMeds.filter((entity) => {
     const hasHighConfidence = isHighConfidenceMedication(entity);
     const needsReview = requiresMedicationReview(entity);
-    const isIdentified = hasHighConfidence && !needsReview;
-    return !isIdentified;
+    return !(hasHighConfidence && !needsReview);
   });
 
   const medicationClarificationMeds = medicationEntities.filter((entity) => {
@@ -622,56 +628,80 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             </div>
           </div>
 
-          {reviewableMeds.length > 0 && (
+          {(pharmacologicalMeds.length > 0 || topicalOrSupplementMeds.length > 0) && (
             <div>
               <h4 className="font-medium text-sm text-slate-700 mb-2">{ui.currentMedicationTitle}</h4>
-              <div className="space-y-1">
-                {identifiedMeds.map((entity) => (
-                  <EditableCheckbox
-                    key={entity.id}
-                    id={entity.id}
-                    text={getMedicationDisplayName(entity)}
-                    checked={selectedIds.includes(entity.id)}
-                    onToggle={handleToggle}
-                    onTextChange={handleTextChange}
-                  />
-                ))}
-                {clarificationMeds.map((entity) => {
-                  const suggestion = entity.medication_data?.suggested_name;
-                  const isAccepted = entity.medication_data?.suggestion_status === 'accepted_by_clinician';
-                  const currentName = getMedicationDisplayName(entity);
-                  const originalText = entity.medication_data?.original_text;
-                  return (
-                    <div key={entity.id}>
+
+              {pharmacologicalMeds.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-slate-500 mb-1">Medicación farmacológica</p>
+                  <div className="space-y-1">
+                    {identifiedMeds.map((entity) => (
                       <EditableCheckbox
+                        key={entity.id}
                         id={entity.id}
-                        text={isAccepted ? currentName : `${currentName} [por confirmar]`}
+                        text={getMedicationDisplayName(entity)}
                         checked={selectedIds.includes(entity.id)}
                         onToggle={handleToggle}
                         onTextChange={handleTextChange}
                       />
-                      {suggestion && !isAccepted && (
-                        <div className="ml-6 mt-0.5 flex items-center gap-1.5 flex-wrap text-xs text-slate-400">
-                          <span>Posible coincidencia:</span>
-                          <span className="font-medium text-slate-600">{suggestion}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleAcceptMedicationSuggestion(entity.id)}
-                            className="px-2 py-0.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-medium"
-                          >
-                            Usar sugerencia
-                          </button>
+                    ))}
+                    {clarificationMeds.map((entity) => {
+                      const suggestion = entity.medication_data?.suggested_name;
+                      const isAccepted = entity.medication_data?.suggestion_status === 'accepted_by_clinician';
+                      const currentName = getMedicationDisplayName(entity);
+                      const originalText = entity.medication_data?.original_text;
+                      return (
+                        <div key={entity.id}>
+                          <EditableCheckbox
+                            id={entity.id}
+                            text={isAccepted ? currentName : `${currentName} [por confirmar]`}
+                            checked={selectedIds.includes(entity.id)}
+                            onToggle={handleToggle}
+                            onTextChange={handleTextChange}
+                          />
+                          {suggestion && !isAccepted && (
+                            <div className="ml-6 mt-0.5 flex items-center gap-1.5 flex-wrap text-xs text-slate-400">
+                              <span>Posible coincidencia:</span>
+                              <span className="font-medium text-slate-600">{suggestion}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleAcceptMedicationSuggestion(entity.id)}
+                                className="px-2 py-0.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-medium"
+                              >
+                                Usar sugerencia
+                              </button>
+                            </div>
+                          )}
+                          {isAccepted && originalText && (
+                            <div className="ml-6 mt-0.5 text-xs text-slate-400">
+                              <span>Texto original: &ldquo;{originalText}&rdquo;</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {isAccepted && originalText && (
-                        <div className="ml-6 mt-0.5 text-xs text-slate-400">
-                          <span>Texto original: &ldquo;{originalText}&rdquo;</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {topicalOrSupplementMeds.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-slate-500 mb-1">Otros tratamientos referidos</p>
+                  <div className="space-y-1">
+                    {topicalOrSupplementMeds.map((entity) => (
+                      <EditableCheckbox
+                        key={entity.id}
+                        id={entity.id}
+                        text={getMedicationDisplayName(entity)}
+                        checked={selectedIds.includes(entity.id)}
+                        onToggle={handleToggle}
+                        onTextChange={handleTextChange}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

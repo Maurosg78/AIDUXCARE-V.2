@@ -404,6 +404,7 @@ const MEDICATION_STATUSES_FOR_CURRENT: ReadonlySet<string> = new Set([
   'unclear',
 ]);
 
+
 const mergePreExtractedMedications = (
   analysis: ClinicalAnalysis,
   raw: any,
@@ -427,6 +428,10 @@ const mergePreExtractedMedications = (
       if (originalText) {
         existingTexts.add(String(originalText).toLowerCase().trim());
       }
+      const canonicalName = (med as any).medication_data?.canonical_name;
+      if (canonicalName) {
+        existingTexts.add(String(canonicalName).toLowerCase().trim());
+      }
     }
   }
 
@@ -448,13 +453,22 @@ const mergePreExtractedMedications = (
     const dose = String((item as any).dose || '').trim();
     const frequency = String((item as any).frequency || '').trim();
     const suggestedName = String((item as any).suggested_name || '').trim();
+    const rawCanonical = (item as any).canonical_name;
+    const canonicalName: string | null =
+      rawCanonical != null && rawCanonical !== '' ? String(rawCanonical).trim() : null;
 
     // Scenario B: LLM already has the corrected name — no duplicate, no chip needed
     if (suggestedName && existingTexts.has(suggestedName.toLowerCase())) {
       continue;
     }
 
-    // Scenario A: LLM has same original_text as a plain string
+    // Canonical dedup: same drug, different transcription ("Janumet 50 y 1000" vs "Janumet")
+    if (canonicalName && existingTexts.has(canonicalName.toLowerCase())) {
+      continue;
+    }
+
+    // Scenario A: LLM has exact same original_text as a plain string.
+    // Must be checked before base-name dedup so the upgrade path is not skipped.
     // If a suggested_name exists, upgrade the plain-string entry to carry medication_data
     // so the chip can render. Only upgrade if the status belongs in medicacion_actual.
     if (existingTexts.has(originalText.toLowerCase())) {
@@ -485,6 +499,7 @@ const mergePreExtractedMedications = (
         clinicianReviewRequired: true,
       });
       existingTexts.add(originalText.toLowerCase());
+      if (canonicalName) existingTexts.add(canonicalName.toLowerCase());
       continue;
     }
 
@@ -504,9 +519,11 @@ const mergePreExtractedMedications = (
         frequency,
         duration: '',
         ...(suggestedName ? { suggested_name: suggestedName } : {}),
+        ...(canonicalName != null ? { canonical_name: canonicalName } : {}),
       },
     });
     existingTexts.add(originalText.toLowerCase());
+    if (canonicalName) existingTexts.add(canonicalName.toLowerCase());
   }
 
   // Apply upgrades: replace plain-string entries with structured entries carrying suggested_name

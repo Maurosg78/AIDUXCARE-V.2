@@ -1,5 +1,5 @@
 // §1.7.2 ENGINEERING.md: version ID required on all clinical prompts
-const PROMPT_VERSION = 'medication-extraction-v1.1';
+const PROMPT_VERSION = 'medication-extraction-v1.2';
 
 // §1.7 ENGINEERING.md: XML tags, precedence declaration, version ID, output_schema block
 const MEDICATION_EXTRACTION_PROMPT = `[PROMPT_VERSION: ${PROMPT_VERSION} | 2026-06-09]
@@ -50,6 +50,7 @@ Devuelve SOLO un JSON válido. Sin texto previo ni posterior.
   "medications": [
     {
       "original_text": "exactamente como lo dijo el paciente",
+      "canonical_name": "nombre del medicamento sin dosis, sin frecuencia, sin unidades — el nombre base que usaría un farmacéutico. Ejemplos: 'Janumet 50 y 1000' → 'Janumet', 'tranquilmacín 25' → 'Tranquilmazín', 'pastillas para la diabetes' → null. null si no puede determinarse.",
       "dose": "dosis o cadena vacía",
       "frequency": "frecuencia o cadena vacía",
       "mention_status": "current | previous | stopped_adverse | topical_or_supplement | unclear",
@@ -69,6 +70,7 @@ export type MedicationMentionStatus =
 
 export type MedicationMention = {
   original_text: string;
+  canonical_name?: string | null;
   dose: string;
   frequency: string;
   mention_status: MedicationMentionStatus;
@@ -120,9 +122,15 @@ const toMedicationArray = (value: unknown): MedicationMention[] => {
       : 'unclear';
 
     const suggestedName = String(record.suggested_name || '').trim();
+    const rawCanonical = record.canonical_name;
+    const canonicalName =
+      rawCanonical != null && rawCanonical !== ''
+        ? String(rawCanonical).trim()
+        : null;
 
     items.push({
       original_text: originalText,
+      ...(canonicalName != null ? { canonical_name: canonicalName } : {}),
       dose: String(record.dose || '').trim(),
       frequency: String(record.frequency || '').trim(),
       mention_status: mentionStatus,
