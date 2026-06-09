@@ -10,6 +10,8 @@ import { matchDiagnosis } from '@/core/clinical-evidence/diagnosisMatcher';
 import { prioritizeEvidence } from '@/core/clinical-reasoning/prioritizeEvidence';
 import { applyImagingScopeGuard } from '@/core/clinical-safety/imagingScopeGuard';
 import { safeLogger } from '../utils/safeLogger';
+import { validateClinicalOutput } from '@/core/clinical/ClinicalOutputValidator';
+import type { MedicationMention } from '@/core/ai/extractMedicationMentions';
 
 type NiagaraProxyPayload = {
   text: string;
@@ -109,6 +111,17 @@ export const useNiagaraProcessor = () => {
       const cleaned = shouldForceSpanish ? ensureSpanishClinicalAnalysis(guarded.analysis) : guarded.analysis;
       const cleanedResponseKeys = Object.keys(cleaned ?? {});
       safeLogger.clinicalContextBuilt(cleanedResponseKeys, 'niagara_cleaned_response');
+
+      // §1.6 ENGINEERING.md: deterministic post-model guard — runs after normalization, before UI
+      const preExtractedMeds = (response?.pre_extracted_medications ?? []) as MedicationMention[];
+      const validationResult = validateClinicalOutput(
+        cleaned as unknown as Parameters<typeof validateClinicalOutput>[0],
+        preExtractedMeds,
+      );
+      if (!validationResult.passed) {
+        console.warn('[NiagaraProcessor] Clinical validation failed:', validationResult.issues.map(i => i.code));
+      }
+
       setNiagaraResults(cleaned);
       return cleaned;
     } catch (error) {

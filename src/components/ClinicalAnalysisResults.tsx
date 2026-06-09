@@ -29,11 +29,19 @@ interface ClinicalAnalysisResultsProps {
 
 type MedicationConfidence = 'high' | 'medium' | 'low';
 
+type MedicationMentionStatus =
+  | 'current'
+  | 'previous'
+  | 'stopped_adverse'
+  | 'topical_or_supplement'
+  | 'unclear';
+
 interface StructuredMedicationData {
   original_text?: string;
   normalized_name?: string;
   confidence?: MedicationConfidence;
   requires_review?: boolean;
+  mention_status?: MedicationMentionStatus;
   suggested_name?: string;
 }
 

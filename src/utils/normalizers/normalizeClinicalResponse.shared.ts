@@ -395,6 +395,15 @@ const mergePreExtractedMajorMedicalHistory = (
   };
 };
 
+// §1.6 ENGINEERING.md: deterministic guard — mention_status controls routing, not prompt instructions
+// Statuses that belong in medicacion_actual (patient currently uses / used)
+const MEDICATION_STATUSES_FOR_CURRENT: ReadonlySet<string> = new Set([
+  'current',
+  'previous',
+  'topical_or_supplement',
+  'unclear',
+]);
+
 const mergePreExtractedMedications = (
   analysis: ClinicalAnalysis,
   raw: any,
@@ -407,23 +416,51 @@ const mergePreExtractedMedications = (
 
   const existingTexts = new Set<string>();
   const currentMeds = (analysis.medicacion_actual ?? []) as any[];
+
   for (const med of currentMeds) {
     if (typeof med === 'string') {
       existingTexts.add(med.toLowerCase().trim());
     } else if (med && typeof med === 'object') {
-      const originalText = (med as any).medication_data?.original_text || (med as any).text || '';
-      if (originalText) existingTexts.add(String(originalText).toLowerCase().trim());
+      const originalText =
+        (med as any).medication_data?.original_text || (med as any).text || '';
+      if (originalText) {
+        existingTexts.add(String(originalText).toLowerCase().trim());
+      }
     }
   }
 
   const newMeds: any[] = [];
+  const newAdverseReactions: AdverseDrugReaction[] = [];
+
   for (const item of preExtracted) {
     if (!item || typeof item !== 'object') continue;
+
     const originalText = String((item as any).original_text || '').trim();
     if (!originalText || existingTexts.has(originalText.toLowerCase())) continue;
+
+    const mentionStatus = String((item as any).mention_status || 'unclear').trim();
     const dose = String((item as any).dose || '').trim();
     const frequency = String((item as any).frequency || '').trim();
     const suggestedName = String((item as any).suggested_name || '').trim();
+
+    // §1.6 deterministic guard: stopped_adverse routes to adverseDrugReactions, not medicacion_actual
+    if (mentionStatus === 'stopped_adverse') {
+      const adverseText = dose
+        ? `${transformText(originalText)} ${dose}`
+        : transformText(originalText);
+      newAdverseReactions.push({
+        drugName: adverseText,
+        reactionDescription: 'Suspendido por reacción adversa (reportado por paciente)',
+        patientReported: true,
+        clinicianReviewRequired: true,
+      });
+      existingTexts.add(originalText.toLowerCase());
+      continue;
+    }
+
+    // Guard: only statuses that represent actual patient medication enter medicacion_actual
+    if (!MEDICATION_STATUSES_FOR_CURRENT.has(mentionStatus)) continue;
+
     newMeds.push({
       text: transformText(originalText),
       medication_data: {
@@ -432,6 +469,7 @@ const mergePreExtractedMedications = (
         active_ingredient: '',
         confidence: 'low' as const,
         requires_review: true,
+        mention_status: mentionStatus,
         dose,
         frequency,
         duration: '',
@@ -441,13 +479,28 @@ const mergePreExtractedMedications = (
     existingTexts.add(originalText.toLowerCase());
   }
 
-  if (newMeds.length === 0) {
+  const hasNewMeds = newMeds.length > 0;
+  const hasNewAdverse = newAdverseReactions.length > 0;
+
+  if (!hasNewMeds && !hasNewAdverse) {
     return analysis;
   }
 
+  const updatedMedicacion = hasNewMeds
+    ? ([...currentMeds, ...newMeds] as any)
+    : analysis.medicacion_actual;
+
+  const existingAdverse = Array.isArray(analysis.adverseDrugReactions)
+    ? analysis.adverseDrugReactions
+    : [];
+  const updatedAdverse = hasNewAdverse
+    ? [...existingAdverse, ...newAdverseReactions]
+    : existingAdverse;
+
   return {
     ...analysis,
-    medicacion_actual: [...currentMeds, ...newMeds] as any,
+    medicacion_actual: updatedMedicacion,
+    adverseDrugReactions: updatedAdverse,
   };
 };
 

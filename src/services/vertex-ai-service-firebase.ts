@@ -233,7 +233,6 @@ export async function analyzeWithVertexProxy(payload: {
         async (prompt) => {
           const extractionResult = await callVertexWithPrompt(prompt, `medications-${Date.now()}`);
           const extractionText = extractTextField(extractionResult);
-          console.log('[MedicationMentions] Raw keys:', Object.keys(extractionResult ?? {}), 'text length:', extractionText?.length ?? 0, 'text preview:', extractionText?.slice(0, 200));
           return extractionText ?? '{}';
         }
       ).catch((err: unknown) => {
@@ -241,7 +240,6 @@ export async function analyzeWithVertexProxy(payload: {
         return [];
       }),
     ]);
-    console.log('[MedicationMentions] Pre-extraction result count:', preExtractedMedications.length, preExtractedMedications);
     const majorMedicalHistoryContext = buildPreExtractedMedicalHistoryContext(preExtractedMajorMedicalHistory);
     const contextualPatientContext = [contextoPaciente, majorMedicalHistoryContext]
       .filter(Boolean)
