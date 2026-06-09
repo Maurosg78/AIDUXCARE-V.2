@@ -199,4 +199,122 @@ describe('normalizeClinicalResponse market isolation', () => {
     expect(result.yellow_flags[0]).toContain('Capacidad cardíaca reducida');
     expect(result.yellow_flags[0]).not.toContain('[object Object]');
   });
+
+  // §1.6 ENGINEERING.md: suggested_name dedup scenarios
+  // These tests guard the three cases in mergePreExtractedMedications
+
+  it('Scenario A: upgrades plain-string LLM entry to structured when pre-extracted has suggested_name', () => {
+    // LLM extracts the misheard form. Pre-extractor has the misheard form + correction.
+    // The structured entry must survive with suggested_name so the UI chip can render.
+    const proxyResponse = {
+      text: JSON.stringify({
+        ...responsePayload,
+        conversation_highlights: {
+          ...responsePayload.conversation_highlights,
+          medications: ['llanumet'],
+        },
+      }),
+      pre_extracted_medications: [
+        {
+          original_text: 'llanumet',
+          dose: '',
+          frequency: '',
+          mention_status: 'current',
+          suggested_name: 'Janumet 50/1000',
+        },
+      ],
+    };
+
+    const result = normalizeClinicalResponse(proxyResponse, { market: 'ES' });
+
+    const llanumetEntry = result.medicacion_actual.find(
+      (m: any) => typeof m === 'object' && m?.medication_data?.original_text === 'llanumet'
+    );
+    expect(llanumetEntry).toBeDefined();
+    expect((llanumetEntry as any).medication_data.suggested_name).toBe('Janumet 50/1000');
+    expect((llanumetEntry as any).medication_data.requires_review).toBe(true);
+    // No duplicate — only one entry for llanumet
+    const duplicateCount = result.medicacion_actual.filter(
+      (m: any) =>
+        (typeof m === 'string' && m.toLowerCase() === 'llanumet') ||
+        (typeof m === 'object' && m?.medication_data?.original_text?.toLowerCase() === 'llanumet')
+    ).length;
+    expect(duplicateCount).toBe(1);
+  });
+
+  it('Scenario B: no duplicate when LLM already has the corrected name from suggested_name', () => {
+    // LLM correctly extracts "Janumet 50/1000". Pre-extractor has misheard "llanumet" + suggestion.
+    // Only one entry for Janumet 50/1000 must appear — no phantom "llanumet" entry.
+    const proxyResponse = {
+      text: JSON.stringify({
+        ...responsePayload,
+        conversation_highlights: {
+          ...responsePayload.conversation_highlights,
+          medications: ['Janumet 50/1000'],
+        },
+      }),
+      pre_extracted_medications: [
+        {
+          original_text: 'llanumet',
+          dose: '',
+          frequency: '',
+          mention_status: 'current',
+          suggested_name: 'Janumet 50/1000',
+        },
+      ],
+    };
+
+    const result = normalizeClinicalResponse(proxyResponse, { market: 'ES' });
+
+    const janumetCount = result.medicacion_actual.filter(
+      (m: any) =>
+        (typeof m === 'string' && m.toLowerCase().includes('janumet')) ||
+        (typeof m === 'object' &&
+          (m?.text?.toLowerCase().includes('janumet') ||
+           m?.medication_data?.original_text?.toLowerCase().includes('janumet')))
+    ).length;
+    expect(janumetCount).toBe(1);
+    // No "llanumet" entry should appear
+    const llanumetCount = result.medicacion_actual.filter(
+      (m: any) =>
+        (typeof m === 'string' && m.toLowerCase() === 'llanumet') ||
+        (typeof m === 'object' && m?.medication_data?.original_text?.toLowerCase() === 'llanumet')
+    ).length;
+    expect(llanumetCount).toBe(0);
+  });
+
+  it('Scenario C: pre-extracted medication not in LLM output is added with suggested_name', () => {
+    // LLM did not extract this medication at all. Pre-extractor found it with a correction.
+    // Must appear as structured entry with suggested_name.
+    const proxyResponse = {
+      text: JSON.stringify({
+        ...responsePayload,
+        conversation_highlights: {
+          ...responsePayload.conversation_highlights,
+          medications: [],
+        },
+      }),
+      pre_extracted_medications: [
+        {
+          original_text: 'llanumet',
+          dose: '50/1000',
+          frequency: 'diario',
+          mention_status: 'current',
+          suggested_name: 'Janumet 50/1000',
+        },
+      ],
+    };
+
+    const result = normalizeClinicalResponse(proxyResponse, { market: 'ES' });
+
+    expect(result.medicacion_actual.length).toBeGreaterThan(0);
+    const entry = result.medicacion_actual.find(
+      (m: any) => typeof m === 'object' && m?.medication_data?.original_text === 'llanumet'
+    );
+    expect(entry).toBeDefined();
+    expect((entry as any).medication_data.suggested_name).toBe('Janumet 50/1000');
+    expect((entry as any).medication_data.dose).toBe('50/1000');
+    expect((entry as any).medication_data.frequency).toBe('diario');
+    expect((entry as any).medication_data.requires_review).toBe(true);
+  });
 });

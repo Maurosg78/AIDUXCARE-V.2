@@ -415,7 +415,8 @@ const mergePreExtractedMedications = (
   }
 
   const existingTexts = new Set<string>();
-  const currentMeds = (analysis.medicacion_actual ?? []) as any[];
+  // Shallow copy so upgrade mutations do not affect the original analysis object
+  const currentMeds = [...((analysis.medicacion_actual ?? []) as any[])];
 
   for (const med of currentMeds) {
     if (typeof med === 'string') {
@@ -431,17 +432,46 @@ const mergePreExtractedMedications = (
 
   const newMeds: any[] = [];
   const newAdverseReactions: AdverseDrugReaction[] = [];
+  // Upgrade map: index in currentMeds → structured replacement data
+  // Used when LLM has the plain-string version and pre-extractor has suggested_name
+  type UpgradeEntry = { suggestedName: string; mentionStatus: string; dose: string; frequency: string };
+  const upgradeIndices = new Map<number, UpgradeEntry>();
 
   for (const item of preExtracted) {
     if (!item || typeof item !== 'object') continue;
 
     const originalText = String((item as any).original_text || '').trim();
-    if (!originalText || existingTexts.has(originalText.toLowerCase())) continue;
+    if (!originalText) continue;
 
+    // Extract all fields before dedup decisions — needed for upgrade logic
     const mentionStatus = String((item as any).mention_status || 'unclear').trim();
     const dose = String((item as any).dose || '').trim();
     const frequency = String((item as any).frequency || '').trim();
     const suggestedName = String((item as any).suggested_name || '').trim();
+
+    // Scenario B: LLM already has the corrected name — no duplicate, no chip needed
+    if (suggestedName && existingTexts.has(suggestedName.toLowerCase())) {
+      continue;
+    }
+
+    // Scenario A: LLM has same original_text as a plain string
+    // If a suggested_name exists, upgrade the plain-string entry to carry medication_data
+    // so the chip can render. Only upgrade if the status belongs in medicacion_actual.
+    if (existingTexts.has(originalText.toLowerCase())) {
+      if (
+        suggestedName &&
+        mentionStatus !== 'stopped_adverse' &&
+        MEDICATION_STATUSES_FOR_CURRENT.has(mentionStatus)
+      ) {
+        const existingIdx = currentMeds.findIndex(
+          (m: any) => typeof m === 'string' && m.toLowerCase().trim() === originalText.toLowerCase()
+        );
+        if (existingIdx >= 0) {
+          upgradeIndices.set(existingIdx, { suggestedName, mentionStatus, dose, frequency });
+        }
+      }
+      continue;
+    }
 
     // §1.6 deterministic guard: stopped_adverse routes to adverseDrugReactions, not medicacion_actual
     if (mentionStatus === 'stopped_adverse') {
@@ -479,14 +509,35 @@ const mergePreExtractedMedications = (
     existingTexts.add(originalText.toLowerCase());
   }
 
+  // Apply upgrades: replace plain-string entries with structured entries carrying suggested_name
+  for (const [idx, upgrade] of upgradeIndices) {
+    const originalString = currentMeds[idx] as string;
+    currentMeds[idx] = {
+      text: transformText(originalString.trim()),
+      medication_data: {
+        original_text: originalString.trim(),
+        normalized_name: '',
+        active_ingredient: '',
+        confidence: 'low' as const,
+        requires_review: true,
+        mention_status: upgrade.mentionStatus,
+        dose: upgrade.dose,
+        frequency: upgrade.frequency,
+        duration: '',
+        suggested_name: upgrade.suggestedName,
+      },
+    };
+  }
+
   const hasNewMeds = newMeds.length > 0;
   const hasNewAdverse = newAdverseReactions.length > 0;
+  const hasUpgraded = upgradeIndices.size > 0;
 
-  if (!hasNewMeds && !hasNewAdverse) {
+  if (!hasNewMeds && !hasNewAdverse && !hasUpgraded) {
     return analysis;
   }
 
-  const updatedMedicacion = hasNewMeds
+  const updatedMedicacion = (hasNewMeds || hasUpgraded)
     ? ([...currentMeds, ...newMeds] as any)
     : analysis.medicacion_actual;
 
