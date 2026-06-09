@@ -7,6 +7,10 @@ import { resolveClinicalMarket, type ClinicalMarket } from "@/core/market/resolv
 import { buildAuthenticatedJsonHeaders } from "./firebaseAuthHeaders";
 import { extractMajorMedicalHistory } from "@/core/ai/extractMedicalHistory";
 import { extractMedicationMentions, type MedicationMention } from "@/core/ai/extractMedicationMentions";
+import {
+  createClinicalInputPackage,
+  serializeClinicalInputPackage,
+} from "@/core/ai/ClinicalInputAssembler";
 
 type NiagaraProxyPayload = {
   text: string;
@@ -85,31 +89,29 @@ const extractTextField = (data: any): string | null => {
   return null;
 };
 
-const buildPreExtractedMedicalHistoryContext = (items: string[]): string => {
-  if (items.length === 0) {
-    return '';
+const buildAttachmentAssemblerInput = (attachments: ClinicalAttachment[] | undefined) => {
+  if (!attachments || attachments.length === 0) {
+    return undefined;
   }
 
-  const lines = items.map((item) => `- ${item}`);
-  const block = [
-    '[Antecedentes médicos mayores identificados en pre-extracción]:',
-    ...lines,
-  ];
-  const context = block.join('\n');
-  return context;
-};
+  return attachments.map((attachment, index) => {
+    const fallbackId = `attachment-${index + 1}`;
+    const attachmentId = typeof (attachment as any).id === 'string'
+      ? (attachment as any).id
+      : fallbackId;
+    const attachmentType = attachment.fileType || 'unknown';
+    const attachmentText = attachment.extractedText || '';
+    const eligibilityStatus = typeof (attachment as any).patientIdentityStatus === 'string'
+      ? (attachment as any).patientIdentityStatus
+      : undefined;
 
-const buildPreExtractedMedicationContext = (items: MedicationMention[]): string => {
-  if (items.length === 0) return '';
-
-  const lines = items.map((item) => {
-    const parts = [item.original_text];
-    if (item.dose) parts.push(item.dose);
-    if (item.frequency) parts.push(item.frequency);
-    return `- ${parts.join(', ')}`;
+    return {
+      id: attachmentId,
+      type: attachmentType,
+      extractedText: attachmentText,
+      ...(eligibilityStatus ? { eligibilityStatus } : {}),
+    };
   });
-
-  return ['[Medicación identificada en pre-extracción]:', ...lines].join('\n');
 };
 
 const buildVoiceSummaryPrompt = (transcript: string, language: 'en' | 'es' | 'fr') => {
@@ -240,17 +242,24 @@ export async function analyzeWithVertexProxy(payload: {
         return [];
       }),
     ]);
-    const majorMedicalHistoryContext = buildPreExtractedMedicalHistoryContext(preExtractedMajorMedicalHistory);
-    const contextualPatientContext = [contextoPaciente, majorMedicalHistoryContext]
-      .filter(Boolean)
-      .join('\n\n');
+    const contextualPatientContext = contextoPaciente;
+    const attachmentsText = buildAttachmentAssemblerInput(payload.attachments);
+    const clinicalInputPackage = createClinicalInputPackage({
+      transcript: sanitizedTranscript,
+      attachmentsText,
+      preExtractedMedications,
+      preExtractedMajorHistory: preExtractedMajorMedicalHistory,
+      visitType: normalizedVisitType,
+      locale: resolvedMarket,
+    });
+    const compactClinicalInput = serializeClinicalInputPackage(clinicalInputPackage);
     
     const structuredPrompt = buildAnalysisPrompt({
       contextoPaciente: contextualPatientContext,
-      transcript: sanitizedTranscript, // Use de-identified, size-limited transcript for main analysis
+      transcript: compactClinicalInput,
       professionalProfile: payload.professionalProfile, // Pass professional profile
       visitType: normalizedVisitType, // Pass visit type for prompt customization
-      attachments: payload.attachments // Pass clinical attachments (PDFs, images, etc.)
+      attachments: undefined
     }, {
       market: resolvedMarket,
     });
