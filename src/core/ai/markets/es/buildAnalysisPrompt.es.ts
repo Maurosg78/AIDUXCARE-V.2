@@ -154,6 +154,7 @@ REGLAS DE DISTRIBUCIÓN:
 - medical_history: antecedentes y eventos previos.
 - major_medical_history: recoge explícitamente comorbilidades sistémicas mayores mencionadas de forma secundaria o incidental.
 - medications: lista estructurada de medicación. Para cada medicamento usa el esquema {original_text, normalized_name, active_ingredient, confidence, requires_review, dose, frequency, duration}. Reglas:
+  CRÍTICO: original_text es SOLO el nombre del medicamento tal como lo dijo el paciente — máximo 4-5 palabras. NUNCA la frase completa del transcript. Correcto: "Janumet 50 y 1000". Incorrecto: "dos pastillas, una por la mañana y una por la noche de 1000 Janumet se llaman".
   CRÍTICO: En fisioterapia el paciente menciona medicación
   habitualmente de forma colateral. Estas menciones SON
   medicación relevante y deben incluirse.
