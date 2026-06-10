@@ -65,6 +65,7 @@ const checkPreExtractedMedicationsPreserved = (
   const adverse = normalized.adverseDrugReactions ?? [];
 
   const allMedTexts = new Set<string>();
+  const allCanonicals = new Set<string>();
 
   for (const med of medicacion) {
     if (typeof med === 'string') {
@@ -75,6 +76,8 @@ const checkPreExtractedMedicationsPreserved = (
       const text =
         String(medData?.original_text || medRecord.text || '').toLowerCase().trim();
       if (text) allMedTexts.add(text);
+      const canonical = String(medData?.canonical_name || '').toLowerCase().trim();
+      if (canonical) allCanonicals.add(canonical);
     }
   }
 
@@ -93,7 +96,11 @@ const checkPreExtractedMedicationsPreserved = (
     const suggestedKey = (item.suggested_name ?? '').toLowerCase().trim();
     const foundViaSuggestion = suggestedKey !== '' && allMedTexts.has(suggestedKey);
 
-    if (!foundDirectly && !foundViaSuggestion) {
+    // Also check canonical_name — covers merge path where original_text differs
+    const itemCanonical = (item.canonical_name ?? '').toLowerCase().trim();
+    const foundByCanonical = itemCanonical !== '' && allCanonicals.has(itemCanonical);
+
+    if (!foundDirectly && !foundViaSuggestion && !foundByCanonical) {
       issues.push({
         code: 'MED_DROPPED_BY_MODEL',
         severity: 'warning',

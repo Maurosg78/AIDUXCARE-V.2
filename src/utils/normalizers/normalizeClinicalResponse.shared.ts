@@ -347,9 +347,12 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
       const isStructured = firstItem && typeof firstItem === 'object' && 'original_text' in firstItem;
       if (isStructured) {
         return meds.map((med: any) => {
+          const rawOriginalText = String(med.original_text || '');
+          const canonicalName = med.canonical_name ?? null;
+          const cleanedText = cleanDisplayText(rawOriginalText, canonicalName);
           const medData: ClinicalMedicationEntry = {
-            original_text: String(med.original_text || ''),
-            canonical_name: med.canonical_name ?? null,
+            original_text: cleanedText,
+            canonical_name: canonicalName,
             normalized_name: String(med.normalized_name || ''),
             dose: String(med.dose || ''),
             frequency: String(med.frequency || ''),
@@ -362,7 +365,7 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
             ...(med.suggested_name ? { suggested_name: String(med.suggested_name) } : {}),
           };
           return {
-            text: medData.original_text || medData.normalized_name,
+            text: cleanedText || medData.normalized_name,
             medication_data: medData,
           };
         });
@@ -415,6 +418,15 @@ const mergePreExtractedMajorMedicalHistory = (
     ...analysis,
     antecedentes_medicos: antecedentesMedicos,
   };
+};
+
+// Strips transcript filler from medication display names when a clean canonical_name is available.
+const TRANSCRIPT_NOISE = /\b(ok|perfecto|s[íi]|claro|pues|entonces|exacto|bueno)\b/i;
+
+export const cleanDisplayText = (text: string, canonical: string | null | undefined): string => {
+  if (!canonical) return text;
+  const isVerbose = text.length > 30 || TRANSCRIPT_NOISE.test(text);
+  return isVerbose ? canonical : text;
 };
 
 // §1.6 ENGINEERING.md: deterministic guard — mention_status controls routing, not prompt instructions
@@ -499,8 +511,9 @@ const mergePreExtractedMedications = (
       if (existingIdx !== undefined) {
         const existingMed = currentMeds[existingIdx] as any;
         const existingData = existingMed?.medication_data as ClinicalMedicationEntry | undefined;
+        const cleanedMergedText = cleanDisplayText(originalText, canonicalName);
         const mergedData: ClinicalMedicationEntry = {
-          original_text: originalText,
+          original_text: cleanedMergedText,
           canonical_name: canonicalName,
           normalized_name: existingData?.normalized_name || '',
           dose: dose || existingData?.dose || '',
@@ -518,7 +531,7 @@ const mergePreExtractedMedications = (
             : {}),
         };
         currentMeds[existingIdx] = {
-          text: transformText(originalText),
+          text: transformText(cleanedMergedText),
           medication_data: mergedData,
         };
         mergedIndices.add(existingIdx);
@@ -564,8 +577,9 @@ const mergePreExtractedMedications = (
     // Guard: only statuses that represent actual patient medication enter medicacion_actual
     if (!MEDICATION_STATUSES_FOR_CURRENT.has(mentionStatus)) continue;
 
+    const cleanedNewText = cleanDisplayText(originalText, canonicalName);
     const newMedData: ClinicalMedicationEntry = {
-      original_text: originalText,
+      original_text: cleanedNewText,
       canonical_name: canonicalName,
       normalized_name: '',
       active_ingredient: '',
@@ -578,7 +592,7 @@ const mergePreExtractedMedications = (
       source: 'pre_extracted',
       ...(suggestedName ? { suggested_name: suggestedName } : {}),
     };
-    newMeds.push({ text: transformText(originalText), medication_data: newMedData });
+    newMeds.push({ text: transformText(cleanedNewText), medication_data: newMedData });
     existingByOriginal.add(originalText.toLowerCase());
     if (canonicalName) existingByOriginal.add(canonicalName.toLowerCase());
   }
@@ -586,8 +600,9 @@ const mergePreExtractedMedications = (
   // Apply upgrades: replace plain-string entries with structured entries carrying suggested_name
   for (const [idx, upgrade] of upgradeIndices) {
     const originalString = currentMeds[idx] as string;
+    const cleanedUpgradeText = cleanDisplayText(originalString.trim(), null);
     const upgradeData: ClinicalMedicationEntry = {
-      original_text: originalString.trim(),
+      original_text: cleanedUpgradeText,
       canonical_name: null,
       normalized_name: '',
       active_ingredient: '',
@@ -601,7 +616,7 @@ const mergePreExtractedMedications = (
       source: 'pre_extracted',
     };
     currentMeds[idx] = {
-      text: transformText(originalString.trim()),
+      text: transformText(cleanedUpgradeText),
       medication_data: upgradeData,
     };
   }
