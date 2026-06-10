@@ -425,6 +425,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     const safeNormalizedName = isGenericMedicationCategory(normalizedName) ? '' : normalizedName;
     const rawDisplayName = originalText || safeEditedText || safeNormalizedName || normalizedName;
     const displayName = stripTechnicalSuffix(rawDisplayName);
+    const dose = medicationData?.dose;
+    if (dose && dose.trim() && !displayName.includes(dose)) {
+      return `${displayName} ${dose}`.trim();
+    }
     return displayName;
   };
 
