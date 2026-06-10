@@ -4,7 +4,7 @@ import type {
 } from '@/core/clinical/ClinicalMedicationEntry';
 
 // §1.7.2 ENGINEERING.md: version ID required on all clinical prompts
-const PROMPT_VERSION = 'medication-extraction-v1.2';
+const PROMPT_VERSION = 'medication-extraction-v1.3';
 
 // §1.7 ENGINEERING.md: XML tags, precedence declaration, version ID, output_schema block
 const MEDICATION_EXTRACTION_PROMPT = `[PROMPT_VERSION: ${PROMPT_VERSION} | 2026-06-09]
@@ -42,11 +42,29 @@ EXCLUYE siempre (no incluir en el JSON):
 CRITERIO CLAVE: ¿El paciente lo toma o lo tomó? → incluir con mention_status.
 ¿Es propuesta futura del médico que aún no ocurrió? → excluir.
 
-CORRECCIÓN ORTOGRÁFICA (solo cuando sea fonéticamente evidente):
-Si original_text parece un error de transcripción de un medicamento conocido
-(ej. "llanumet" → "Janumet 50/1000"), añade "suggested_name" con el nombre correcto.
-Requisito: similitud fonética alta Y el contexto clínico lo confirma.
-Si hay cualquier duda, omite "suggested_name".
+VALIDACIÓN DE NOMBRE COMERCIAL (vademécum España):
+Para cada medicamento identificado:
+
+1. suggested_name: si el nombre en la transcripción es un error de transcripción
+   o variante fonética de un medicamento registrado en España, pon aquí el nombre
+   comercial exacto (no el principio activo). Usa tu conocimiento del vademécum
+   español (CIMA/AEMPS).
+   - "tranquilmacín" → suggested_name: "Trankimazin"
+   - "llanumet" → suggested_name: "Janumet"
+   - "rivotril" → suggested_name: "Rivotril" (ya correcto, confirmar)
+   - "pastillas para la ansiedad" → suggested_name: null
+   Si hay cualquier duda, pon null.
+
+2. active_ingredient: principio activo en español, separado del nombre comercial.
+   - "Janumet" → active_ingredient: "metformina/sitagliptina"
+   - "Trankimazin" → active_ingredient: "alprazolam"
+   - "pastillas para la diabetes" → active_ingredient: null
+
+3. NUNCA incluyas dosis ni frecuencia en suggested_name.
+   suggested_name es solo el nombre comercial base. La dosis va en el campo dose.
+
+REGLA CRÍTICA: Si el nombre no corresponde a ningún medicamento conocido en España,
+no inventes un nombre. Deja suggested_name: null y confidence: "low".
 </task>
 
 <output_schema>
