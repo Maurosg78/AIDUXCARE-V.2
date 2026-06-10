@@ -11,6 +11,10 @@ import {
   createClinicalInputPackage,
   serializeClinicalInputPackage,
 } from "@/core/ai/ClinicalInputAssembler";
+import {
+  detectRedFlags,
+  mergeRedFlags,
+} from "@/core/clinical/ClinicalRedFlagDetector";
 
 type NiagaraProxyPayload = {
   text: string;
@@ -193,10 +197,12 @@ export async function analyzeWithVertexProxy(payload: {
   let identifiersMap = {};
   let preExtractedMajorMedicalHistory: string[] = [];
   let preExtractedMedications: MedicationMention[] = [];
-  
+  let deidentifiedTranscript = '';
+
   if (payload.transcript && !payload.prompt) {
     // De-identify transcript before processing
     const { deidentifiedText, identifiersMap: map } = deidentify(payload.transcript);
+    deidentifiedTranscript = deidentifiedText;
     identifiersMap = map;
     const sanitizedTranscript = sanitizeTranscript(deidentifiedText);
     
@@ -290,6 +296,36 @@ export async function analyzeWithVertexProxy(payload: {
     responseData.pre_extracted_medications = preExtractedMedications;
   }
   
+  // §1.6 ENGINEERING.md: deterministic red flag fast path — runs on deidentified text
+  if (deidentifiedTranscript && typeof responseData.text === 'string') {
+    try {
+      const stub = {
+        medicacion_actual: preExtractedMedications,
+        red_flags: [] as string[],
+      } as unknown as ClinicalAnalysis;
+      const detectedFlags = detectRedFlags(deidentifiedTranscript, stub);
+      if (detectedFlags.length > 0) {
+        const parsed = JSON.parse(responseData.text) as Record<string, any>;
+        const existingFlags: string[] =
+          Array.isArray(parsed?.medicolegal_alerts?.red_flags)
+            ? (parsed.medicolegal_alerts.red_flags as string[])
+            : Array.isArray(parsed?.red_flags)
+            ? (parsed.red_flags as string[])
+            : [];
+        const merged = mergeRedFlags(existingFlags, detectedFlags);
+        if (Array.isArray(parsed?.medicolegal_alerts?.red_flags)) {
+          parsed.medicolegal_alerts.red_flags = merged;
+        } else if (Array.isArray(parsed?.red_flags)) {
+          parsed.red_flags = merged;
+        }
+        responseData.text = JSON.stringify(parsed);
+        console.debug('[RedFlagDetector] codes:', detectedFlags.map(f => f.code), 'count:', detectedFlags.length);
+      }
+    } catch {
+      // malformed LLM JSON or detector failure — never block the pipeline
+    }
+  }
+
   // ✅ PHIPA COMPLIANCE: Re-identify response if needed
   if (Object.keys(identifiersMap).length > 0 && responseData.text) {
     responseData.text = reidentify(responseData.text, identifiersMap);
