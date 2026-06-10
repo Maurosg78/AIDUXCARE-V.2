@@ -1,9 +1,9 @@
 /**
  * EvaluationTab Component
- * 
+ *
  * Extracted from ProfessionalWorkflowPage for better code organization.
  * Handles physical evaluation test selection and documentation.
- * 
+ *
  * @compliance PHIPA-aware (design goal), security audit logging
  */
 
@@ -110,7 +110,16 @@ const deriveTestCategory = (definition?: MskTestDefinition | null): TestCategory
 
 const isMskTest = (t: MskTestDefinition | PhysicalTest): t is MskTestDefinition =>
   'normalTemplate' in t;
+const safeNormalizeName = (value: unknown): string =>
+  String(value ?? '').toLowerCase().trim();
 
+const cleanPhysicalTestName = (value: unknown): string =>
+  String(value ?? '').replace(/^Consider assessing\s+/i, '').trim();
+
+const getPhysicalTestCandidateName = (test: any): string =>
+  cleanPhysicalTestName(
+    test?.match?.name || test?.rawName || test?.name || test?.test || ''
+  );
 const getFieldPreviewKey = (field: TestFieldDefinition): string => {
   if (field.kind === 'angle_bilateral') {
     return 'bilateralAngle';
@@ -263,15 +272,15 @@ const renderFieldInput = (
             onChange={(e) => {
               const newValue = e.target.value === '' ? null : Number(e.target.value);
               onChange(newValue);
-              
-              if (entry && entry._prefillDefaults && updateTest && 
-                  entry._prefillDefaults[field.id] !== null && 
+
+              if (entry && entry._prefillDefaults && updateTest &&
+                  entry._prefillDefaults[field.id] !== null &&
                   entry._prefillDefaults[field.id] !== undefined) {
                 const prefillValue = entry._prefillDefaults[field.id];
                 if (newValue !== null && newValue !== prefillValue) {
                   const updatedPrefills = { ...entry._prefillDefaults };
                   updatedPrefills[field.id] = null;
-                  updateTest(entry.id, { 
+                  updateTest(entry.id, {
                     result: "positive",
                     _prefillDefaults: updatedPrefills
                   });
@@ -349,27 +358,27 @@ const renderFieldInput = (
 export interface EvaluationTabProps {
   // Visit type
   visitType?: 'initial' | 'follow-up';  // ✅ NEW: For follow-up selective re-evaluation
-  
+
   // Test management
   filteredEvaluationTests: EvaluationTestEntry[];
   evaluationTests: EvaluationTestEntry[];
   completedCount: number;
   detectedCaseRegion: MSKRegion | null;
-  
+
   // AI suggestions
   pendingAiSuggestions: Array<{
     key: number;
-    rawName: string;
+    rawName?: string;
     match?: MskTestDefinition | null;
   }>;
   // ✅ NEW: All AI suggestions (not filtered by "already selected") for calculating top 5
   allAiSuggestions?: Array<{
     key: number;
-    rawName: string;
+    rawName?: string;
     match?: MskTestDefinition | null;
   }>;
   physicalTestAssistanceChoice: PhysicalTestAssistanceChoice;
-  
+
   // Test library
   isTestAlreadySelected: (id: string, name: string) => boolean;
   addEvaluationTest: (entry: EvaluationTestEntry) => void;
@@ -377,7 +386,7 @@ export interface EvaluationTabProps {
   updateEvaluationTest: (id: string, updates: Partial<EvaluationTestEntry>) => void;
   createEntryFromLibrary: (test: MskTestDefinition, source: "ai" | "manual" | "custom") => EvaluationTestEntry;
   createCustomEntry: (name: string, source: "ai" | "manual" | "custom") => EvaluationTestEntry;
-  
+
   // Custom test form
   customTestName: string;
   customTestRegion: MSKRegion | "other";
@@ -392,12 +401,12 @@ export interface EvaluationTabProps {
   resetCustomForm: () => void;
   handleAddCustomTest: () => void;
   handleLibrarySelect: (event: React.ChangeEvent<HTMLSelectElement>) => void;
-  
+
   // SOAP generation
   handleGenerateSoap: () => Promise<void>;
   isGeneratingSOAP: boolean;
   onPillarNotesChange?: (notes: MageePillarNotes) => void;
-  
+
   // Workflow
   sessionTypeFromUrl: 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate' | null;
   workflowRoute: WorkflowRoute | null;
@@ -516,17 +525,17 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   const { topTests: topAiSuggestions, remainingTests: additionalAiSuggestions } = useMemo(() => {
     // ✅ CRITICAL: Use allAiSuggestions (ALL suggestions, not filtered) if available
     // This ensures we calculate top 5 from ALL tests, not just pending ones
-    const allSuggestions = allAiSuggestions && allAiSuggestions.length > 0 
-      ? allAiSuggestions 
+    const allSuggestions = allAiSuggestions && allAiSuggestions.length > 0
+      ? allAiSuggestions
       : pendingAiSuggestions;
-    
+
     console.log('[EvaluationTab] Calculating top 5 (memoized):', {
       allAiSuggestionsCount: allAiSuggestions?.length || 0,
       pendingAiSuggestionsCount: pendingAiSuggestions.length,
       usingAll: !!(allAiSuggestions && allAiSuggestions.length > 0),
       allSuggestionsCount: allSuggestions.length
     });
-    
+
     if (allSuggestions.length === 0) {
       return { topTests: [], remainingTests: [] };
     }
@@ -539,7 +548,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
       const specificity = match?.specificity;
       const sensitivityQual = (match as any)?.sensitivityQualitative;
       const specificityQual = (match as any)?.specificityQualitative;
-      
+
       return {
         name: match?.name || item.rawName,
         test: match?.name || item.rawName,
@@ -558,26 +567,38 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
     // ✅ Sort by importance using average score (sensitivity + specificity) / 2
     // This determines the top 5 best tests based on clinical value
     const sortedAndSeparated = getTopPhysicalTests(formattedSuggestions, 5);
-    
+
     console.log('[EvaluationTab] Top 5 calculated (memoized):', {
       topTestsCount: sortedAndSeparated.topTests.length,
       remainingTestsCount: sortedAndSeparated.remainingTests.length,
       topTests: sortedAndSeparated.topTests.map((t: any) => t.name || t.rawName),
       remainingTests: sortedAndSeparated.remainingTests.map((t: any) => t.name || t.rawName)
     });
-    
+
     // ✅ FIX: Filter top 5 by "already selected" ONLY for phase 1 display
-    // Phase 1 should only show top 5 tests that are NOT already added
     const topTestsFiltered = sortedAndSeparated.topTests.filter((test: any) => {
-      const candidateName = test.match?.name || test.rawName || test.name || '';
-      const candidateId = test.match?.id || `ai-${candidateName.toLowerCase().trim()}`;
+      const candidateName = getPhysicalTestCandidateName(test);
+
+      if (!candidateName) {
+        console.warn('[EvaluationTab] Skipping top physical test without name', {
+          hasMatch: Boolean(test?.match),
+          hasRawName: Boolean(test?.rawName),
+          hasName: Boolean(test?.name),
+          hasTest: Boolean(test?.test),
+        });
+        return false;
+      }
+
+      const candidateId = test?.match?.id || `ai-${safeNormalizeName(candidateName)}`;
       const alreadySelected = filteredEvaluationTests.some(
-        (evaluationTest) => evaluationTest.id === candidateId || 
-        evaluationTest.name.toLowerCase().trim() === candidateName.toLowerCase().trim()
+        (evaluationTest) =>
+          evaluationTest.id === candidateId ||
+          safeNormalizeName(evaluationTest.name) === safeNormalizeName(candidateName)
       );
+
       return !alreadySelected;
     });
-    
+
     // ✅ CRITICAL: Ensure remainingTests have the correct format (match, rawName, originalIndex) for sidebar rendering
     const remainingTestsFormatted = sortedAndSeparated.remainingTests.map((test: any) => {
       // Find the original suggestion from allSuggestions to preserve rawName, match, originalIndex
@@ -598,19 +619,19 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
         match: test.match,
       };
     });
-    
+
     // ✅ FIX: Filter additional tests (6+) to exclude tests that are already selected
     // If a test from the sidebar is selected, it should disappear from the sidebar because it's now in Selected Tests
     // Use the same logic as isTestAlreadySelected: compare by id OR normalized name
     // IMPORTANT: Clean "Consider assessing" prefix from names to match how tests are created in continueToEvaluation
-    const normalizeName = (value: string) => value.toLowerCase().trim();
-    const cleanTestName = (name: string) => name.replace(/^Consider assessing\s+/i, '').trim();
-    
+    const normalizeName = safeNormalizeName;
+    const cleanTestName = cleanPhysicalTestName;
+
     const additionalTestsFiltered = remainingTestsFormatted.filter((test: any) => {
       const rawCandidateName = test.match?.name || test.rawName || test.name || '';
       const candidateName = cleanTestName(rawCandidateName); // Clean prefix to match how tests are created
       const candidateId = test.match?.id || `ai-${normalizeName(candidateName)}`;
-      
+
       // Use the same comparison logic as isTestAlreadySelected
       // Use evaluationTests (not filteredEvaluationTests) to match isTestAlreadySelected behavior
       const alreadySelected = evaluationTests.some(
@@ -621,25 +642,25 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
           return testIdMatches || testNameMatches;
         }
       );
-      
+
       return !alreadySelected; // Only show tests that are NOT already selected
     });
-    
+
     const finalResult = {
       topTests: topTestsFiltered,
       remainingTests: additionalTestsFiltered, // ✅ FIX: Filter out tests that are already in the main list
     };
-    
+
     const sidebarShouldShow = finalResult.remainingTests.length > 0;
     const remainingTestsCount = finalResult.remainingTests.length;
-    
+
     console.log('[EvaluationTab] Final result:', {
       topTestsCount: finalResult.topTests.length,
       remainingTestsCount,
       sidebarShouldShow,
       totalSuggestionsFromVertex: allSuggestions.length,
-      reason: remainingTestsCount === 0 
-        ? 'No sidebar: Vertex only suggested 5 tests (or fewer). Sidebar only shows tests 6+.' 
+      reason: remainingTestsCount === 0
+        ? 'No sidebar: Vertex only suggested 5 tests (or fewer). Sidebar only shows tests 6+.'
         : `Sidebar will show ${remainingTestsCount} additional test(s)`,
       remainingTestsDetails: finalResult.remainingTests.map((t: any) => ({
         originalIndex: t.originalIndex || t.key,
@@ -648,7 +669,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
         matchName: t.match?.name
       }))
     });
-    
+
     return finalResult;
   }, [allAiSuggestions, pendingAiSuggestions, filteredEvaluationTests]);
   const quickPickTests = useMemo(() => {
@@ -669,7 +690,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
             {visitType === 'follow-up' ? t('workflow.selectiveReevaluation') : t('workflow.physicalEvaluation')}
           </h2>
           <p className="text-sm text-slate-500">
-            {visitType === 'follow-up' 
+            {visitType === 'follow-up'
               ? t('workflow.evaluationSubtitleFollowup')
               : t('workflow.evaluationSubtitleInitial')}
           </p>
@@ -806,7 +827,18 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                             if (matched) {
                               addEvaluationTest(createEntryFromLibrary(matched, "ai"));
                             } else {
-                              addEvaluationTest(createCustomEntry(item.rawName || item.name, "ai"));
+                              const customName = getPhysicalTestCandidateName(item);
+
+                              if (!customName) {
+                                console.warn('[EvaluationTab] Cannot add AI physical test without name', {
+                                  hasRawName: Boolean(item?.rawName),
+                                  hasName: Boolean(item?.name),
+                                  hasMatch: Boolean(item?.match),
+                                });
+                                return;
+                              }
+
+                              addEvaluationTest(createCustomEntry(customName, "ai"));
                             }
                           }}
                           className="ml-2 rounded-full bg-[#8b5cf6] px-3 py-1 text-xs text-white transition hover:bg-[#7c3aed]"
@@ -1052,7 +1084,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
             </div>
             {filteredEvaluationTests.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
-                {detectedCaseRegion 
+                {detectedCaseRegion
                   ? t('workflow.evaluation.emptyStateWithRegion', { region: visibleRegionLabels[detectedCaseRegion] })
                   : t('workflow.evaluation.emptyState')}
               </div>
@@ -1142,10 +1174,10 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                                   entry.values?.[field.id] ?? null,
                                   (newValue) => {
                                     const updatedValues = { ...(entry.values ?? {}), [field.id]: newValue };
-                                    
+
                                     // ✅ AUTO-RESULT: Detect changes that indicate abnormal results
                                     let newResult = entry.result;
-                                    
+
                                     if (field.kind === 'yes_no') {
                                       if (newValue === true) {
                                         newResult = "positive";
@@ -1155,7 +1187,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                                           const val = updatedValues[f.id];
                                           if (f.kind === 'yes_no' && val === true) return true;
                                           if (f.kind === 'score_0_10' && typeof val === 'number' && val > 0) return true;
-                                          if ((f.kind === 'angle_bilateral' || f.kind === 'angle_unilateral') && 
+                                          if ((f.kind === 'angle_bilateral' || f.kind === 'angle_unilateral') &&
                                               typeof val === 'number' && f.normalRange) {
                                             if (val < f.normalRange.min || val > f.normalRange.max) return true;
                                           }
@@ -1174,7 +1206,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                                           const val = updatedValues[f.id];
                                           if (f.kind === 'yes_no' && val === true) return true;
                                           if (f.kind === 'score_0_10' && typeof val === 'number' && val > 0) return true;
-                                          if ((f.kind === 'angle_bilateral' || f.kind === 'angle_unilateral') && 
+                                          if ((f.kind === 'angle_bilateral' || f.kind === 'angle_unilateral') &&
                                               typeof val === 'number' && f.normalRange) {
                                             if (val < f.normalRange.min || val > f.normalRange.max) return true;
                                           }
@@ -1185,8 +1217,8 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                                         }
                                       }
                                     }
-                                    
-                                    updateEvaluationTest(entry.id, { 
+
+                                    updateEvaluationTest(entry.id, {
                                       values: updatedValues,
                                       result: newResult
                                     });
@@ -1198,7 +1230,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                               </div>
                             ))}
                           </div>
-                          
+
                           {/* Result selection section */}
                           <div className="space-y-3 pt-2 border-t border-slate-200">
                             <div className="flex flex-wrap items-center gap-3">
@@ -1237,7 +1269,7 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                               ))}
                             </div>
                           </div>
-                          
+
                           {/* Add Notes field */}
                           <div className="pt-2 border-t border-slate-200">
                             <label className="block text-xs font-medium text-slate-700 mb-1.5">

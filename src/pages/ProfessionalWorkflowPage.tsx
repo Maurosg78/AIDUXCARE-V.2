@@ -4383,7 +4383,19 @@ const ProfessionalWorkflowPage = () => {
         entry = createEntryFromLibrary(suggestion.match, "ai");
       } else {
         // ✅ PHASE 2 FIX: Clean "Consider assessing" prefix from rawName
-        const cleanName = suggestion.rawName.replace(/^Consider assessing\s+/i, '').trim();
+        const cleanName = String(suggestion.rawName ?? suggestion.match?.name ?? '')
+          .replace(/^Consider assessing\s+/i, '')
+          .trim();
+
+        if (!cleanName) {
+          console.warn('[PHASE2] Cannot create custom physical test entry without name', {
+            originalIndex,
+            hasRawName: Boolean(suggestion.rawName),
+            hasMatchName: Boolean(suggestion.match?.name),
+          });
+          return;
+        }
+
         console.log(`[PHASE2] Creating custom entry`, {
           hasCleanName: Boolean(cleanName),
         });
