@@ -7,7 +7,7 @@ export type MedicationMentionStatus =
 
 export type MedicationConfidence = 'high' | 'medium' | 'low';
 
-export type MedicationSource = 'main_analysis' | 'pre_extracted';
+export type MedicationSource = 'main_analysis' | 'pre_extracted' | 'merged';
 
 export interface ClinicalMedicationEntry {
   original_text: string;

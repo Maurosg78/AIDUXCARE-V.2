@@ -437,28 +437,33 @@ const mergePreExtractedMedications = (
     return analysis;
   }
 
-  const existingTexts = new Set<string>();
-  // Shallow copy so upgrade mutations do not affect the original analysis object
+  // existingByCanonical: canonical_name (from main analysis) → index in currentMeds
+  // existingByOriginal: original_text lookup + within-batch dedup
+  const existingByCanonical = new Map<string, number>();
+  const existingByOriginal = new Set<string>();
+  // Shallow copy so mutations do not affect the original analysis object
   const currentMeds = [...((analysis.medicacion_actual ?? []) as any[])];
 
-  for (const med of currentMeds) {
+  for (let i = 0; i < currentMeds.length; i++) {
+    const med = currentMeds[i];
     if (typeof med === 'string') {
-      existingTexts.add(med.toLowerCase().trim());
+      existingByOriginal.add(med.toLowerCase().trim());
     } else if (med && typeof med === 'object') {
       const originalText =
         (med as any).medication_data?.original_text || (med as any).text || '';
       if (originalText) {
-        existingTexts.add(String(originalText).toLowerCase().trim());
+        existingByOriginal.add(String(originalText).toLowerCase().trim());
       }
       const canonicalName = (med as any).medication_data?.canonical_name;
       if (canonicalName) {
-        existingTexts.add(String(canonicalName).toLowerCase().trim());
+        existingByCanonical.set(String(canonicalName).toLowerCase().trim(), i);
       }
     }
   }
 
   const newMeds: { text: string; medication_data: ClinicalMedicationEntry }[] = [];
   const newAdverseReactions: AdverseDrugReaction[] = [];
+  const mergedIndices = new Set<number>();
   // Upgrade map: index in currentMeds → structured replacement data
   // Used when LLM has the plain-string version and pre-extractor has suggested_name
   type UpgradeEntry = { suggestedName: string; mentionStatus: string; dose: string; frequency: string };
@@ -470,7 +475,7 @@ const mergePreExtractedMedications = (
     const originalText = String((item as any).original_text || '').trim();
     if (!originalText) continue;
 
-    // Extract all fields before dedup decisions — needed for upgrade logic
+    // Extract all fields before routing decisions — needed for merge and upgrade logic
     const mentionStatus = String((item as any).mention_status || 'unclear').trim();
     const dose = String((item as any).dose || '').trim();
     const frequency = String((item as any).frequency || '').trim();
@@ -480,20 +485,51 @@ const mergePreExtractedMedications = (
       rawCanonical != null && rawCanonical !== '' ? String(rawCanonical).trim() : null;
 
     // Scenario B: LLM already has the corrected name — no duplicate, no chip needed
-    if (suggestedName && existingTexts.has(suggestedName.toLowerCase())) {
+    if (suggestedName && existingByOriginal.has(suggestedName.toLowerCase())) {
       continue;
     }
 
-    // Canonical dedup: same drug, different transcription ("Janumet 50 y 1000" vs "Janumet")
-    if (canonicalName && existingTexts.has(canonicalName.toLowerCase())) {
-      continue;
+    // Merge: canonical match with main analysis entry.
+    // Enrich the existing entry: pre-extractor contributes original_text (with dose),
+    // mention_status and canonical_name; Niagara contributes confidence, requires_review,
+    // normalized_name and active_ingredient.
+    if (canonicalName && mentionStatus !== 'stopped_adverse') {
+      const canonicalKey = canonicalName.toLowerCase();
+      const existingIdx = existingByCanonical.get(canonicalKey);
+      if (existingIdx !== undefined) {
+        const existingMed = currentMeds[existingIdx] as any;
+        const existingData = existingMed?.medication_data as ClinicalMedicationEntry | undefined;
+        const mergedData: ClinicalMedicationEntry = {
+          original_text: originalText,
+          canonical_name: canonicalName,
+          normalized_name: existingData?.normalized_name || '',
+          dose: dose || existingData?.dose || '',
+          frequency: frequency || existingData?.frequency || '',
+          duration: existingData?.duration || '',
+          active_ingredient: existingData?.active_ingredient || '',
+          mention_status: mentionStatus as MedicationMentionStatus,
+          confidence: existingData?.confidence ?? 'low',
+          requires_review: existingData?.requires_review ?? true,
+          source: 'merged',
+          ...(suggestedName
+            ? { suggested_name: suggestedName }
+            : existingData?.suggested_name
+            ? { suggested_name: existingData.suggested_name }
+            : {}),
+        };
+        currentMeds[existingIdx] = {
+          text: transformText(originalText),
+          medication_data: mergedData,
+        };
+        mergedIndices.add(existingIdx);
+        continue;
+      }
     }
 
-    // Scenario A: LLM has exact same original_text as a plain string.
-    // Must be checked before base-name dedup so the upgrade path is not skipped.
+    // Scenario A: exact original_text match against main analysis.
     // If a suggested_name exists, upgrade the plain-string entry to carry medication_data
     // so the chip can render. Only upgrade if the status belongs in medicacion_actual.
-    if (existingTexts.has(originalText.toLowerCase())) {
+    if (existingByOriginal.has(originalText.toLowerCase())) {
       if (
         suggestedName &&
         mentionStatus !== 'stopped_adverse' &&
@@ -520,8 +556,8 @@ const mergePreExtractedMedications = (
         patientReported: true,
         clinicianReviewRequired: true,
       });
-      existingTexts.add(originalText.toLowerCase());
-      if (canonicalName) existingTexts.add(canonicalName.toLowerCase());
+      existingByOriginal.add(originalText.toLowerCase());
+      if (canonicalName) existingByOriginal.add(canonicalName.toLowerCase());
       continue;
     }
 
@@ -543,8 +579,8 @@ const mergePreExtractedMedications = (
       ...(suggestedName ? { suggested_name: suggestedName } : {}),
     };
     newMeds.push({ text: transformText(originalText), medication_data: newMedData });
-    existingTexts.add(originalText.toLowerCase());
-    if (canonicalName) existingTexts.add(canonicalName.toLowerCase());
+    existingByOriginal.add(originalText.toLowerCase());
+    if (canonicalName) existingByOriginal.add(canonicalName.toLowerCase());
   }
 
   // Apply upgrades: replace plain-string entries with structured entries carrying suggested_name
@@ -573,12 +609,13 @@ const mergePreExtractedMedications = (
   const hasNewMeds = newMeds.length > 0;
   const hasNewAdverse = newAdverseReactions.length > 0;
   const hasUpgraded = upgradeIndices.size > 0;
+  const hasMerged = mergedIndices.size > 0;
 
-  if (!hasNewMeds && !hasNewAdverse && !hasUpgraded) {
+  if (!hasNewMeds && !hasNewAdverse && !hasUpgraded && !hasMerged) {
     return analysis;
   }
 
-  const updatedMedicacion = (hasNewMeds || hasUpgraded)
+  const updatedMedicacion = (hasNewMeds || hasUpgraded || hasMerged)
     ? ([...currentMeds, ...newMeds] as any)
     : analysis.medicacion_actual;
 
