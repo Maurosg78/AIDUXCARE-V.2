@@ -1367,3 +1367,6 @@ AiduxCare amplifica. Evidencia. Acompaña.
 ---
 
 *AiduxCare V2 — Documento interno de ingeniería. No contiene datos de pacientes.*
+
+## FUNDAMENTO CIENTÍFICO
+Ver CLINICAL_AI_EVIDENCE.md en la raíz del repo.
