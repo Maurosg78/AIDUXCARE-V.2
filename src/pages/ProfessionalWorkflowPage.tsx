@@ -1455,6 +1455,14 @@ const ProfessionalWorkflowPage = () => {
       }
 
       try {
+        if (resumeFromUrl && sessionIdFromUrl) {
+          logger.info('[WO-IA-RESUME-01] skipping workflow detection activeTab reset during resume', {
+            sessionId: sessionIdFromUrl,
+          });
+          setWorkflowDetected(true);
+          return;
+        }
+
         // ✅ CRITICAL FIX: If sessionTypeFromUrl is 'followup', use it as explicit follow-up
         const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
 
@@ -1590,7 +1598,7 @@ const ProfessionalWorkflowPage = () => {
         }
       });
     return () => { cancelled = true; };
-  }, [patientId, user?.uid, sessionTypeFromUrl, workflowRoute?.type, location.state, clinicalSessionDateKey]);
+  }, [patientId, user?.uid, sessionTypeFromUrl, workflowRoute?.type, location.state, clinicalSessionDateKey, resumeFromUrl, sessionIdFromUrl]);
 
   // ✅ CRITICAL FIX: Auto-navigate to SOAP tab after Niagara analysis for follow-up visits (legacy path only; follow-up now uses SOAP-only, no Niagara)
   useEffect(() => {
@@ -1807,6 +1815,13 @@ const ProfessionalWorkflowPage = () => {
     return () => {
       const state = unmountPersistRef.current;
       if (!state) return;
+      if (resumeFromUrl && sessionIdFromUrl) {
+        console.log('[WO-IA-RESUME-01] skipping interrupted-initial autosave during resume', {
+          hasSessionId: Boolean(sessionIdFromUrl),
+        });
+        return;
+      }
+
       const hasProgress = state.soapStatus !== "finalized" && (state.isRecording || (state.transcript?.trim().length ?? 0) > 0 || (state.physioNotes?.trim().length ?? 0) > 0 || (state.evaluationTests?.length ?? 0) > 0);
       if (!hasProgress) return;
       const isInitialSession = state.visitType === 'initial' || state.visitType === '';
@@ -1867,7 +1882,7 @@ const ProfessionalWorkflowPage = () => {
         }
       }
     };
-  }, [patientIdFromUrl, user?.uid, sessionTypeFromUrl, visitType, sessionId, transcript, physioNotes, evaluationTests, activeTab, selectedEntityIds, physicalTestAssistanceChoice, localSoapNote, soapStatus, niagaraResults, selectedRedFlagIds, redFlagDecisions, initialAssessmentClosedAt, baselineIdFromSession, isRecording, currentPatient]);
+  }, [patientIdFromUrl, user?.uid, sessionTypeFromUrl, visitType, sessionId, transcript, physioNotes, evaluationTests, activeTab, selectedEntityIds, physicalTestAssistanceChoice, localSoapNote, soapStatus, niagaraResults, selectedRedFlagIds, redFlagDecisions, initialAssessmentClosedAt, baselineIdFromSession, isRecording, currentPatient, resumeFromUrl, sessionIdFromUrl]);
 
   const [customTestName, setCustomTestName] = useState("");
   const [customTestRegion, setCustomTestRegion] = useState<MSKRegion | "other">("shoulder");
