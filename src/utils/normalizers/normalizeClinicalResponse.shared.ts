@@ -1,6 +1,12 @@
 import { parseVertexResponse, validateClinicalSchema } from "../responseParser";
 import type { EvidenceRecommendation } from "../../core/clinical-reasoning/prioritizeEvidence";
 import { safeLogger } from "../../utils/safeLogger";
+import type {
+  ClinicalMedicationEntry,
+  MedicationConfidence,
+  MedicationMentionStatus,
+  MedicationSource,
+} from '@/core/clinical/ClinicalMedicationEntry';
 
 export type LegalExposure = "low" | "moderate" | "high";
 
@@ -340,10 +346,26 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
       const firstItem = meds[0];
       const isStructured = firstItem && typeof firstItem === 'object' && 'original_text' in firstItem;
       if (isStructured) {
-        return meds.map((med: any) => ({
-          text: med.original_text || med.normalized_name || '',
-          medication_data: med,
-        }));
+        return meds.map((med: any) => {
+          const medData: ClinicalMedicationEntry = {
+            original_text: String(med.original_text || ''),
+            canonical_name: med.canonical_name ?? null,
+            normalized_name: String(med.normalized_name || ''),
+            dose: String(med.dose || ''),
+            frequency: String(med.frequency || ''),
+            duration: String(med.duration || ''),
+            active_ingredient: String(med.active_ingredient || ''),
+            mention_status: (med.mention_status as MedicationMentionStatus) ?? 'current',
+            confidence: (med.confidence as MedicationConfidence) ?? 'low',
+            requires_review: med.requires_review ?? true,
+            source: 'main_analysis' as MedicationSource,
+            ...(med.suggested_name ? { suggested_name: String(med.suggested_name) } : {}),
+          };
+          return {
+            text: medData.original_text || medData.normalized_name,
+            medication_data: medData,
+          };
+        });
       }
       return transformArray(ensureStringArray(meds), transformText);
     })() as any,
@@ -435,7 +457,7 @@ const mergePreExtractedMedications = (
     }
   }
 
-  const newMeds: any[] = [];
+  const newMeds: { text: string; medication_data: ClinicalMedicationEntry }[] = [];
   const newAdverseReactions: AdverseDrugReaction[] = [];
   // Upgrade map: index in currentMeds → structured replacement data
   // Used when LLM has the plain-string version and pre-extractor has suggested_name
@@ -506,22 +528,21 @@ const mergePreExtractedMedications = (
     // Guard: only statuses that represent actual patient medication enter medicacion_actual
     if (!MEDICATION_STATUSES_FOR_CURRENT.has(mentionStatus)) continue;
 
-    newMeds.push({
-      text: transformText(originalText),
-      medication_data: {
-        original_text: originalText,
-        normalized_name: '',
-        active_ingredient: '',
-        confidence: 'low' as const,
-        requires_review: true,
-        mention_status: mentionStatus,
-        dose,
-        frequency,
-        duration: '',
-        ...(suggestedName ? { suggested_name: suggestedName } : {}),
-        ...(canonicalName != null ? { canonical_name: canonicalName } : {}),
-      },
-    });
+    const newMedData: ClinicalMedicationEntry = {
+      original_text: originalText,
+      canonical_name: canonicalName,
+      normalized_name: '',
+      active_ingredient: '',
+      confidence: 'low',
+      requires_review: true,
+      mention_status: mentionStatus as MedicationMentionStatus,
+      dose,
+      frequency,
+      duration: '',
+      source: 'pre_extracted',
+      ...(suggestedName ? { suggested_name: suggestedName } : {}),
+    };
+    newMeds.push({ text: transformText(originalText), medication_data: newMedData });
     existingTexts.add(originalText.toLowerCase());
     if (canonicalName) existingTexts.add(canonicalName.toLowerCase());
   }
@@ -529,20 +550,23 @@ const mergePreExtractedMedications = (
   // Apply upgrades: replace plain-string entries with structured entries carrying suggested_name
   for (const [idx, upgrade] of upgradeIndices) {
     const originalString = currentMeds[idx] as string;
+    const upgradeData: ClinicalMedicationEntry = {
+      original_text: originalString.trim(),
+      canonical_name: null,
+      normalized_name: '',
+      active_ingredient: '',
+      confidence: 'low',
+      requires_review: true,
+      mention_status: upgrade.mentionStatus as MedicationMentionStatus,
+      dose: upgrade.dose,
+      frequency: upgrade.frequency,
+      duration: '',
+      suggested_name: upgrade.suggestedName,
+      source: 'pre_extracted',
+    };
     currentMeds[idx] = {
       text: transformText(originalString.trim()),
-      medication_data: {
-        original_text: originalString.trim(),
-        normalized_name: '',
-        active_ingredient: '',
-        confidence: 'low' as const,
-        requires_review: true,
-        mention_status: upgrade.mentionStatus,
-        dose: upgrade.dose,
-        frequency: upgrade.frequency,
-        duration: '',
-        suggested_name: upgrade.suggestedName,
-      },
+      medication_data: upgradeData,
     };
   }
 

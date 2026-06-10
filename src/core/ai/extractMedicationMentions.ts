@@ -1,3 +1,8 @@
+import type {
+  ClinicalMedicationEntry,
+  MedicationMentionStatus,
+} from '@/core/clinical/ClinicalMedicationEntry';
+
 // §1.7.2 ENGINEERING.md: version ID required on all clinical prompts
 const PROMPT_VERSION = 'medication-extraction-v1.2';
 
@@ -61,21 +66,8 @@ Devuelve SOLO un JSON válido. Sin texto previo ni posterior.
 Si no hay medicación del paciente: {"medications": []}
 </output_schema>`;
 
-export type MedicationMentionStatus =
-  | 'current'
-  | 'previous'
-  | 'stopped_adverse'
-  | 'topical_or_supplement'
-  | 'unclear';
-
-export type MedicationMention = {
-  original_text: string;
-  canonical_name?: string | null;
-  dose: string;
-  frequency: string;
-  mention_status: MedicationMentionStatus;
-  suggested_name?: string;
-};
+export type { MedicationMentionStatus } from '@/core/clinical/ClinicalMedicationEntry';
+export type { ClinicalMedicationEntry as MedicationMention } from '@/core/clinical/ClinicalMedicationEntry';
 
 type MedicationExtractionResponse = {
   medications?: unknown;
@@ -105,10 +97,10 @@ const extractJsonObject = (raw: string): string => {
   return withoutFence.slice(firstBraceIndex, lastBraceIndex + 1);
 };
 
-const toMedicationArray = (value: unknown): MedicationMention[] => {
+const toMedicationArray = (value: unknown): ClinicalMedicationEntry[] => {
   if (!Array.isArray(value)) return [];
 
-  const items: MedicationMention[] = [];
+  const items: ClinicalMedicationEntry[] = [];
   for (const item of value) {
     if (!item || typeof item !== 'object') continue;
     const record = item as Record<string, unknown>;
@@ -123,19 +115,26 @@ const toMedicationArray = (value: unknown): MedicationMention[] => {
 
     const suggestedName = String(record.suggested_name || '').trim();
     const rawCanonical = record.canonical_name;
-    const canonicalName =
+    const canonicalName: string | null =
       rawCanonical != null && rawCanonical !== ''
         ? String(rawCanonical).trim()
         : null;
 
-    items.push({
+    const entry: ClinicalMedicationEntry = {
       original_text: originalText,
-      ...(canonicalName != null ? { canonical_name: canonicalName } : {}),
+      canonical_name: canonicalName,
+      normalized_name: '',
       dose: String(record.dose || '').trim(),
       frequency: String(record.frequency || '').trim(),
+      duration: '',
+      active_ingredient: '',
       mention_status: mentionStatus,
+      confidence: 'low',
+      requires_review: true,
+      source: 'pre_extracted',
       ...(suggestedName ? { suggested_name: suggestedName } : {}),
-    });
+    };
+    items.push(entry);
   }
   return items;
 };
@@ -147,7 +146,7 @@ const buildPrompt = (transcript: string): string =>
 export const extractMedicationMentions = async (
   transcript: string,
   callVertex: (prompt: string) => Promise<string>
-): Promise<MedicationMention[]> => {
+): Promise<ClinicalMedicationEntry[]> => {
   const prompt = buildPrompt(transcript);
   const raw = await callVertex(prompt);
   const jsonText = extractJsonObject(raw);
