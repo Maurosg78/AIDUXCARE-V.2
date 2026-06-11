@@ -268,6 +268,143 @@ function buildTreatmentDecisionItemsFromPlan(planText: string): {
   };
 }
 
+type SOAPEditableEntity = {
+  id?: string;
+  text?: unknown;
+  type?: string;
+  custom?: boolean;
+  edited?: boolean;
+  source?: string;
+  medication_data?: {
+    original_text?: string;
+    normalized_name?: string;
+    selected_suggestion?: string;
+    suggested_name?: string;
+    suggestion_status?: string;
+    dose?: string;
+    frequency?: string;
+    requires_review?: boolean;
+  };
+};
+
+function clinicalValueToString(value: unknown): string {
+  if (!value) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value !== 'object') return String(value).trim();
+
+  const record = value as Record<string, unknown>;
+  const medicationData = record.medication_data as Record<string, unknown> | undefined;
+  const text =
+    record.text ??
+    record.label ??
+    record.name ??
+    record.description ??
+    medicationData?.selected_suggestion ??
+    medicationData?.normalized_name ??
+    medicationData?.original_text;
+  return String(text ?? '').trim();
+}
+
+function uniqueClinicalStrings(values: readonly unknown[]): string[] {
+  const strings = values.map(clinicalValueToString).filter(Boolean);
+  return Array.from(new Set(strings));
+}
+
+function entityToMedicationText(entity: SOAPEditableEntity): string {
+  const medicationData = entity.medication_data;
+  const baseText =
+    clinicalValueToString(entity.text) ||
+    medicationData?.selected_suggestion ||
+    medicationData?.normalized_name ||
+    medicationData?.original_text ||
+    medicationData?.suggested_name ||
+    '';
+  const dose = medicationData?.dose?.trim() ?? '';
+  if (dose && baseText && !baseText.includes(dose)) {
+    return `${baseText} ${dose}`.trim();
+  }
+  return baseText.trim();
+}
+
+function normalizeAnalysisForSOAP({
+  analysis,
+  analysisBeforeSafety,
+}: {
+  analysis: ClinicalAnalysis | null;
+  analysisBeforeSafety: unknown;
+}): ClinicalAnalysis | null {
+  if (!analysis) return analysis;
+
+  const analysisRecord = analysis as ClinicalAnalysis & Record<string, unknown>;
+  const sourceRecord =
+    analysisBeforeSafety && typeof analysisBeforeSafety === 'object'
+      ? analysisBeforeSafety as Record<string, unknown>
+      : {};
+  const entities = Array.isArray(analysisRecord.entities)
+    ? analysisRecord.entities as SOAPEditableEntity[]
+    : [];
+  const isEditedEntity = (entity: SOAPEditableEntity) =>
+    entity.edited === true ||
+    entity.custom === true ||
+    entity.source === 'clinician_confirmed' ||
+    entity.medication_data?.suggestion_status === 'accepted_by_clinician';
+  const hasEditedMedicationEntities = entities.some((entity) =>
+    entity.type === 'medication' && isEditedEntity(entity)
+  );
+  const hasEditedClinicalEntities = entities.some((entity) =>
+    entity.type !== 'medication' && isEditedEntity(entity)
+  );
+  const hasCamelRedFlags = Array.isArray(analysisRecord.redFlags);
+  const hasCamelYellowFlags = Array.isArray(analysisRecord.yellowFlags);
+
+  if (
+    !hasEditedMedicationEntities &&
+    !hasEditedClinicalEntities &&
+    !hasCamelRedFlags &&
+    !hasCamelYellowFlags
+  ) {
+    return analysis;
+  }
+
+  const normalized: ClinicalAnalysis & Record<string, unknown> = { ...analysisRecord };
+  const medicationEntities = entities.filter((entity) => entity.type === 'medication');
+
+  if (hasEditedMedicationEntities && medicationEntities.length > 0) {
+    normalized.medicacion_actual = uniqueClinicalStrings(
+      medicationEntities.map((entity) => entityToMedicationText(entity))
+    );
+  }
+
+  if (hasEditedClinicalEntities) {
+    const clinicalEntities = entities.filter((entity) => entity.type !== 'medication');
+    normalized.hallazgos_clinicos = uniqueClinicalStrings(
+      clinicalEntities.map((entity) => entity.text)
+    );
+  }
+
+  if (hasCamelRedFlags) {
+    const originalRedFlags = uniqueClinicalStrings(sourceRecord.red_flags as unknown[] || []);
+    const reconciledRedFlags = uniqueClinicalStrings(normalized.red_flags || []);
+    const safetyAddedRedFlags = reconciledRedFlags.filter((flag) => !originalRedFlags.includes(flag));
+    normalized.red_flags = uniqueClinicalStrings([
+      ...((analysisRecord.redFlags as unknown[]) || []),
+      ...safetyAddedRedFlags,
+    ]);
+  }
+
+  if (hasCamelYellowFlags) {
+    const originalYellowFlags = uniqueClinicalStrings(sourceRecord.yellow_flags as unknown[] || []);
+    const reconciledYellowFlags = uniqueClinicalStrings(normalized.yellow_flags || []);
+    const safetyAddedYellowFlags = reconciledYellowFlags.filter((flag) => !originalYellowFlags.includes(flag));
+    normalized.yellow_flags = uniqueClinicalStrings([
+      ...((analysisRecord.yellowFlags as unknown[]) || []),
+      ...safetyAddedYellowFlags,
+    ]);
+  }
+
+  return normalized;
+}
+
 const demoPatient = {
   id: "CA-TEST-001",
   name: "Sofia Bennett",
@@ -5163,10 +5300,14 @@ const ProfessionalWorkflowPage = () => {
       const localizedLibrary = MSK_TEST_LIBRARY.filter((definition): definition is MskTestDefinition => {
         return 'normalTemplate' in definition;
       });
+      const soapReadyAnalysisSource = normalizeAnalysisForSOAP({
+        analysis: reconciledAnalysisSource,
+        analysisBeforeSafety: analysisSource,
+      });
       const unifiedData: UnifiedClinicalData = {
         tab1: {
           transcript: transcript || '',
-          analysis: reconciledAnalysisSource,
+          analysis: soapReadyAnalysisSource,
           attachments: attachments,
         },
         tab2: {
