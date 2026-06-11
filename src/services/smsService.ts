@@ -266,162 +266,38 @@ export class SMSService {
       });
 
       safeLogger.identifierOperation('sms_consent_link', jurisdiction);
-      safeLogger.phoneValidation('sms_provider_enabled', TWILIO_ENABLED || VONAGE_ENABLED);
 
-      const providerUsed = SMS_PROVIDER === 'vonage' ? 'vonage' : 'twilio';
+      // Paso 5 — proxy seguro via Cloud Function (credenciales Vonage nunca en browser)
+      const authenticatedHeaders = await buildAuthenticatedJsonHeaders();
 
-      if (providerUsed === 'vonage') {
-        if (!VONAGE_ENABLED) {
-          throw new Error('Vonage provider selected but API key/secret or phone number are missing.');
-        }
-        await SMSService.sendViaVonage({
-          phone,
-          message,
-          patientName,
-          clinicName,
-          consentToken,
-          consentUrl,
-          auditRefId: auditRef.id,
-        });
-      } else if (TWILIO_ENABLED) {
-        try {
-          // Ensure phone number has no spaces (Twilio requires E.164 without spaces)
-          const cleanPhoneForTwilio = phone.replace(/\s/g, '');
+      const SMS_FUNCTION_REGION = 'northamerica-northeast1';
+      const SMS_FUNCTION_PROJECT = 'aiduxcare-v2-uat-dev';
+      const smsFunctionUrl = `https://${SMS_FUNCTION_REGION}-${SMS_FUNCTION_PROJECT}.cloudfunctions.net/sendConsentSMS`;
 
-          // Detect if sending to Canadian number from US Twilio number
-          const isCanadianNumber = cleanPhoneForTwilio.startsWith('+1') &&
-            (cleanPhoneForTwilio.startsWith('+1416') || cleanPhoneForTwilio.startsWith('+1647') ||
-              cleanPhoneForTwilio.startsWith('+1437') || cleanPhoneForTwilio.startsWith('+1513') ||
-              cleanPhoneForTwilio.startsWith('+1613') || cleanPhoneForTwilio.startsWith('+1506') ||
-              cleanPhoneForTwilio.startsWith('+1705') || cleanPhoneForTwilio.startsWith('+1807') ||
-              cleanPhoneForTwilio.startsWith('+1226') || cleanPhoneForTwilio.startsWith('+1343') ||
-              cleanPhoneForTwilio.startsWith('+1365') || cleanPhoneForTwilio.startsWith('+1403') ||
-              cleanPhoneForTwilio.startsWith('+1431') || cleanPhoneForTwilio.startsWith('+1450') ||
-              cleanPhoneForTwilio.startsWith('+1418') || cleanPhoneForTwilio.startsWith('+1819') ||
-              cleanPhoneForTwilio.startsWith('+1878') || cleanPhoneForTwilio.startsWith('+1236') ||
-              cleanPhoneForTwilio.startsWith('+1249') || cleanPhoneForTwilio.startsWith('+1289') ||
-              cleanPhoneForTwilio.startsWith('+1306') || cleanPhoneForTwilio.startsWith('+1639') ||
-              cleanPhoneForTwilio.startsWith('+1832') || cleanPhoneForTwilio.startsWith('+1867') ||
-              cleanPhoneForTwilio.startsWith('+1905') || cleanPhoneForTwilio.startsWith('+1937'));
+      const smsFunctionPayload = {
+        phone: phone,
+        message: message,
+        clinicName: clinicName,
+        patientName: patientName,
+        consentToken: consentToken,
+      };
 
-          const isUSNumber = TWILIO_PHONE_NUMBER?.startsWith('+1') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1416') && !TWILIO_PHONE_NUMBER.startsWith('+1647') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1437') && !TWILIO_PHONE_NUMBER.startsWith('+1513') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1613') && !TWILIO_PHONE_NUMBER.startsWith('+1506') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1705') && !TWILIO_PHONE_NUMBER.startsWith('+1807') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1226') && !TWILIO_PHONE_NUMBER.startsWith('+1343') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1365') && !TWILIO_PHONE_NUMBER.startsWith('+1403') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1431') && !TWILIO_PHONE_NUMBER.startsWith('+1450') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1418') && !TWILIO_PHONE_NUMBER.startsWith('+1819') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1878') && !TWILIO_PHONE_NUMBER.startsWith('+1236') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1249') && !TWILIO_PHONE_NUMBER.startsWith('+1289') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1306') && !TWILIO_PHONE_NUMBER.startsWith('+1639') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1832') && !TWILIO_PHONE_NUMBER.startsWith('+1867') &&
-            !TWILIO_PHONE_NUMBER.startsWith('+1905') && !TWILIO_PHONE_NUMBER.startsWith('+1937');
+      const smsFunctionRequest = await fetch(smsFunctionUrl, {
+        method: 'POST',
+        headers: authenticatedHeaders,
+        body: JSON.stringify(smsFunctionPayload),
+      });
 
-          // Log exact values being sent to Twilio
-          safeLogger.phoneValidation('twilio_target_canadian_number', isCanadianNumber);
-          safeLogger.phoneValidation('twilio_sender_us_number', isUSNumber);
-          safeLogger.vertexResponse(message.length, message.length > 0, 'sms_message_prepared');
+      const smsFunctionResponse = await smsFunctionRequest.json() as {
+        ok: boolean;
+        messageId?: string;
+        error?: string;
+      };
 
-          // Use Twilio REST API directly (no SDK needed for simple use case)
-          const response = await fetch(
-            `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-              },
-              body: new URLSearchParams({
-                From: TWILIO_PHONE_NUMBER,
-                To: cleanPhoneForTwilio, // Use cleaned phone without spaces
-                Body: message,
-              }),
-            }
-          );
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            const errorMessage = errorData.message || response.statusText;
-            const errorCode = errorData.code;
-
-            // Log full error response for debugging
-            const twilioErrorCode = errorCode ?? response.status;
-            const twilioHasMessage = Boolean(errorMessage);
-            safeLogger.errorOccurred('SMSTwilioApi', twilioErrorCode, twilioHasMessage);
-
-            // Check for common Twilio trial account errors
-            if (errorMessage.includes('not a valid') || errorMessage.includes('unverified') || errorCode === 21211) {
-              const trialRestrictionCode = errorCode ?? 'trial_restriction';
-              safeLogger.errorOccurred('SMSTwilioTrialRestriction', trialRestrictionCode, true);
-            }
-
-            // Check for domestic-only restrictions (US number trying to send to Canada)
-            if (errorCode === 21608 || errorMessage.includes('domestic') || errorMessage.includes('not allowed')) {
-              const domesticRestrictionCode = errorCode ?? 'domestic_restriction';
-              safeLogger.errorOccurred('SMSTwilioDomesticRestriction', domesticRestrictionCode, true);
-            }
-
-            throw new Error(`Twilio API error: ${errorMessage} (Code: ${errorCode || 'N/A'})`);
-          }
-
-          const result = await response.json();
-
-          // Log successful response details
-          const twilioSuccess = Boolean(result.sid);
-          safeLogger.phoneValidation('twilio_api_success', twilioSuccess);
-
-          // Update audit trail with success
-          await addDoc(collection(db, SMS_COLLECTION), {
-            phone: cleanPhoneForTwilio, // Store cleaned version (no spaces)
-            phoneOriginal: phone, // Store original for reference
-            message,
-            patientName,
-            clinicName,
-            consentToken,
-            consentUrl,
-            status: 'sent',
-            twilioSid: result.sid,
-            twilioStatus: result.status,
-            twilioPrice: result.price,
-            twilioPriceUnit: result.price_unit,
-            createdAt: serverTimestamp(),
-            type: 'consent_request',
-            auditRefId: auditRef.id,
-          });
-
-          safeLogger.phoneValidation('consent_sms_sent_twilio', twilioSuccess);
-
-        } catch (twilioError: any) {
-          const twilioSendErrorCode = twilioError?.code ?? 'unknown';
-          const twilioSendHasMessage = Boolean(twilioError?.message);
-          safeLogger.errorOccurred('SMSTwilioSend', twilioSendErrorCode, twilioSendHasMessage);
-
-          // Update audit trail with error
-          await addDoc(collection(db, SMS_COLLECTION), {
-            phone,
-            message,
-            patientName,
-            clinicName,
-            consentToken,
-            consentUrl,
-            status: 'failed',
-            error: twilioError.message || 'Twilio send failed',
-            createdAt: serverTimestamp(),
-            type: 'consent_request',
-            auditRefId: auditRef.id,
-          });
-
-          safeLogger.errorOccurred('SMSTwilioSendAudit', twilioSendErrorCode, twilioSendHasMessage);
-
-          // Re-throw to allow caller to handle (e.g., show manual fallback)
-          throw new Error(`Failed to send SMS via Twilio: ${twilioError.message}`);
-        }
-      } else {
-        // Twilio not configured - save as pending for manual sending
-        safeLogger.phoneValidation('twilio_configured', false);
-
+      const smsSentSuccessfully = smsFunctionResponse.ok === true;
+      if (!smsSentSuccessfully) {
+        const smsErrorCode = smsFunctionResponse.error ?? 'unknown_error';
+        safeLogger.errorOccurred('SMSCloudFunction', smsErrorCode, true);
         await addDoc(collection(db, SMS_COLLECTION), {
           phone,
           message,
@@ -429,17 +305,33 @@ export class SMSService {
           clinicName,
           consentToken,
           consentUrl,
-          status: 'pending',
+          status: 'failed',
+          error: smsErrorCode,
           createdAt: serverTimestamp(),
           type: 'consent_request',
           auditRefId: auditRef.id,
-          note: 'Twilio not configured - requires manual sending',
         });
-
-        safeLogger.identifierOperation('sms_consent_link', 'queued_manual_send');
-
-        throw new Error('SMS service is not configured. Message queued for manual sending.');
+        throw new Error(`[SMS] Cloud Function error: ${smsErrorCode}`);
       }
+
+      const smsMessageId = smsFunctionResponse.messageId ?? 'no-message-id';
+
+      await addDoc(collection(db, SMS_COLLECTION), {
+        phone,
+        message,
+        patientName,
+        clinicName,
+        consentToken,
+        consentUrl,
+        status: 'sent',
+        messageId: smsMessageId,
+        provider: 'vonage',
+        createdAt: serverTimestamp(),
+        type: 'consent_request',
+        auditRefId: auditRef.id,
+      });
+
+      safeLogger.phoneValidation('consent_sms_sent_via_cloud_function', true);
 
     } catch (error) {
       const consentLinkErrorCode = (error as { code?: string })?.code ?? 'unknown';
