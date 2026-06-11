@@ -10,7 +10,7 @@
  */
 
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import logger from '@/shared/utils/logger';
 import { SMS_TEMPLATES, validateSMSTemplate, validateSMSTemplateEs } from '../content/smsTemplates';
 import { getPublicBaseUrl } from '../utils/urlHelpers';
@@ -254,6 +254,7 @@ export class SMSService {
       // Save to Firestore audit trail BEFORE sending — non-blocking (rules may deny for new patients)
       let auditRef: { id: string } | null = null;
       try {
+        const currentUser = auth.currentUser;
         const auditInitialPayload = {
           phone,
           message,
@@ -262,6 +263,7 @@ export class SMSService {
           consentToken,
           consentUrl,
           status: 'sending',
+          userId: currentUser.uid,
           createdAt: serverTimestamp(),
           type: 'consent_request',
         };
