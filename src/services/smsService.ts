@@ -251,19 +251,27 @@ export class SMSService {
       const finalPhoneIsValid = SMSService.validatePhoneNumber(phone);
       safeLogger.phoneValidation('final_phone_validated', finalPhoneIsValid);
 
-      // Save to Firestore audit trail BEFORE sending
-      const auditRef = await addDoc(collection(db, SMS_COLLECTION), {
-        phone,
-        message,
-        patientName,
-        clinicName,
-        consentToken,
-        consentUrl,
-        status: 'sending',
-        createdAt: serverTimestamp(),
-        type: 'consent_request',
-        twilioEnabled: TWILIO_ENABLED,
-      });
+      // Save to Firestore audit trail BEFORE sending — non-blocking (rules may deny for new patients)
+      let auditRef: { id: string } | null = null;
+      try {
+        const auditInitialPayload = {
+          phone,
+          message,
+          patientName,
+          clinicName,
+          consentToken,
+          consentUrl,
+          status: 'sending',
+          createdAt: serverTimestamp(),
+          type: 'consent_request',
+        };
+        auditRef = await addDoc(collection(db, SMS_COLLECTION), auditInitialPayload);
+      } catch (auditWriteError) {
+        console.warn(
+          '[SMS] Non-blocking audit trail write failed — continuing with SMS send:',
+          auditWriteError
+        );
+      }
 
       safeLogger.identifierOperation('sms_consent_link', jurisdiction);
 
@@ -298,38 +306,48 @@ export class SMSService {
       if (!smsSentSuccessfully) {
         const smsErrorCode = smsFunctionResponse.error ?? 'unknown_error';
         safeLogger.errorOccurred('SMSCloudFunction', smsErrorCode, true);
-        await addDoc(collection(db, SMS_COLLECTION), {
+        try {
+          const auditFailedPayload = {
+            phone,
+            message,
+            patientName,
+            clinicName,
+            consentToken,
+            consentUrl,
+            status: 'failed',
+            error: smsErrorCode,
+            createdAt: serverTimestamp(),
+            type: 'consent_request',
+            auditRefId: auditRef?.id ?? null,
+          };
+          await addDoc(collection(db, SMS_COLLECTION), auditFailedPayload);
+        } catch (auditFailedWriteError) {
+          console.warn('[SMS] Non-blocking failed-audit write failed:', auditFailedWriteError);
+        }
+        throw new Error(`[SMS] Cloud Function error: ${smsErrorCode}`);
+      }
+
+      const smsMessageId = smsFunctionResponse.messageId ?? 'no-message-id';
+
+      try {
+        const auditSentPayload = {
           phone,
           message,
           patientName,
           clinicName,
           consentToken,
           consentUrl,
-          status: 'failed',
-          error: smsErrorCode,
+          status: 'sent',
+          messageId: smsMessageId,
+          provider: 'vonage',
           createdAt: serverTimestamp(),
           type: 'consent_request',
-          auditRefId: auditRef.id,
-        });
-        throw new Error(`[SMS] Cloud Function error: ${smsErrorCode}`);
+          auditRefId: auditRef?.id ?? null,
+        };
+        await addDoc(collection(db, SMS_COLLECTION), auditSentPayload);
+      } catch (auditSentWriteError) {
+        console.warn('[SMS] Non-blocking sent-audit write failed:', auditSentWriteError);
       }
-
-      const smsMessageId = smsFunctionResponse.messageId ?? 'no-message-id';
-
-      await addDoc(collection(db, SMS_COLLECTION), {
-        phone,
-        message,
-        patientName,
-        clinicName,
-        consentToken,
-        consentUrl,
-        status: 'sent',
-        messageId: smsMessageId,
-        provider: 'vonage',
-        createdAt: serverTimestamp(),
-        type: 'consent_request',
-        auditRefId: auditRef.id,
-      });
 
       safeLogger.phoneValidation('consent_sms_sent_via_cloud_function', true);
 
