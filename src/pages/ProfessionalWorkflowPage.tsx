@@ -1455,13 +1455,9 @@ const ProfessionalWorkflowPage = () => {
       }
 
       try {
-        if (resumeFromUrl && sessionIdFromUrl) {
-          logger.info('[WO-IA-RESUME-01] skipping workflow detection activeTab reset during resume', {
-            sessionId: sessionIdFromUrl,
-          });
-          setWorkflowDetected(true);
-          return;
-        }
+        // [WO-IA-RESUME-01] On resume, workflow detection still runs so workflowRoute/visitType are
+        // populated. Only setActiveTab is skipped — the tab hydrated from Firestore is preserved.
+        const isResumingActiveSession = resumeFromUrl === true && Boolean(sessionIdFromUrl);
 
         // ✅ CRITICAL FIX: If sessionTypeFromUrl is 'followup', use it as explicit follow-up
         const isExplicitFollowUp = sessionTypeFromUrl === 'followup';
@@ -1491,8 +1487,19 @@ const ProfessionalWorkflowPage = () => {
           ? 'analysis'  // ✅ FIX: Start with analysis for follow-up conversation
           : getInitialTab(route);
 
-        if (['analysis', 'evaluation', 'soap'].includes(initialTab)) {
-          setActiveTab(initialTab as ActiveTab);
+        if (isResumingActiveSession) {
+          logger.info(
+            '[WO-IA-RESUME-01] preserving restored activeTab — skipping setActiveTab only',
+            { sessionId: sessionIdFromUrl, skippedInitialTab: initialTab }
+          );
+        } else {
+          const isValidTab =
+            initialTab === 'analysis' ||
+            initialTab === 'evaluation' ||
+            initialTab === 'soap';
+          if (isValidTab) {
+            setActiveTab(initialTab as ActiveTab);
+          }
         }
 
         // ✅ WORKFLOW OPTIMIZATION: Track workflow session start
@@ -3229,15 +3236,19 @@ const ProfessionalWorkflowPage = () => {
     };
   }, []);
 
-  const normalizeName = (value: string) => value.toLowerCase().trim();
+  const normalizeName = (value: string | undefined | null): string => {
+    const safeValue = typeof value === 'string' ? value : '';
+    return safeValue.toLowerCase().trim();
+  };
 
   /**
    * Normalize test name for deduplication
    * Removes common prefixes and normalizes formatting
    * WO-FIX-TESTS-DUPLICADOS-03
    */
-  const normalizeTestName = (name: string): string => {
-    return name
+  const normalizeTestName = (name: string | undefined | null): string => {
+    const safeName = typeof name === 'string' ? name : '';
+    return safeName
       .toLowerCase()
       .replace(/^consider assessing\s+/i, '')
       .replace(/\s*\(.*?\)\s*/g, '') // Remove parenthetical content
@@ -3522,7 +3533,8 @@ const ProfessionalWorkflowPage = () => {
     setEvaluationTests(prev => {
       let cleaned = false;
       const cleanedTests = prev.map(test => {
-        if (test.name.toLowerCase().startsWith('consider assessing')) {
+        const safeTestName = typeof test.name === 'string' ? test.name.toLowerCase() : '';
+        if (safeTestName.startsWith('consider assessing')) {
           cleaned = true;
           const newName = test.name.replace(/^consider assessing\s+/i, '');
           console.log(`[CLEANUP] Renaming legacy test label`, {
@@ -3630,7 +3642,10 @@ const ProfessionalWorkflowPage = () => {
   }, [niagaraResults, sessionTypeFromUrl, workflowRoute?.type, detectedCaseRegion, followUpAlerts, aiPhysicalTestSuggestionsEnabled]); // ✅ FIX: Add detectedCaseRegion to dependencies
 
   const pendingAiSuggestions = useMemo(() => {
-    const toKey = (value: string) => value?.toLowerCase().trim() ?? "";
+    const toKey = (value: string | undefined | null): string => {
+      const lowered = value?.toLowerCase() ?? '';
+      return lowered.trim();
+    };
     return aiSuggestions.filter((item) => {
       const candidateName = item.match ? item.match.name : item.rawName || item.displayName || "";
       const candidateId = item.match ? item.match.id : `ai-${toKey(candidateName)}`;
@@ -5789,7 +5804,7 @@ const ProfessionalWorkflowPage = () => {
         featuresUsed: Object.values(metrics.featuresUsed).filter(Boolean).length,
       });
     } catch (error) {
-      console.error('❌ [VALUE METRICS] Error tracking value metrics:', error);
+      console.warn('[VALUE METRICS] Non-blocking metrics error:', error);
       // Don't throw - analytics should not break main flow
     }
   }, [
