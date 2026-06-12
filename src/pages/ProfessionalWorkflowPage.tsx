@@ -405,6 +405,62 @@ function normalizeAnalysisForSOAP({
   return normalized;
 }
 
+function applyPhysioDecisions(
+  analysis: ClinicalAnalysis,
+  approvedIds: string[]
+): ClinicalAnalysis {
+  if (!analysis) return analysis;
+  if (approvedIds.length === 0) return analysis;
+
+  const approvedSet = new Set(approvedIds);
+  const filtered = { ...analysis } as ClinicalAnalysis & Record<string, unknown>;
+
+  if (Array.isArray((filtered as any).entities)) {
+    const filteredEntities = ((filtered as any).entities as any[])
+      .filter((entity: any) => approvedSet.has(entity.id));
+    (filtered as any).entities = filteredEntities;
+  }
+
+  if (Array.isArray(filtered.red_flags)) {
+    filtered.red_flags = filtered.red_flags
+      .filter((_: unknown, index: number) => approvedSet.has(`red-${index}`));
+  }
+
+  if (Array.isArray((filtered as any).redFlags)) {
+    (filtered as any).redFlags = ((filtered as any).redFlags as unknown[])
+      .filter((_: unknown, index: number) => approvedSet.has(`red-${index}`));
+  }
+
+  if (Array.isArray(filtered.yellow_flags)) {
+    filtered.yellow_flags = filtered.yellow_flags
+      .filter((_: unknown, index: number) => approvedSet.has(`yellow-${index}`));
+  }
+
+  if (Array.isArray((filtered as any).yellowFlags)) {
+    (filtered as any).yellowFlags = ((filtered as any).yellowFlags as unknown[])
+      .filter((_: unknown, index: number) => approvedSet.has(`yellow-${index}`));
+  }
+
+  const biopsychosocialFieldPrefixMap: Array<[keyof ClinicalAnalysis, string]> = [
+    ['biopsychosocial_occupational', 'occupational'],
+    ['biopsychosocial_protective', 'protective'],
+    ['biopsychosocial_functional_limitations', 'functional'],
+    ['biopsychosocial_psychological', 'psychological'],
+    ['biopsychosocial_social', 'social'],
+    ['biopsychosocial_patient_strengths', 'strength'],
+  ];
+
+  for (const [fieldName, idPrefix] of biopsychosocialFieldPrefixMap) {
+    const fieldValue = filtered[fieldName];
+    if (Array.isArray(fieldValue)) {
+      (filtered as any)[fieldName] = (fieldValue as unknown[])
+        .filter((_: unknown, index: number) => approvedSet.has(`${idPrefix}-${index}`));
+    }
+  }
+
+  return filtered;
+}
+
 const demoPatient = {
   id: "CA-TEST-001",
   name: "Sofia Bennett",
@@ -5092,8 +5148,27 @@ const ProfessionalWorkflowPage = () => {
       : derivePlanFromText(baselinePlanText || previousPlanInput);
     const hasDerivedPlan = derived.inClinic.length > 0 || derived.homeProgram.length > 0;
     if (!hasDerivedPlan) {
+      const inClinicSourceLoaded =
+        Boolean(previousTreatmentPlan?.inClinicText?.trim());
+      const homeProgramSourceLoaded =
+        Boolean(previousTreatmentPlan?.homeProgramText?.trim());
+      const baselineSourceLoaded =
+        Boolean(followUpClinicalState?.baselineSOAP?.plan?.trim());
+      const anyPlanSourceLoaded =
+        inClinicSourceLoaded || homeProgramSourceLoaded || baselineSourceLoaded;
+
       setInClinicItems([]);
-      setHomeProgramItems([]);
+      setHomeProgramItems((existingHepItems) => {
+        // Preserve existing HEP items when plan sources are temporarily
+        // unavailable - prevents timing wipe when sessionId changes on
+        // recording start before async data reloads.
+        const hasExistingItems = existingHepItems.length > 0;
+        const isTimingWipe = hasExistingItems && !anyPlanSourceLoaded;
+        if (isTimingWipe) {
+          return existingHepItems;
+        }
+        return [];
+      });
       treatmentDecisionConfirmationRef.current = null;
       setTreatmentDecisionConfirmation(null);
       return;
@@ -5222,7 +5297,11 @@ const ProfessionalWorkflowPage = () => {
 
       // Step 1: Organize unified data from Tab 1 and Tab 2
       const analysisSource = editedAnalysisResults ?? niagaraResults;
-      let reconciledAnalysisSource = analysisSource;
+      const physioApprovedAnalysis = applyPhysioDecisions(
+        analysisSource as ClinicalAnalysis,
+        selectedEntityIds
+      );
+      let reconciledAnalysisSource = physioApprovedAnalysis;
 
       if (analysisSource && physicalExamResults.length > 0) {
         try {
@@ -6470,11 +6549,16 @@ const ProfessionalWorkflowPage = () => {
                 }
               );
               const memoryService = new PatientTrajectoryMemoryService();
+              const followUpAnalysisSource = editedAnalysisResults ?? niagaraResults;
+              const followUpPhysioApprovedAnalysis = applyPhysioDecisions(
+                followUpAnalysisSource as ClinicalAnalysis,
+                selectedEntityIds
+              );
               const longitudinalSnapshot = await memoryService.buildEncounterLongitudinalSnapshot(patientId, s, {
                 objectiveText: o,
                 assessmentText: a,
                 planText: p,
-                analysisSource: editedAnalysisResults ?? niagaraResults,
+                analysisSource: followUpPhysioApprovedAnalysis,
                 sessionId: activeSessionId,
               });
               const encounterId = await encountersRepo.createEncounterCompleted({
