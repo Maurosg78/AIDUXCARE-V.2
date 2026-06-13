@@ -507,7 +507,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
   const reviewableMeds = medicationEntities.filter((entity) => {
     const isPlaceholder = hasPrescriptionPlaceholder(entity);
-    return !isPlaceholder;
+    const mentionStatus = entity.medication_data?.mention_status ?? '';
+    const isPastMedication = mentionStatus === 'previous';
+    const isDiscontinuedMedication = mentionStatus === 'stopped_adverse';
+    const shouldExclude =
+      isPlaceholder || isPastMedication || isDiscontinuedMedication;
+    return !shouldExclude;
   });
 
   const topicalOrSupplementMeds = reviewableMeds.filter(
