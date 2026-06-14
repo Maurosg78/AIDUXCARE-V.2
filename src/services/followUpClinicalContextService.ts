@@ -126,6 +126,40 @@ export class FollowUpClinicalContextService {
       const trajectoryFromComparison = classifyTrajectoryFromTwoPoints(previousPainLevel ?? undefined, currentPainLevel ?? undefined);
 
       longitudinalSummary = summaryFromComparison ?? undefined;
+      // Enriquecer con SOAP de sesión anterior para capturar variaciones clínicas específicas
+      // (ROM, edema, síntomas) que buildLongitudinalSummaryForPrompt no incluye.
+      const previousSoapNote = previousSession?.soapNote as
+        | { subjective?: string; objective?: string; assessment?: string }
+        | undefined;
+
+      const previousSubjectiveText = previousSoapNote?.subjective?.trim() ?? '';
+      const previousObjectiveText = previousSoapNote?.objective?.trim() ?? '';
+      const previousAssessmentText = previousSoapNote?.assessment?.trim() ?? '';
+
+      const hasPreviousSOAPContent =
+        previousSubjectiveText.length > 0 ||
+        previousObjectiveText.length > 0 ||
+        previousAssessmentText.length > 0;
+
+      if (hasPreviousSOAPContent) {
+        const previousSOAPContextLines = [
+          previousSubjectiveText
+            ? `Subjective (previous visit): ${previousSubjectiveText.slice(0, 400)}`
+            : '',
+          previousObjectiveText
+            ? `Objective findings (previous visit): ${previousObjectiveText.slice(0, 500)}`
+            : '',
+          previousAssessmentText
+            ? `Assessment (previous visit): ${previousAssessmentText.slice(0, 300)}`
+            : '',
+        ].filter((line) => line.length > 0);
+
+        const previousSOAPContextBlock = previousSOAPContextLines.join('\n');
+
+        longitudinalSummary = [longitudinalSummary, previousSOAPContextBlock]
+          .filter((part) => part && part.trim().length > 0)
+          .join('\n\n');
+      }
       trajectoryPattern = trajectoryFromComparison?.label ?? undefined;
       trajectoryConfidence = trajectoryFromComparison?.confidence ?? undefined;
     }

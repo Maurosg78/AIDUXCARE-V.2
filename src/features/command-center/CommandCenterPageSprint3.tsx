@@ -730,9 +730,6 @@ export const CommandCenterPageSprint3: React.FC = () => {
       const sessionIdToCancel = session.id;
       try {
         await sessionService.updateSession(sessionIdToCancel, { status: 'cancelled' });
-        // Optimistic removal: prevents read-after-write race where Firestore
-        // getDocs() returns stale data still including the cancelled session.
-        // Mirrors the pattern in handleDismissOpenResponsibility.
         inProgressSessions.optimisticRemove(sessionIdToCancel);
         const matchingQuickItem = todayQuickList.find(
           (quickItem) => quickItem.patientId === patientId
@@ -745,7 +742,8 @@ export const CommandCenterPageSprint3: React.FC = () => {
         logger.error('[CommandCenter] Failed to dismiss incomplete session');
       }
     },
-    [inProgressSessions.data, inProgressSessions.optimisticRemove, inProgressSessions.refetch, removeTodayQuickItem, todayQuickList]
+    [inProgressSessions.data, inProgressSessions.refetch,
+      inProgressSessions.optimisticRemove, todayQuickList, removeTodayQuickItem]
   );
 
   const handleOpenClinicalDayRow = useCallback((row: ClinicalDayRow) => {
