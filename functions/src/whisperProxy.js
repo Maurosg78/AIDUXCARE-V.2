@@ -24,8 +24,17 @@ exports.whisperProxy = onCall(
   },
   async (request) => {
     const startTime = Date.now();
-    const userId = request.auth?.uid || 'anonymous';
-    const hasAuthenticatedUser = request.auth?.uid != null;
+    const callerUid = request.auth?.uid ?? null;
+    const isAuthenticatedCaller = callerUid !== null;
+    if (!isAuthenticatedCaller) {
+      throw new HttpsError(
+        'unauthenticated',
+        'Firebase ID token required to use whisperProxy'
+      );
+    }
+
+    const userId = callerUid; // ya verificado arriba
+    const hasAuthenticatedUser = true;
     
     console.log(`[whisperProxy] Request received`, { hasAuthenticatedUser, userId });
     console.log(`[whisperProxy] Request data keys:`, Object.keys(request.data || {}));
