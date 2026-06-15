@@ -442,16 +442,6 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
         }}
       />
 
-      {!hideAdditionalNotesSection ? (
-        <AdditionalClinicalContextInput
-          additionalNotes={additionalNotes}
-          setAdditionalNotes={setAdditionalNotes}
-          languagePreference={languagePreference}
-          isProcessing={isProcessing}
-          isGeneratingSOAP={isGeneratingSOAP}
-        />
-      ) : null}
-
       {transcriptMeta && (
         <div className="mt-2 text-xs text-slate-500 flex flex-wrap items-center gap-3">
           <span>{UI.detectedLang(transcriptMeta.detectedLanguage)}</span>
@@ -539,6 +529,17 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
 
         {!hideAnalyzeButton ? (
           <div className="mt-4 pt-4 border-t border-slate-200">
+            {!hideAdditionalNotesSection && !additionalNotes.trim() && Boolean(transcript?.trim()) && (
+              <div className="mb-3">
+                <AdditionalClinicalContextInput
+                  additionalNotes={additionalNotes}
+                  setAdditionalNotes={setAdditionalNotes}
+                  languagePreference={languagePreference}
+                  isProcessing={isProcessing}
+                  isGeneratingSOAP={isGeneratingSOAP}
+                />
+              </div>
+            )}
             {preAnalyzeContent}
             <button
               onClick={handleAnalyzeWithVertex}
