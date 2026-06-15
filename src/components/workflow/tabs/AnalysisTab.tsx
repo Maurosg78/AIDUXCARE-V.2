@@ -648,7 +648,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
           <button
             onClick={handleAnalyzeWithVertex}
             disabled={isProcessing || isGeneratingSOAP}
-            className="mt-4 inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
           >
             {(isProcessing || isGeneratingSOAP) ? (
               <>
