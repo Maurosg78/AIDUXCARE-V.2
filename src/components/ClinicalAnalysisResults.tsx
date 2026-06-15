@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { AlertCircle, Heart, Brain, Activity, AlertTriangle } from 'lucide-react';
 import { EditableCheckbox } from './EditableCheckbox';
 import { AddCustomItemButton } from './AddCustomItemButton';
@@ -6,12 +6,7 @@ import { useEditableResults } from '../hooks/useEditableResults';
 import { sortPhysicalTestsByImportance, getTopPhysicalTests } from '../utils/sortPhysicalTestsByImportance';
 import { isSpainPilot } from '@/core/pilotDetection';
 import type { EvidenceRecommendation } from '@/core/clinical-reasoning/prioritizeEvidence';
-import { AddMedicationModal } from '@/components/clinical-decisions/AddMedicationModal';
-import {
-  getPatientClinicalDecisions,
-  saveClinicalDecision,
-} from '@/core/clinical-decisions/clinicalDecisionService';
-import type { ClinicalDecision, MedicationDecisionState } from '@/core/clinical-decisions/types';
+import { getPatientClinicalDecisions } from '@/core/clinical-decisions/clinicalDecisionService';
 
 interface ClinicalAnalysisResultsProps {
   results: any;
@@ -85,17 +80,11 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   visitType = 'initial',
   selectedRedFlagIds,
   redFlagsDetected = [],
-  currentUserId,
-  currentSessionId,
   currentPatientId,
 }) => {
-  const [isAddMedicationModalOpen, setIsAddMedicationModalOpen] = useState(false);
-  const [physioAddedMedications, setPhysioAddedMedications] = useState<ClinicalDecision[]>([]);
-  const [medicationError, setMedicationError] = useState<string | null>(null);
   const esPilot = isSpainPilot();
   const ui = esPilot
     ? {
-        followUpMessage: 'Genera la nota SOAP en la sección de documentación inferior. El seguimiento utiliza la línea basal, los tratamientos y las notas clínicas, sin bloques de análisis separados.',
         medicoLegalTitle: 'Resumen médico-legal',
         medicoLegalBody: 'Notas de cumplimiento y red flags seleccionados en el paso de análisis.',
         redFlagSingle: '1 red flag seleccionada en el paso de análisis anterior.',
@@ -111,7 +100,6 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         testsBody: 'Selecciona las valoraciones que planeas realizar en la pestaña de evaluación.',
       }
     : {
-        followUpMessage: 'Generate your SOAP note in the Documentation section below. Follow-up uses baseline, treatments, and clinical notes only — no separate analysis sections.',
         medicoLegalTitle: 'Medico-legal Summary',
         medicoLegalBody: 'Compliance notes and red flags selected in the analysis step.',
         redFlagSingle: '1 red flag selected in the analysis step above.',
@@ -150,6 +138,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     : [];
 
   useEffect(() => {
+    if (visitType === 'follow-up') return;
     if (!currentPatientId) return;
 
     let cancelled = false;
@@ -163,7 +152,6 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             decision.source === 'physio_added' &&
             decision.status === 'active'
         );
-        setPhysioAddedMedications(medications);
         medications.forEach((medication) => {
           addMedicationDecisionToResults({
             id: medication.id,
@@ -177,13 +165,12 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
       })
       .catch(() => {
         if (cancelled) return;
-        setPhysioAddedMedications([]);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [addMedicationDecisionToResults, currentPatientId]);
+  }, [addMedicationDecisionToResults, currentPatientId, visitType]);
 
   const handleToggle = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -269,94 +256,7 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
   if (!editedResults) return null;
 
-  const handleAddMedication = async (medication: {
-    name: string;
-    dose?: string;
-    frequency?: string;
-    state: MedicationDecisionState;
-    note?: string;
-  }) => {
-    if (!currentUserId || !currentSessionId || !currentPatientId) {
-      setMedicationError('No se pudo registrar el medicamento: faltan datos de sesion.');
-      return;
-    }
-
-    try {
-      const saved = await saveClinicalDecision({
-        kind: 'medication',
-        status: 'active',
-        source: 'physio_added',
-        text: medication.name,
-        decidedBy: currentUserId,
-        decidedAt: new Date().toISOString(),
-        sessionId: currentSessionId,
-        patientId: currentPatientId,
-        reason: null,
-        ...(medication.dose ? { medicationDose: medication.dose } : {}),
-        ...(medication.frequency ? { medicationFrequency: medication.frequency } : {}),
-        medicationState: medication.state,
-        ...(medication.note ? { note: medication.note } : {}),
-      });
-      setPhysioAddedMedications((prev) => [...prev, saved]);
-      addMedicationDecisionToResults({
-        id: saved.id,
-        name: saved.text,
-        dose: saved.medicationDose,
-        frequency: saved.medicationFrequency,
-        state: saved.medicationState,
-        note: saved.note,
-      });
-      setMedicationError(null);
-      setIsAddMedicationModalOpen(false);
-    } catch (error) {
-      console.error('[ClinicalAnalysisResults] Failed to persist medication clinical decision', error);
-      setMedicationError('No se pudo registrar el medicamento. Intenta nuevamente.');
-    }
-  };
-
-  // Follow-up: mostrar mensaje simple, sin secciones de análisis
-  if (visitType === 'follow-up') {
-    return (
-      <>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
-          <p>{ui.followUpMessage}</p>
-          {medicationError && (
-            <p className="mt-3 text-sm font-medium text-red-700">{medicationError}</p>
-          )}
-          {physioAddedMedications.length > 0 && (
-            <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-left">
-              <p className="mb-2 text-xs font-medium text-slate-600">
-                Medicamentos registrados por el fisioterapeuta
-              </p>
-              {physioAddedMedications.map((medication) => (
-                <div
-                  key={medication.id}
-                  className="flex items-center justify-between border-b border-slate-100 py-1 last:border-0"
-                >
-                  <span className="text-xs text-slate-700">{medication.text}</span>
-                  <div className="flex items-center gap-2">
-                    {medication.medicationState && (
-                      <span className="text-xs text-slate-400">{medication.medicationState}</span>
-                    )}
-                    {medication.medicationDose && (
-                      <span className="text-xs text-slate-400">{medication.medicationDose}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <AddMedicationModal
-          isOpen={isAddMedicationModalOpen}
-          onConfirm={(medication) => {
-            void handleAddMedication(medication);
-          }}
-          onCancel={() => setIsAddMedicationModalOpen(false)}
-        />
-      </>
-    );
-  }
+  if (visitType === 'follow-up') return null;
 
   // A partir de aquí visitType === 'initial' — no necesitamos verificar de nuevo
   const entities = Array.isArray(editedResults.entities)
