@@ -5069,6 +5069,7 @@ const ProfessionalWorkflowPage = () => {
   /** Sprint A: persist HEP checkbox state to `sessions/{id}.hepCompliance` (merge). */
   const updateHomeProgramItems = useCallback(
     (next: TodayFocusItem[]) => {
+      const treatmentDecisionMarker = markTreatmentDecisionEdited();
       setHomeProgramItems(next);
       if (visitType !== 'follow-up') return;
       const uid = user?.uid;
@@ -5087,6 +5088,7 @@ const ProfessionalWorkflowPage = () => {
       sessionService
         .updateSession(sid, {
           hepCompliance,
+          treatmentDecisionConfirmation: treatmentDecisionMarker,
           userId: uid,
           patientId: patientId || '',
           patientName,
@@ -5095,6 +5097,7 @@ const ProfessionalWorkflowPage = () => {
         .catch(() => {});
     },
     [
+      markTreatmentDecisionEdited,
       visitType,
       user?.uid,
       hepSessionKey,
