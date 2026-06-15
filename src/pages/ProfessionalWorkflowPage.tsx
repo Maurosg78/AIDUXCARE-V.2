@@ -5189,7 +5189,27 @@ const ProfessionalWorkflowPage = () => {
       completed: false,
       source: 'plan' as const,
     }));
-    setHomeProgramItems(hepItems);
+    setHomeProgramItems((existingItems) => {
+      const normalizeHepLabel = (label: string) => label.trim().replace(/\s+/g, ' ').toLowerCase();
+      const existingCompletionByLabel = new Map<string, boolean[]>();
+      existingItems.forEach((item) => {
+        const normalizedLabel = normalizeHepLabel(item.label);
+        if (!normalizedLabel) return;
+        const existingCompletions = existingCompletionByLabel.get(normalizedLabel) ?? [];
+        existingCompletions.push(item.completed);
+        existingCompletionByLabel.set(normalizedLabel, existingCompletions);
+      });
+      const hepItemsWithPreservedCompletion = hepItems.map((item) => {
+        const normalizedLabel = normalizeHepLabel(item.label);
+        const existingCompletions = existingCompletionByLabel.get(normalizedLabel) ?? [];
+        const preservedCompletion = existingCompletions.shift() ?? false;
+        return {
+          ...item,
+          completed: preservedCompletion,
+        };
+      });
+      return hepItemsWithPreservedCompletion;
+    });
 
     const uid = user?.uid;
     if (!uid) return;
