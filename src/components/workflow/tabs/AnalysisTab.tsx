@@ -918,11 +918,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
               </div>
             )}
           </>
-        ) : (
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-center text-sm text-slate-600">
-            {t('workflow.analysis.generateSoapHint')}
-          </div>
-        )
+        ) : null
       ) : niagaraResults && interactiveResults ? (
         <>
           {/* WO-BUG-008 / WO-PART-B-REDFLAG-DECISION: Red flags — physio selects which apply + per-flag clinical decision */}
