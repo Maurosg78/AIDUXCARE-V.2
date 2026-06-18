@@ -2085,6 +2085,7 @@ const ProfessionalWorkflowPage = () => {
   }, [patientIdFromUrl, user?.uid, sessionTypeFromUrl, visitType, sessionId, transcript, physioNotes, evaluationTests, activeTab, selectedEntityIds, physicalTestAssistanceChoice, localSoapNote, soapStatus, niagaraResults, selectedRedFlagIds, redFlagDecisions, initialAssessmentClosedAt, baselineIdFromSession, isRecording, currentPatient, resumeFromUrl, sessionIdFromUrl]);
 
   const [customTestName, setCustomTestName] = useState("");
+  const [customTestNameError, setCustomTestNameError] = useState(false);
   const [customTestRegion, setCustomTestRegion] = useState<MSKRegion | "other">("shoulder");
   const [customTestResult, setCustomTestResult] = useState<EvaluationResult | "">("");
   const [customTestNotes, setCustomTestNotes] = useState("");
@@ -3667,7 +3668,11 @@ const ProfessionalWorkflowPage = () => {
   );
 
   const handleAddCustomTest = useCallback(() => {
-    if (!customTestName.trim()) return;
+    if (!customTestName.trim()) {
+      setCustomTestNameError(true);
+      return;
+    }
+    setCustomTestNameError(false);
     const region = customTestRegion === "other" ? null : customTestRegion;
     const entry = {
       ...createCustomEntry(customTestName.trim(), "custom", region),
@@ -8203,11 +8208,13 @@ const ProfessionalWorkflowPage = () => {
                   createEntryFromLibrary={createEntryFromLibrary}
                   createCustomEntry={createCustomEntry}
                   customTestName={customTestName}
+                  customTestNameError={customTestNameError}
                   customTestRegion={customTestRegion}
                   customTestResult={customTestResult}
                   customTestNotes={customTestNotes}
                   isCustomFormOpen={isCustomFormOpen}
                   setCustomTestName={setCustomTestName}
+                  setCustomTestNameError={setCustomTestNameError}
                   setCustomTestRegion={setCustomTestRegion}
                   setCustomTestResult={setCustomTestResult}
                   setCustomTestNotes={setCustomTestNotes}

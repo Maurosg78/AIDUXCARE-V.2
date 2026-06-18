@@ -16,6 +16,7 @@ import { localizeMskTestForEs, regionLabelsEs } from '../../../core/msk-tests/li
 import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import { getTopPhysicalTests } from '../../../utils/sortPhysicalTestsByImportance';
 import { FirebaseWhisperService } from '../../../services/FirebaseWhisperService';
+import { cn } from '@/lib/utils';
 
 type EvaluationResult = "normal" | "positive" | "negative" | "inconclusive";
 type TestCategoryKey = 'rom' | 'neuro' | 'inspection' | 'strength' | 'functional' | 'orthopedic' | 'general';
@@ -389,11 +390,13 @@ export interface EvaluationTabProps {
 
   // Custom test form
   customTestName: string;
+  customTestNameError: boolean;
   customTestRegion: MSKRegion | "other";
   customTestResult: EvaluationResult | "";
   customTestNotes: string;
   isCustomFormOpen: boolean;
   setCustomTestName: (name: string) => void;
+  setCustomTestNameError: (hasError: boolean) => void;
   setCustomTestRegion: (region: MSKRegion | "other") => void;
   setCustomTestResult: (result: EvaluationResult | "") => void;
   setCustomTestNotes: (notes: string) => void;
@@ -428,11 +431,13 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
   createEntryFromLibrary,
   createCustomEntry,
   customTestName,
+  customTestNameError,
   customTestRegion,
   customTestResult,
   customTestNotes,
   isCustomFormOpen,
   setCustomTestName,
+  setCustomTestNameError,
   setCustomTestRegion,
   setCustomTestResult,
   setCustomTestNotes,
@@ -1002,10 +1007,23 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                     <div className="mt-3 space-y-3">
                       <input
                         value={customTestName}
-                        onChange={(event) => setCustomTestName(event.target.value)}
+                        onChange={(event) => {
+                          if (customTestNameError) setCustomTestNameError(false);
+                          setCustomTestName(event.target.value);
+                        }}
                         placeholder={t('workflow.evaluation.testNamePlaceholder')}
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
+                        className={cn(
+                          "w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#7c3aed]",
+                          customTestNameError && "border-red-400 focus:ring-red-400"
+                        )}
                       />
+                      {customTestNameError && (
+                        <p className="mt-1 text-xs text-red-500">
+                          {isSpanishLocale
+                            ? 'Escribe el nombre de la prueba antes de añadirla.'
+                            : 'Enter the test name before adding it.'}
+                        </p>
+                      )}
                       <div className="grid grid-cols-2 gap-2">
                         <select
                           value={customTestRegion}
@@ -1053,7 +1071,8 @@ export const EvaluationTab: React.FC<EvaluationTabProps> = ({
                         <button
                           type="button"
                           onClick={handleAddCustomTest}
-                          className="rounded-full bg-[#7c3aed] px-4 py-2 text-xs font-semibold text-white hover:bg-[#6d28d9]"
+                          disabled={!customTestName.trim()}
+                          className="rounded-full bg-[#7c3aed] px-4 py-2 text-xs font-semibold text-white hover:bg-[#6d28d9] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {t('workflow.evaluation.saveCustomTest')}
                         </button>
