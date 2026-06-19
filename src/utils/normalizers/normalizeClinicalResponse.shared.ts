@@ -358,7 +358,7 @@ const mapStructuredPayload = (payload: StructuredPayload, transformText: TextTra
             frequency: String(med.frequency || ''),
             duration: String(med.duration || ''),
             active_ingredient: String(med.active_ingredient || ''),
-            mention_status: (med.mention_status as MedicationMentionStatus) ?? 'current',
+            mention_status: (med.mention_status as MedicationMentionStatus) ?? 'unclear',
             confidence: (med.confidence as MedicationConfidence) ?? 'low',
             requires_review: med.requires_review ?? true,
             source: 'main_analysis' as MedicationSource,
@@ -429,9 +429,9 @@ export const cleanDisplayText = (text: string, canonical: string | null | undefi
   return isVerbose ? canonical : text;
 };
 
-// §1.6 ENGINEERING.md: deterministic guard — mention_status controls routing, not prompt instructions
-// Statuses that belong in medicacion_actual (patient currently uses / used)
-const MEDICATION_STATUSES_FOR_CURRENT: ReadonlySet<string> = new Set([
+// §1.6 ENGINEERING.md: deterministic guard — mention_status controls routing, not prompt instructions.
+// These statuses stay visible for clinician review; UI separates current, unclear, and historical meds.
+const MEDICATION_STATUSES_FOR_REVIEW_SURFACE: ReadonlySet<string> = new Set([
   'current',
   'previous',
   'topical_or_supplement',
@@ -546,7 +546,7 @@ const mergePreExtractedMedications = (
       if (
         suggestedName &&
         mentionStatus !== 'stopped_adverse' &&
-        MEDICATION_STATUSES_FOR_CURRENT.has(mentionStatus)
+        MEDICATION_STATUSES_FOR_REVIEW_SURFACE.has(mentionStatus)
       ) {
         const existingIdx = currentMeds.findIndex(
           (m: any) => typeof m === 'string' && m.toLowerCase().trim() === originalText.toLowerCase()
@@ -574,8 +574,8 @@ const mergePreExtractedMedications = (
       continue;
     }
 
-    // Guard: only statuses that represent actual patient medication enter medicacion_actual
-    if (!MEDICATION_STATUSES_FOR_CURRENT.has(mentionStatus)) continue;
+    // Guard: only medication mentions with reviewable clinical value enter the medication surface.
+    if (!MEDICATION_STATUSES_FOR_REVIEW_SURFACE.has(mentionStatus)) continue;
 
     const cleanedNewText = cleanDisplayText(originalText, canonicalName);
     const newMedData: ClinicalMedicationEntry = {

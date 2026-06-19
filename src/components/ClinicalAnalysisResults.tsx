@@ -95,9 +95,18 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         clear: 'Limpiar',
         chiefComplaintTitle: 'Motivo de consulta y hallazgos clave',
         addClinicalHighlight: 'Añadir hallazgo clínico...',
-        currentMedicationTitle: 'Medicación actual',
-        testsTitle: 'Pruebas físicas recomendadas',
-        testsBody: 'Selecciona las valoraciones que planeas realizar en la pestaña de evaluación.',
+        currentMedicationTitle: 'Medicación',
+        pharmacologicalMedicationTitle: 'Medicación actual confirmada',
+        medicationClarificationTitle: 'Medicación por confirmar',
+        medicationClarificationBody: 'Nombres dudosos o menciones sin estado actual claro. Confirmar antes de incluir en medicación actual.',
+        medicationHistoryTitle: 'Medicación previa referida',
+        topicalMedicationTitle: 'Otros tratamientos referidos',
+        possibleMatch: 'Posible coincidencia:',
+        useSuggestion: 'Usar sugerencia',
+        capturedText: 'Texto capturado:',
+        confirmMedicationName: 'Confirmar nombre de medicamento:',
+        testsTitle: 'Pruebas físicas evaluadas',
+        testsBody: 'Selecciona las valoraciones que el fisio decide registrar en la pestaña de evaluación.',
       }
     : {
         medicoLegalTitle: 'Medico-legal Summary',
@@ -110,9 +119,18 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
         clear: 'Limpiar',
         chiefComplaintTitle: 'Chief complaint & key findings',
         addClinicalHighlight: 'Add clinical highlight...',
-        currentMedicationTitle: 'Current medication',
-        testsTitle: 'Recommended Physical Tests',
-        testsBody: 'Select the assessments you plan to run in the evaluation tab.',
+        currentMedicationTitle: 'Medication',
+        pharmacologicalMedicationTitle: 'Confirmed current medication',
+        medicationClarificationTitle: 'Medication to confirm',
+        medicationClarificationBody: 'Unclear names or mentions without confirmed current status. Confirm before including as current medication.',
+        medicationHistoryTitle: 'Previous medication mentioned',
+        topicalMedicationTitle: 'Other treatments mentioned',
+        possibleMatch: 'Possible match:',
+        useSuggestion: 'Use suggestion',
+        capturedText: 'Captured text:',
+        confirmMedicationName: 'Confirm medication name:',
+        testsTitle: 'Evaluated Physical Tests',
+        testsBody: 'Select the assessments the physio decides to document in the evaluation tab.',
       };
   const {
     editedResults,
@@ -182,13 +200,30 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
 
   const handleSelectAll = (section: string) => {
     let idsToSelect: string[] = [];
+    const isSelectableMedicationEntity = (entity: any): boolean => {
+      if (entity?.type !== 'medication') return false;
+      const medicationData = entity.medication_data ?? {};
+      const mentionStatus = medicationData.mention_status ?? 'unclear';
+      const confidence = medicationData.confidence;
+      const requiresReview = medicationData.requires_review === true;
+      const suggestionAccepted = medicationData.suggestion_status === 'accepted_by_clinician';
+      const isCurrentOrTopical =
+        mentionStatus === 'current' || mentionStatus === 'topical_or_supplement' || suggestionAccepted;
+      return isCurrentOrTopical && (suggestionAccepted || (confidence === 'high' && !requiresReview));
+    };
 
     switch (section) {
       case 'alerts':
-        idsToSelect = editedResults?.entities?.filter((e: any) => e.type === 'medication').map((e: any) => e.id).filter(Boolean) || [];
+        idsToSelect = editedResults?.entities
+          ?.filter(isSelectableMedicationEntity)
+          .map((e: any) => e.id)
+          .filter(Boolean) || [];
         break;
       case 'clinical':
-        idsToSelect = editedResults?.entities?.map((e: any) => e.id).filter(Boolean) || [];
+        idsToSelect = editedResults?.entities
+          ?.filter((e: any) => e.type !== 'medication' || isSelectableMedicationEntity(e))
+          .map((e: any) => e.id)
+          .filter(Boolean) || [];
         break;
       case 'physical':
         idsToSelect = physicalTests.map((test: any) => {
@@ -321,9 +356,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
       : entityTextOriginalText || entityTextNormalizedName;
     const normalizedName = medicationData?.normalized_name || '';
     const originalText = medicationData?.original_text || '';
+    const safeOriginalText = isGenericMedicationCategory(originalText) ? '' : originalText;
     const safeEditedText = isGenericMedicationCategory(editedText) ? '' : editedText;
     const safeNormalizedName = isGenericMedicationCategory(normalizedName) ? '' : normalizedName;
-    const rawDisplayName = originalText || safeEditedText || safeNormalizedName || normalizedName;
+    const rawDisplayName = safeOriginalText || safeEditedText || safeNormalizedName || normalizedName;
     const displayName = stripTechnicalSuffix(rawDisplayName);
     const dose = medicationData?.dose;
     if (dose && dose.trim() && !displayName.includes(dose)) {
@@ -349,9 +385,10 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
     const editedText = typeof rawEntityText === 'string'
       ? rawEntityText
       : entityTextOriginalText || entityTextNormalizedName;
+    const safeOriginalText = isGenericMedicationCategory(originalText) ? '' : originalText;
     const safeEditedText = isGenericMedicationCategory(editedText) ? '' : editedText;
     const safeNormalizedName = isGenericMedicationCategory(normalizedName) ? '' : normalizedName;
-    const rawDisplayName = originalText || safeEditedText || safeNormalizedName || normalizedName;
+    const rawDisplayName = safeOriginalText || safeEditedText || safeNormalizedName || normalizedName;
     const displayName = stripTechnicalSuffix(rawDisplayName);
     return displayName;
   };
@@ -408,42 +445,61 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
   const reviewableMeds = medicationEntities.filter((entity) => {
     const isPlaceholder = hasPrescriptionPlaceholder(entity);
     const mentionStatus = entity.medication_data?.mention_status ?? '';
-    const isPastMedication = mentionStatus === 'previous';
     const isDiscontinuedMedication = mentionStatus === 'stopped_adverse';
-    const shouldExclude =
-      isPlaceholder || isPastMedication || isDiscontinuedMedication;
+    const shouldExclude = isPlaceholder || isDiscontinuedMedication;
     return !shouldExclude;
+  });
+
+  const isAcceptedMedicationSuggestion = (entity: ClinicalEntity): boolean => {
+    const suggestionStatus = entity.medication_data?.suggestion_status;
+    const isAccepted = suggestionStatus === 'accepted_by_clinician';
+    return isAccepted;
+  };
+
+  const needsMedicationClarification = (entity: ClinicalEntity): boolean => {
+    const medicationData = entity.medication_data;
+    const mentionStatus = medicationData?.mention_status ?? 'unclear';
+    const hasHighConfidence = isHighConfidenceMedication(entity);
+    const needsReview = requiresMedicationReview(entity);
+    const displayName = getMedicationClarificationDisplayName(entity);
+    const isGenericDisplayName = isGenericMedicationCategory(displayName);
+    const isUnclearMention = mentionStatus === 'unclear';
+    const isAccepted = isAcceptedMedicationSuggestion(entity);
+    const shouldClarify =
+      !isAccepted && (isUnclearMention || needsReview || !hasHighConfidence || isGenericDisplayName);
+    return shouldClarify;
+  };
+
+  const currentMedicationMeds = reviewableMeds.filter((entity) => {
+    const mentionStatus = entity.medication_data?.mention_status ?? 'unclear';
+    const isCurrent = mentionStatus === 'current' || isAcceptedMedicationSuggestion(entity);
+    return isCurrent && !needsMedicationClarification(entity);
   });
 
   const topicalOrSupplementMeds = reviewableMeds.filter(
     (entity) => entity.medication_data?.mention_status === 'topical_or_supplement'
   );
 
-  const pharmacologicalMeds = reviewableMeds.filter(
+  const medicationHistoryMeds = reviewableMeds.filter(
+    (entity) => entity.medication_data?.mention_status === 'previous'
+  );
+
+  const pharmacologicalMeds = currentMedicationMeds.filter(
     (entity) => entity.medication_data?.mention_status !== 'topical_or_supplement'
   );
 
   const identifiedMeds = pharmacologicalMeds.filter((entity) => {
     const hasHighConfidence = isHighConfidenceMedication(entity);
     const needsReview = requiresMedicationReview(entity);
-    return hasHighConfidence && !needsReview;
+    const isAccepted = isAcceptedMedicationSuggestion(entity);
+    return isAccepted || (hasHighConfidence && !needsReview);
   });
 
-  const clarificationMeds = pharmacologicalMeds.filter((entity) => {
-    const hasHighConfidence = isHighConfidenceMedication(entity);
-    const needsReview = requiresMedicationReview(entity);
-    return !(hasHighConfidence && !needsReview);
-  });
-
-  const medicationClarificationMeds = medicationEntities.filter((entity) => {
-    const medicationData = entity.medication_data;
-    if (!medicationData) {
-      return false;
-    }
-    const confidence = medicationData.confidence;
-    const needsReview = requiresMedicationReview(entity);
-    const isHighConfidence = confidence === 'high';
-    return needsReview || !isHighConfidence;
+  const medicationClarificationMeds = reviewableMeds.filter((entity) => {
+    const mentionStatus = entity.medication_data?.mention_status ?? 'unclear';
+    const isHistoricalMedication = mentionStatus === 'previous';
+    const isTopicalOrSupplement = mentionStatus === 'topical_or_supplement';
+    return !isHistoricalMedication && !isTopicalOrSupplement && needsMedicationClarification(entity);
   });
 
   return (
@@ -537,13 +593,16 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
             </div>
           </div>
 
-          {(pharmacologicalMeds.length > 0 || topicalOrSupplementMeds.length > 0) && (
+          {(pharmacologicalMeds.length > 0 ||
+            medicationClarificationMeds.length > 0 ||
+            medicationHistoryMeds.length > 0 ||
+            topicalOrSupplementMeds.length > 0) && (
             <div>
               <h4 className="font-medium text-sm text-slate-700 mb-2">{ui.currentMedicationTitle}</h4>
 
               {pharmacologicalMeds.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-xs font-medium text-slate-500 mb-1">Medicación farmacológica</p>
+                  <p className="text-xs font-medium text-slate-500 mb-1">{ui.pharmacologicalMedicationTitle}</p>
                   <div className="space-y-1">
                     {identifiedMeds.map((entity) => (
                       <EditableCheckbox
@@ -555,36 +614,40 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                         onTextChange={handleTextChange}
                       />
                     ))}
-                    {clarificationMeds.map((entity) => {
+                  </div>
+                </div>
+              )}
+
+              {medicationClarificationMeds.length > 0 && (
+                <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-xs font-semibold text-amber-900">{ui.medicationClarificationTitle}</p>
+                  <p className="mb-2 text-xs text-amber-800">{ui.medicationClarificationBody}</p>
+                  <div className="space-y-2">
+                    {medicationClarificationMeds.map((entity) => {
                       const suggestion = entity.medication_data?.suggested_name;
-                      const isAccepted = entity.medication_data?.suggestion_status === 'accepted_by_clinician';
-                      const currentName = getMedicationDisplayName(entity);
-                      const originalText = entity.medication_data?.original_text;
+                      const currentName = getMedicationClarificationDisplayName(entity);
+                      const originalText = entity.medication_data?.original_text || currentName;
+                      const isGenericOriginalText = isGenericMedicationCategory(originalText);
+                      const clarificationLabel = isGenericOriginalText
+                        ? ui.confirmMedicationName
+                        : ui.capturedText;
                       return (
-                        <div key={entity.id}>
-                          <EditableCheckbox
-                            id={entity.id}
-                            text={isAccepted ? currentName : `${currentName} [por confirmar]`}
-                            checked={selectedIds.includes(entity.id)}
-                            onToggle={handleToggle}
-                            onTextChange={handleTextChange}
-                          />
-                          {suggestion && !isAccepted && (
-                            <div className="ml-6 mt-0.5 flex items-center gap-1.5 flex-wrap text-xs text-slate-400">
-                              <span>Posible coincidencia:</span>
-                              <span className="font-medium text-slate-600">{suggestion}</span>
+                        <div key={entity.id} className="rounded border border-amber-200 bg-white px-3 py-2 text-xs text-slate-700">
+                          <div>
+                            <span className="font-medium text-slate-500">{clarificationLabel}</span>{' '}
+                            <span className="font-semibold text-slate-800">&ldquo;{originalText}&rdquo;</span>
+                          </div>
+                          {suggestion && (
+                            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                              <span className="text-slate-500">{ui.possibleMatch}</span>
+                              <span className="font-semibold text-slate-800">{suggestion}</span>
                               <button
                                 type="button"
                                 onClick={() => handleAcceptMedicationSuggestion(entity.id)}
                                 className="px-2 py-0.5 rounded border border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-medium"
                               >
-                                Usar sugerencia
+                                {ui.useSuggestion}
                               </button>
-                            </div>
-                          )}
-                          {isAccepted && originalText && (
-                            <div className="ml-6 mt-0.5 text-xs text-slate-400">
-                              <span>Texto original: &ldquo;{originalText}&rdquo;</span>
                             </div>
                           )}
                         </div>
@@ -594,9 +657,22 @@ export const ClinicalAnalysisResults: React.FC<ClinicalAnalysisResultsProps> = (
                 </div>
               )}
 
+              {medicationHistoryMeds.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-slate-500 mb-1">{ui.medicationHistoryTitle}</p>
+                  <div className="space-y-1">
+                    {medicationHistoryMeds.map((entity) => (
+                      <p key={entity.id} className="text-xs text-slate-600">
+                        {getMedicationDisplayName(entity)}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {topicalOrSupplementMeds.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Otros tratamientos referidos</p>
+                  <p className="text-xs font-medium text-slate-500 mb-1">{ui.topicalMedicationTitle}</p>
                   <div className="space-y-1">
                     {topicalOrSupplementMeds.map((entity) => (
                       <EditableCheckbox

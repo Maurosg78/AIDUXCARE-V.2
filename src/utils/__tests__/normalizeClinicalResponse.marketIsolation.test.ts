@@ -139,6 +139,66 @@ describe('normalizeClinicalResponse market isolation', () => {
     });
   });
 
+  it('routes main-analysis medication without mention_status to unclear review', () => {
+    const payloadWithUnscopedMedication = {
+      ...responsePayload,
+      conversation_highlights: {
+        ...responsePayload.conversation_highlights,
+        medications: [
+          {
+            original_text: 'medicamento para mala circulación',
+            normalized_name: 'medicamento para mala circulación',
+            confidence: 'low',
+            requires_review: true,
+          },
+        ],
+      },
+    };
+
+    const result = normalizeClinicalResponse(payloadWithUnscopedMedication, { market: 'ES' });
+
+    expect(result.medicacion_actual[0]).toMatchObject({
+      medication_data: expect.objectContaining({
+        original_text: 'medicamento para mala circulación',
+        mention_status: 'unclear',
+        confidence: 'low',
+        requires_review: true,
+      }),
+    });
+  });
+
+  it('preserves previous medication status from pre-extraction for UI separation', () => {
+    const proxyResponse = {
+      text: JSON.stringify({
+        ...responsePayload,
+        conversation_highlights: {
+          ...responsePayload.conversation_highlights,
+          medications: [],
+        },
+      }),
+      pre_extracted_medications: [
+        {
+          original_text: 'heparina',
+          canonical_name: 'Heparina',
+          mention_status: 'previous',
+        },
+      ],
+    };
+
+    const result = normalizeClinicalResponse(proxyResponse, { market: 'ES' });
+    const heparinEntry = result.medicacion_actual.find(
+      (medication: any) => medication?.medication_data?.canonical_name === 'Heparina'
+    );
+
+    expect(heparinEntry).toMatchObject({
+      medication_data: expect.objectContaining({
+        original_text: 'heparina',
+        canonical_name: 'Heparina',
+        mention_status: 'previous',
+      }),
+    });
+  });
+
   it('merges pre-extracted major medical history before model-returned history', () => {
     const payloadWithPreExtraction = {
       ...responsePayload,
