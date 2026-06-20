@@ -39,6 +39,7 @@ type InProgressSessionSummary = {
   status?: string;
   dateKey?: string;
   updatedAt?: string;
+  transcriptAutoSavedAt?: string;
 };
 
 type InProgressSessionRecord = Omit<InProgressSessionSummary, 'updatedAt'> & {
@@ -71,7 +72,7 @@ interface SessionData {
   soapNote?: SOAPNote | Record<string, unknown> | null;
   physicalTests?: Array<EvaluationTestEntry | PhysicalExamResult>;
   timestamp?: any;
-  status: 'draft' | 'completed' | 'recording_in_progress' | 'interrupted' | 'cancelled';
+  status: 'draft' | 'completed' | 'recording_in_progress' | 'interrupted' | 'cancelled' | 'discarded';
   // ✅ Sprint 2A: Session Type Integration
   sessionType?: 'initial' | 'followup' | 'wsib' | 'mva' | 'certificate';
   tokenBudget?: number;
@@ -590,6 +591,7 @@ class SessionService {
             writeState: data.writeState || undefined,
             encounterId: data.encounterId || undefined,
             openResponsibilityDismissed: data.openResponsibilityDismissed === true,
+            transcriptAutoSavedAt: data.transcriptAutoSavedAt || undefined,
             updatedAt: data.updatedAt,
             createdAt: data.createdAt,
             timestamp: data.timestamp,
@@ -749,6 +751,7 @@ class SessionService {
           status: session.status,
           dateKey: session.dateKey,
           updatedAt: updatedAtIso,
+          transcriptAutoSavedAt: session.transcriptAutoSavedAt,
         };
         return sessionItem;
       });

@@ -200,7 +200,8 @@ function getOpenResponsibilitySortTime(
 }
 
 export const CommandCenterPageSprint3: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const esPilot = i18n.language?.startsWith('es') ?? false;
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -728,8 +729,23 @@ export const CommandCenterPageSprint3: React.FC = () => {
       );
       if (!session?.id) return;
       const sessionIdToCancel = session.id;
+      const sessionToCancel = inProgressSessions.data?.find(
+        (s) => s.id === sessionIdToCancel
+      );
+      const hasPersistedTranscript =
+        Boolean(sessionToCancel?.transcript?.trim()) ||
+        Boolean(sessionToCancel?.transcriptAutoSavedAt);
+
+      if (hasPersistedTranscript) {
+        const confirmed = window.confirm(
+          esPilot
+            ? 'Esta sesión tiene una transcripción guardada. Si la descartas, el contenido clínico se perderá. ¿Confirmar descarte?'
+            : 'This session has a saved transcript. Discarding will lose the clinical content. Confirm discard?'
+        );
+        if (!confirmed) return;
+      }
       try {
-        await sessionService.updateSession(sessionIdToCancel, { status: 'cancelled' });
+        await sessionService.updateSession(sessionIdToCancel, { status: 'discarded' });
         inProgressSessions.optimisticRemove(sessionIdToCancel);
         const matchingQuickItem = todayQuickList.find(
           (quickItem) => quickItem.patientId === patientId
@@ -743,7 +759,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
       }
     },
     [inProgressSessions.data, inProgressSessions.refetch,
-      inProgressSessions.optimisticRemove, todayQuickList, removeTodayQuickItem]
+      inProgressSessions.optimisticRemove, todayQuickList, removeTodayQuickItem, esPilot]
   );
 
   const handleOpenClinicalDayRow = useCallback((row: ClinicalDayRow) => {

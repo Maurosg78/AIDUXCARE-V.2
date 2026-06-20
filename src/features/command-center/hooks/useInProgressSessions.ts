@@ -13,6 +13,7 @@ export interface InProgressSession {
   soapStatus?: 'draft' | 'finalized' | string;
   dateKey?: string;
   updatedAt?: string;
+  transcriptAutoSavedAt?: string;
 }
 
 export interface InProgressSessionsState {
