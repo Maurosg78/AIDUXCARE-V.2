@@ -52,7 +52,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
   initialPatient = null,
   isNewlyCreatedPatient = false,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { patients, loading } = usePatientsList();
   const [step, setStep] = useState<1 | 2>(initialStep);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(initialPatient);
@@ -61,6 +61,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
   const patientHistory = usePatientHistory(step === 2 && !isNewlyCreatedPatient ? selectedPatient?.id ?? null : null);
   const hasHistory = patientHistory.data || false;
   const isLoadingHistory = patientHistory.loading;
+  const esPilot = i18n.language?.startsWith('es') ?? false;
   const isAddToTodayMode = mode === 'add_to_today';
   const ongoingDisabledForStartNow =
     !!selectedPatient &&
@@ -260,8 +261,8 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
             {(() => {
               const initialPilot = SessionTypeService.isPilotAvailable('initial');
               const followPilot = SessionTypeService.isPilotAvailable('followup');
-              const initialOff = !initialPilot;
-              const followBtnOff = !followPilot || followUpDisabled;
+              const initialOff = !initialPilot || isLoadingHistory;
+              const followBtnOff = !followPilot || followUpDisabled || isLoadingHistory;
               const ongoingBtnOff = !followPilot || ongoingDisabled;
               const followTitle =
                 followBtnOff && followUpDisabled
@@ -353,12 +354,26 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
                   {cardInitial}
                   {cardOngoing}
                   {cardFollow}
+                  {isLoadingHistory && (
+                    <p className="text-xs text-slate-400 mt-2">
+                      {esPilot
+                        ? 'Verificando historial del paciente...'
+                        : 'Checking patient history...'}
+                    </p>
+                  )}
                 </>
               ) : (
                 <>
                   {cardFollow}
                   {cardInitial}
                   {cardOngoing}
+                  {isLoadingHistory && (
+                    <p className="text-xs text-slate-400 mt-2">
+                      {esPilot
+                        ? 'Verificando historial del paciente...'
+                        : 'Checking patient history...'}
+                    </p>
+                  )}
                 </>
               );
             })()}
@@ -368,7 +383,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
           <div className="p-6 space-y-3 flex-1 overflow-y-auto">
             <button
               onClick={handleStartInitial}
-              disabled={!SessionTypeService.isPilotAvailable('initial')}
+              disabled={!SessionTypeService.isPilotAvailable('initial') || isLoadingHistory}
               className="w-full p-4 rounded-xl border-2 border-primary-blue/40 bg-gradient-to-r from-primary-blue/10 to-primary-purple/10 hover:border-primary-blue/60 hover:shadow-md transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex items-center gap-3">
@@ -386,7 +401,7 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
             {!isNewlyCreatedPatient && (
               <button
                 onClick={handleStartFollowup}
-                disabled={!SessionTypeService.isPilotAvailable('followup') || followUpDisabled}
+                disabled={!SessionTypeService.isPilotAvailable('followup') || followUpDisabled || isLoadingHistory}
                 title={followUpDisabled ? t('shell.startSessionModal.tooltipFollowupDisabled') : undefined}
                 className="w-full p-4 rounded-xl border-2 border-gray-200 hover:border-primary-blue/30 bg-gray-50/80 hover:bg-primary-blue/5 transition-all text-left font-apple disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -403,6 +418,14 @@ export const StartSessionTwoStepModal: React.FC<StartSessionTwoStepModalProps> =
                   <Play className="w-5 h-5 text-gray-400 ml-auto flex-shrink-0" />
                 </div>
               </button>
+            )}
+
+            {isLoadingHistory && (
+              <p className="text-xs text-slate-400 mt-2">
+                {esPilot
+                  ? 'Verificando historial del paciente...'
+                  : 'Checking patient history...'}
+              </p>
             )}
 
             <button
