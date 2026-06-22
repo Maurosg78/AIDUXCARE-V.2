@@ -5714,21 +5714,60 @@ const ProfessionalWorkflowPage = () => {
       setAnalysisError('Follow-up requires prior clinical baseline (complete an initial assessment first).');
       return;
     }
-    const followUpClinicalUpdate = buildVertexClinicalInput(transcript ?? '', physioNotes);
+    const currentTranscriptText = (transcript ?? '').trim();
+    const currentPhysioNotesText = physioNotes.trim();
+    const currentTranscriptLength = currentTranscriptText.length;
+    const currentPhysioNotesLength = currentPhysioNotesText.length;
+    const minimumFollowUpTranscriptLength = 20;
+    const hasCurrentTranscriptInput = currentTranscriptLength >= minimumFollowUpTranscriptLength;
+    const hasCurrentPhysioNotesInput = currentPhysioNotesLength > 0;
+    const hasCurrentSessionClinicalInput = hasCurrentTranscriptInput || hasCurrentPhysioNotesInput;
+    const currentSessionStateId = sessionId ?? null;
+    const currentSessionRefId = sessionIdRef.current;
+    const currentReservedSessionId = workflowReservedSessionIdRef.current;
+    const generationAttemptSessionId = currentSessionStateId ?? currentSessionRefId ?? currentReservedSessionId;
+    const hasSessionIdForGeneration = Boolean(generationAttemptSessionId);
+    const previousPlanText = previousTreatmentPlan?.planText?.trim() ?? '';
+    const hasPreviousTreatmentPlan = previousPlanText.length > 0;
+    const hasPreviousContext =
+      Boolean(baseline) ||
+      Boolean(previousTreatmentDecision) ||
+      hasPreviousTreatmentPlan ||
+      inClinicItems.length > 0 ||
+      homeProgramItems.length > 0;
+
+    console.info('[FOLLOWUP-SAFETY-GATE]', {
+      transcriptLength: currentTranscriptLength,
+      physioNotesLength: currentPhysioNotesLength,
+      isTranscribing,
+      hasPreviousContext,
+      hasSessionId: hasSessionIdForGeneration,
+    });
+
+    if (isTranscribing) {
+      setAnalysisError('La transcripción aún está en curso. Espera a que termine antes de generar la nota.');
+      return;
+    }
+    if (!hasCurrentSessionClinicalInput) {
+      setAnalysisError('No hay suficiente información clínica de la sesión actual para generar una SOAP segura.');
+      return;
+    }
+
+    const followUpClinicalUpdate = buildVertexClinicalInput(currentTranscriptText, currentPhysioNotesText);
     const hasPendingAttachmentProcessing = attachments.some(
       (attachment) => attachment.processingComplete !== true,
     );
-    const hasChecklist = inClinicItems.length > 0 || homeProgramItems.length > 0;
     const hasClinicalUpdate = followUpClinicalUpdate.length > 0;
     if (hasPendingAttachmentProcessing) {
       setAnalysisError('Espera a que los archivos adjuntos terminen de procesarse antes de generar la nota SOAP.');
       return;
     }
-    if (!hasChecklist && !hasClinicalUpdate) {
-      setAnalysisError('Add at least one confirmed treatment or a clinical update to generate the SOAP note.');
+    if (!hasClinicalUpdate) {
+      setAnalysisError('No hay suficiente información clínica de la sesión actual para generar una SOAP segura.');
       return;
     }
     setAnalysisError(null);
+    setLocalSoapNote(null);
     setIsGeneratingSOAP(true);
     const startTime = Date.now();
     try {
@@ -5805,9 +5844,28 @@ const ProfessionalWorkflowPage = () => {
       const { documentation: soap, considerations, alerts, error: followUpError } = result;
       if (followUpError) {
         setAnalysisError('La generación automática no está disponible en este momento. No se ha producido ningún contenido por IA.');
+        setLocalSoapNote(null);
         setFollowUpAlerts(null);
         setFollowUpPreviouslyReviewedRedFlags([]);
         setFollowUpConsiderations(null);
+        setActiveTab('analysis');
+        return;
+      }
+      const activeSessionStateId = sessionId ?? null;
+      const activeSessionRefId = sessionIdRef.current;
+      const activeReservedSessionId = workflowReservedSessionIdRef.current;
+      const activeGenerationSessionId = activeSessionStateId ?? activeSessionRefId ?? activeReservedSessionId;
+      const generationSessionChanged =
+        generationAttemptSessionId !== null &&
+        activeGenerationSessionId !== null &&
+        generationAttemptSessionId !== activeGenerationSessionId;
+      if (generationSessionChanged) {
+        setAnalysisError('La sesión cambió durante la generación. No se ha producido ningún contenido por IA.');
+        setLocalSoapNote(null);
+        setFollowUpAlerts(null);
+        setFollowUpPreviouslyReviewedRedFlags([]);
+        setFollowUpConsiderations(null);
+        setActiveTab('analysis');
         return;
       }
       secondaryMemorySourceRef.current = result.secondaryMemorySource ?? null;
@@ -5833,8 +5891,10 @@ const ProfessionalWorkflowPage = () => {
       const hasFollowUpBlock = (soap as any)?.followUp?.trim?.();
       if (!soap || (!hasStructuredContent && !hasFollowUpBlock)) {
         setAnalysisError('La generación automática no está disponible en este momento. No se ha producido ningún contenido por IA.');
+        setLocalSoapNote(null);
         setFollowUpAlerts(null);
         setFollowUpPreviouslyReviewedRedFlags([]);
+        setActiveTab('analysis');
         return;
       }
       setLocalSoapNote({
@@ -5872,11 +5932,13 @@ const ProfessionalWorkflowPage = () => {
     } catch (err: any) {
       const message = err?.message || 'Failed to generate SOAP note. Please try again.';
       setAnalysisError(message);
+      setLocalSoapNote(null);
+      setActiveTab('analysis');
       console.error('[Workflow] Follow-up SOAP generation failed:', err);
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, inClinicItems, homeProgramItems, previousTreatmentDecision, previousTreatmentPlan, patientIdFromUrl]);
+  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, isTranscribing, sessionId, inClinicItems, homeProgramItems, previousTreatmentDecision, previousTreatmentPlan, patientIdFromUrl]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
