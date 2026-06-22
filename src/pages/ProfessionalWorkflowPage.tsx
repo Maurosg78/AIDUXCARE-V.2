@@ -1271,6 +1271,41 @@ const ProfessionalWorkflowPage = () => {
       });
       sessionIdRef.current = resolvedSessionId;
       sessionIdForTranscriptRef.current = resolvedSessionId;
+      const requestedIdForComparison = requestedSessionId ?? null;
+      const resolvedIdForComparison = resolvedSessionId ?? null;
+      const sessionIdMismatchDetected =
+        requestedIdForComparison !== null &&
+        resolvedIdForComparison !== null &&
+        requestedIdForComparison !== resolvedIdForComparison;
+
+      console.info('[WO-RESUME-HYDRATION]', {
+        requestedSessionId: requestedIdForComparison,
+        resolvedSessionId: resolvedIdForComparison,
+        source,
+        hasSoapNote: Boolean(hydratedSoapNote),
+        transcriptLength: transcript?.length ?? 0,
+        action: sessionIdMismatchDetected
+          ? 'blocked-mismatch'
+          : 'hydrated-normal',
+      });
+
+      if (sessionIdMismatchDetected) {
+        setSessionId(resolvedSessionId);
+        setLocalSoapNote(null);
+        setActiveTab('analysis');
+        setAnalysisError(
+          'La sesión solicitada no se encontró. Se recuperó información ' +
+          'previa disponible. Revisa el historial antes de continuar.'
+        );
+        console.warn('[WO-RESUME-FALLBACK]', {
+          requestedSessionId: requestedIdForComparison,
+          resolvedSessionId: resolvedIdForComparison,
+          source: 'missing-session',
+          action: 'fallback-blocked-mismatch',
+        });
+        return;
+      }
+
       setSessionId(resolvedSessionId);
       setLocalSoapNote(hydratedSoapNote);
       setSoapStatus(resolvedNoteStatus as SOAPStatus);
@@ -2501,7 +2536,12 @@ const ProfessionalWorkflowPage = () => {
         if (sessionData && sessionData.soapNote) {
           logger.info('[WO-IA-RESUME-01] loadSession(sessionId)', { sessionId: sessionIdFromUrl });
           setSessionId(sessionIdFromUrl);
-          setLocalSoapNote(sessionData.soapNote as SOAPNote);
+          if (sessionData.transcript && typeof sessionData.transcript === 'string') {
+            setTranscript(sessionData.transcript);
+          }
+          if (typeof (sessionData as any).physioNotes === 'string') {
+            setPhysioNotes((sessionData as any).physioNotes);
+          }
           const soapNoteHasExplicitFinalizedStatus =
             (sessionData.soapNote as { status?: string })?.status === 'finalized';
           const sessionIsExplicitlyFinalized =
@@ -2510,6 +2550,19 @@ const ProfessionalWorkflowPage = () => {
               : sessionData.status === 'completed';
           const resolvedSoapStatus = sessionIsExplicitlyFinalized ? 'finalized' : 'draft';
           setSoapStatus(resolvedSoapStatus as SOAPStatus);
+          const sessionTranscriptText =
+            sessionData.transcript && typeof sessionData.transcript === 'string'
+              ? sessionData.transcript
+              : '';
+          console.info('[WO-RESUME-HYDRATION]', {
+            requestedSessionId: sessionIdFromUrl ?? null,
+            resolvedSessionId: sessionIdFromUrl ?? null,
+            source: 'session',
+            hasSoapNote: Boolean(sessionData.soapNote),
+            transcriptLength: sessionTranscriptText.length,
+            action: 'hydrated-normal',
+          });
+          setLocalSoapNote(sessionData.soapNote as SOAPNote);
           if (hasUndecidedFollowUpRedFlags()) {
             console.warn('[RED-FLAG-GATE] Follow-up blocked — decisions pending');
             return;
@@ -2517,12 +2570,6 @@ const ProfessionalWorkflowPage = () => {
           setActiveTab('soap');
           setAnalysisError(null);
           setResumeLoadFailed(null);
-          if (sessionData.transcript && typeof sessionData.transcript === 'string') {
-            setTranscript(sessionData.transcript);
-          }
-          if (typeof (sessionData as any).physioNotes === 'string') {
-            setPhysioNotes((sessionData as any).physioNotes);
-          }
           if (sessionData.physicalTests && Array.isArray(sessionData.physicalTests) && sessionData.physicalTests.length > 0) {
             const sanitized = (sessionData.physicalTests as EvaluationTestEntry[]).map(sanitizeEvaluationEntry);
             setEvaluationTests(sanitized);
