@@ -72,6 +72,8 @@ export interface FollowUpPromptV3Input {
   inClinicItems?: string[];
   /** Home exercise program (current or adjusted). Optional. */
   homeProgram?: string[];
+  /** Previous HEP items that were loaded for continuity but not confirmed in today's session. */
+  homeProgramContextOnly?: string[];
   /** Whether the clinician explicitly edited or confirmed today's HEP decision. */
   homeProgramDecisionProvided?: boolean;
   /** When ES-ES, prompt and model output target Spanish; otherwise en-CA. */
@@ -97,6 +99,7 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
     reviewedAttachmentsSummary,
     inClinicItems = [],
     homeProgram = [],
+    homeProgramContextOnly = [],
   } = input;
   const homeProgramDecisionWasMade = input.homeProgramDecisionProvided === true;
 
@@ -206,6 +209,29 @@ ${longitudinalSummary.trim()}
 `
       : '';
 
+  const homeProgramContextOnlySection =
+    homeProgramContextOnly.length > 0
+      ? `PREVIOUS HEP CONTEXT — no confirmado en sesión actual
+
+Estos ejercicios vienen del programa previo y NO fueron confirmados como Plan activo en la sesión actual.
+Puedes usarlos solo como referencia longitudinal o de adherencia.
+No los incluyas en el Plan ni como HEP prescrito hoy.
+
+${homeProgramContextOnly.map((item) => `${item}`).join('\n\n')}
+
+`
+      : '';
+
+  const planHepProvenanceRule = `REGLA DE PLAN Y HEP:
+El Plan y el Programa de Ejercicios en Casa (HEP) deben
+basarse únicamente en lo que ocurrió en la sesión actual.
+El contexto marcado como "no confirmado en sesión actual"
+es referencia longitudinal — no puede convertirse en
+Plan activo ni en HEP prescrito hoy.
+Si el fisioterapeuta no mencionó, revisó ni confirmó
+un ejercicio durante esta sesión, no lo incluyas en el Plan.
+Puedes mencionarlo en adherencia o evolución, nunca en Plan.`;
+
   const trajectorySection =
     (trajectoryPattern && trajectoryPattern.trim().length > 0) || (painSeriesSummary && painSeriesSummary.trim().length > 0)
       ? `TRAJECTORY PATTERN AND PAIN TREND
@@ -313,6 +339,8 @@ SOURCE OF TRUTH CONSTRAINT:
 - Longitudinal memory may be used to document change over time, response to prior care, and continuity of the plan.
 - Longitudinal memory must NOT be used to invent undocumented interventions or new diagnoses.
 
+${planHepProvenanceRule}
+
 INPUT SOURCES:
 You will receive:
 1. Clinical Transcript -> patient-reported information and interaction
@@ -374,7 +402,7 @@ It may include symptom changes, functional progress, tolerance, or adherence.
 
 ${(clinicalUpdate ?? '').trim() || 'No additional clinical update provided.'}
 
-${reviewedAttachmentsSection}${inClinicSection}${hepSection}${longitudinalSection}${trajectorySection}${patternInsightSection}${currentHepAdherenceSection}${previousPlansSection}
+${reviewedAttachmentsSection}${inClinicSection}${hepSection}${longitudinalSection}${homeProgramContextOnlySection}${trajectorySection}${patternInsightSection}${currentHepAdherenceSection}${previousPlansSection}
 HIERARCHY: today's clinical update and confirmed checklist > baseline SOAP context > previous plan continuity.
 If conflict exists between sources, today's clinical update and confirmed checklist govern today's note.
 Use baseline SOAP only to understand the established condition; do not restate baseline findings as today's content.

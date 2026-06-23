@@ -5824,7 +5824,19 @@ const ProfessionalWorkflowPage = () => {
       const hepTotalCount = homeProgramItems.length;
       const hasHepChecklist = hepTotalCount > 0;
       const hepAdherencePercent = hasHepChecklist ? Math.round((hepCompletedCount / hepTotalCount) * 100) : undefined;
-      const hepDecisionWasMade = Boolean(treatmentDecisionConfirmationRef.current);
+      const homeProgramDecisionWasProvided = Boolean(treatmentDecisionConfirmationRef.current);
+      const homeProgramItemsForPrompt = homeProgramDecisionWasProvided
+        ? homeProgramItems.map((item) => item.label)
+        : [];
+      const homeProgramContextOnly = !homeProgramDecisionWasProvided
+        ? homeProgramItems.map((item) => item.label)
+        : [];
+      console.info('[HEP-PROVENANCE-GATE]', {
+        homeProgramItemsCount: homeProgramItems.length,
+        homeProgramDecisionProvided: homeProgramDecisionWasProvided,
+        homeProgramSentToPromptAsActive: homeProgramItemsForPrompt.length,
+        homeProgramSentAsContextOnly: homeProgramContextOnly.length,
+      });
       // Optional longitudinal context from last completed encounter comparison + trajectory pattern + pain series
       let longitudinalSummary: string | undefined;
       let trajectoryPattern: string | undefined;
@@ -5882,8 +5894,9 @@ const ProfessionalWorkflowPage = () => {
         currentHepAdherenceSummary,
         previousPlansSummary,
         inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
-        homeProgram: homeProgramItems.map((i) => i.label),
-        homeProgramDecisionProvided: hepDecisionWasMade,
+        homeProgram: homeProgramItemsForPrompt,
+        homeProgramContextOnly,
+        homeProgramDecisionProvided: homeProgramDecisionWasProvided,
         jurisdiction: currentJurisdiction,
       };
       // Fase C: documentation + considerations (considerations not part of record until clinician inserts).
