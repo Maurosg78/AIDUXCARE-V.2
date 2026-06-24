@@ -5825,6 +5825,9 @@ const ProfessionalWorkflowPage = () => {
       const hasHepChecklist = hepTotalCount > 0;
       const hepAdherencePercent = hasHepChecklist ? Math.round((hepCompletedCount / hepTotalCount) * 100) : undefined;
       const homeProgramDecisionWasProvided = Boolean(treatmentDecisionConfirmationRef.current);
+      const hepAdherenceSource = homeProgramDecisionWasProvided
+        ? 'confirmed_today'
+        : 'historical_unconfirmed';
       const homeProgramItemsForPrompt = homeProgramDecisionWasProvided
         ? homeProgramItems.map((item) => item.label)
         : [];
@@ -5845,11 +5848,25 @@ const ProfessionalWorkflowPage = () => {
       let patternInsightSummary: string | undefined;
       let reviewedAttachmentsSummary: string | undefined;
       let currentHepAdherenceSummary: string | undefined;
+      let hepAdherenceContextOnly: string | undefined;
       if (hasHepChecklist && hepAdherencePercent !== undefined) {
         const adherenceSummaryEs = `Adherencia HEP hoy: ${hepCompletedCount}/${hepTotalCount} completados (${hepAdherencePercent}%).`;
         const adherenceSummaryEn = `HEP adherence today: ${hepCompletedCount}/${hepTotalCount} completed (${hepAdherencePercent}%).`;
-        currentHepAdherenceSummary = currentJurisdiction === 'ES-ES' ? adherenceSummaryEs : adherenceSummaryEn;
+        const adherenceSummary = currentJurisdiction === 'ES-ES' ? adherenceSummaryEs : adherenceSummaryEn;
+        const adherenceContextEs = `Adherencia HEP no confirmada hoy: ${hepCompletedCount}/${hepTotalCount} completados (${hepAdherencePercent}%).`;
+        const adherenceContextEn = `HEP adherence not confirmed today: ${hepCompletedCount}/${hepTotalCount} completed (${hepAdherencePercent}%).`;
+        const adherenceContext = currentJurisdiction === 'ES-ES' ? adherenceContextEs : adherenceContextEn;
+        currentHepAdherenceSummary = homeProgramDecisionWasProvided ? adherenceSummary : undefined;
+        hepAdherenceContextOnly = homeProgramDecisionWasProvided ? undefined : adherenceContext;
       }
+      console.info('[HEP-ADHERENCE-PROVENANCE]', {
+        hepAdherenceSource,
+        homeProgramDecisionProvided: homeProgramDecisionWasProvided,
+        homeProgramItemsCount: homeProgramItems.length,
+        completedItemsCount: hepCompletedCount,
+        summaryGeneratedAsActive: Boolean(currentHepAdherenceSummary),
+        summaryGeneratedAsContext: Boolean(hepAdherenceContextOnly),
+      });
       try {
         const pid = patientIdFromUrl || demoPatient.id;
         if (pid) {
@@ -5892,6 +5909,7 @@ const ProfessionalWorkflowPage = () => {
         patternInsightSummary,
         reviewedAttachmentsSummary,
         currentHepAdherenceSummary,
+        hepAdherenceContextOnly,
         previousPlansSummary,
         inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
         homeProgram: homeProgramItemsForPrompt,

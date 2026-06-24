@@ -57,7 +57,12 @@ export interface FollowUpPromptV3Input {
    * Optional structured summary of current HEP adherence from today's checklist.
    * Use only to document adherence explicitly confirmed today.
    */
-  currentHepAdherenceSummary?: string;
+  currentHepAdherenceSummary?: string | null;
+  /**
+   * Optional HEP adherence context from a previous/unconfirmed checklist.
+   * Use only as longitudinal context, never as adherence confirmed today.
+   */
+  hepAdherenceContextOnly?: string | null;
   /**
    * Optional summary of previous treatment plan(s) (e.g. last 1–2 plans from treatment_plans).
    * For documentation continuity and linkage to today's response; no new interventions unless in today's input.
@@ -95,6 +100,7 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
     painSeriesSummary,
     patternInsightSummary,
     currentHepAdherenceSummary,
+    hepAdherenceContextOnly,
     previousPlansSummary,
     reviewedAttachmentsSummary,
     inClinicItems = [],
@@ -259,10 +265,24 @@ ${patternInsightSummary.trim()}
       ? `CURRENT HOME PROGRAM ADHERENCE
 
 Use this as a structured fact from today's follow-up checklist.
-Use it only to document adherence confirmed today.
+Document adherence confirmed today.
 Do not infer longer-term adherence beyond what is explicitly provided here.
 
 ${currentHepAdherenceSummary.trim()}
+
+`
+      : '';
+
+  const hepAdherenceContextOnlySection =
+    hepAdherenceContextOnly && hepAdherenceContextOnly.trim().length > 0
+      ? `HOME PROGRAM CONTEXT (NOT CONFIRMED IN TODAY'S SESSION)
+
+This reflects the home program from a previous session.
+The physiotherapist did not review or confirm this program during today's visit.
+Do NOT document this as adherence confirmed today.
+Use only as longitudinal context.
+
+${hepAdherenceContextOnly.trim()}
 
 `
       : '';
@@ -325,7 +345,8 @@ SOURCE OF TRUTH CONSTRAINT:
   - today's clinical update,
   - in-clinic items and home program items provided,
   - the baseline SOAP as context only,
-  - current structured HEP adherence provided,
+  - current structured HEP adherence when provided,
+  - home program context marked not confirmed today as longitudinal context only,
   - longitudinal context / pain trend / trajectory data provided,
   - previous treatment plan information as continuity only,
   - patient longitudinal memory pattern provided,
@@ -402,7 +423,7 @@ It may include symptom changes, functional progress, tolerance, or adherence.
 
 ${(clinicalUpdate ?? '').trim() || 'No additional clinical update provided.'}
 
-${reviewedAttachmentsSection}${inClinicSection}${hepSection}${longitudinalSection}${homeProgramContextOnlySection}${trajectorySection}${patternInsightSection}${currentHepAdherenceSection}${previousPlansSection}
+${reviewedAttachmentsSection}${inClinicSection}${hepSection}${longitudinalSection}${homeProgramContextOnlySection}${trajectorySection}${patternInsightSection}${currentHepAdherenceSection}${hepAdherenceContextOnlySection}${previousPlansSection}
 HIERARCHY: today's clinical update and confirmed checklist > baseline SOAP context > previous plan continuity.
 If conflict exists between sources, today's clinical update and confirmed checklist govern today's note.
 Use baseline SOAP only to understand the established condition; do not restate baseline findings as today's content.
