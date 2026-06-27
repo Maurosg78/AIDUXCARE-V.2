@@ -111,6 +111,7 @@ export interface SOAPTabProps {
   patientFirstName?: string;
   professionalName?: string;
   professionalTitle?: string;
+  sessionDateKey?: string;
   inClinicItemsOverride?: string[];
   hepItemsOverride?: string[];
   /** Patient full name — threaded to SOAPEditor for referral report. */
@@ -178,6 +179,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   patientFirstName,
   professionalName,
   professionalTitle,
+  sessionDateKey,
   inClinicItemsOverride,
   hepItemsOverride,
   patientName,
@@ -415,6 +417,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
           professionalName={professionalName || ''}
           professionalTitle={professionalTitle || 'Fisioterapeuta'}
           planText={emailSummaryPlanText}
+          sessionDateKey={sessionDateKey}
           inClinicItemsOverride={inClinicItemsOverride}
           hepItemsOverride={hepItemsOverride}
         />

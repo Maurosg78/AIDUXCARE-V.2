@@ -23,6 +23,7 @@ export interface PatientSummaryEmailModalProps {
   professionalTitle: string;
   /** Raw SOAP plan text — HEP and in-clinic items are derived from this. */
   planText: string;
+  sessionDateKey?: string;
   inClinicItemsOverride?: string[];
   hepItemsOverride?: string[];
 }
@@ -36,6 +37,7 @@ export const PatientSummaryEmailModal: React.FC<PatientSummaryEmailModalProps> =
   professionalName,
   professionalTitle,
   planText,
+  sessionDateKey,
   inClinicItemsOverride,
   hepItemsOverride,
 }) => {
@@ -57,11 +59,17 @@ export const PatientSummaryEmailModal: React.FC<PatientSummaryEmailModalProps> =
   const hepItems = normalizedHepOverride.length > 0
     ? normalizedHepOverride
     : derived.homeProgram;
-  const visitDate = new Date().toLocaleDateString('es-ES', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  const visitDate = sessionDateKey
+    ? new Date(`${sessionDateKey}T12:00:00`).toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    : new Date().toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
 
   // Reset local state each time the modal opens
   useEffect(() => {
