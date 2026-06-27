@@ -407,7 +407,7 @@ export class VertexAIServiceViaFirebase {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        action: 'generate_soap',
+        action: 'analyze',
         transcript: deidentifiedText, // Use de-identified transcript
         selectedEntityIds: params.selectedEntityIds,
         physicalExamResults: params.physicalExamResults,
