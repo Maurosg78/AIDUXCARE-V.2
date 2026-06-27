@@ -7996,6 +7996,7 @@ const ProfessionalWorkflowPage = () => {
                         ? Boolean(transcript?.trim() || physioNotes.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0)
                         : undefined
                     }
+                    hasSoapContent={Boolean(localSoapNote)}
                     todayFocusBlockRenderedByParent={visitType === 'follow-up'}
                     resumeLoadFailed={resumeLoadFailed}
                     selectedRedFlagIds={selectedRedFlagIds}
@@ -8323,6 +8324,7 @@ const ProfessionalWorkflowPage = () => {
                   hideHeader={false}
                   hideTranscriptArea={currentSessionType === 'followup'}
                   followUpHasContent={currentSessionType === 'followup' ? Boolean(transcript?.trim() || physioNotes.trim() || inClinicItems.length > 0 || homeProgramItems.length > 0) : undefined}
+                  hasSoapContent={Boolean(localSoapNote)}
                   resumeLoadFailed={resumeLoadFailed}
                   selectedRedFlagIds={selectedRedFlagIds}
                   onRedFlagSelectionChange={setSelectedRedFlagIds}

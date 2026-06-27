@@ -178,6 +178,8 @@ export interface AnalysisTabProps {
   hideTranscriptArea?: boolean;
   /** When follow-up captures transcript externally, allow rendering the generate button even if TranscriptArea is hidden. */
   followUpHasContent?: boolean;
+  /** True once a SOAP note exists for the current workflow. */
+  hasSoapContent?: boolean;
   /** When resume failed (session not found), show recovery links to the note or history view. */
   resumeLoadFailed?: { sessionId: string; patientId: string } | null;
   // WO-BUG-008: Red flags — which ones the physio selected (for acceptance stats)
@@ -271,6 +273,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   todayFocusBlockRenderedByParent = false,
   hideTranscriptArea = false,
   followUpHasContent = false,
+  hasSoapContent = false,
   resumeLoadFailed = null,
   selectedRedFlagIds,
   onRedFlagSelectionChange,
@@ -638,13 +641,15 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       {/* WO-FU-GENERATE-BTN: follow-up may capture transcript outside AnalysisTab; keep SOAP trigger visible when content exists */}
       {hideTranscriptArea && followUpHasContent && (
         <div className="mt-4 pt-4 border-t border-slate-200">
-          <AdditionalClinicalContextInput
-            additionalNotes={physioNotes}
-            setAdditionalNotes={setPhysioNotes}
-            languagePreference={languagePreference}
-            isProcessing={isProcessing}
-            isGeneratingSOAP={isGeneratingSOAP}
-          />
+          {!hasSoapContent && (
+            <AdditionalClinicalContextInput
+              additionalNotes={physioNotes}
+              setAdditionalNotes={setPhysioNotes}
+              languagePreference={languagePreference}
+              isProcessing={isProcessing}
+              isGeneratingSOAP={isGeneratingSOAP}
+            />
+          )}
           <button
             onClick={handleAnalyzeWithVertex}
             disabled={isProcessing || isGeneratingSOAP}
