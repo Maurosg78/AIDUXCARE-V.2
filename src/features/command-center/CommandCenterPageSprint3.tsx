@@ -33,7 +33,7 @@ import { PatientWorkflowStatus } from '../../domain/patientStatus';
 
 import logger from '../../shared/utils/logger';
 import { LAST_STARTED_KEY } from './todayListSessionStorage';
-import { subscribeTodayList, saveTodayList } from '../../services/todayListService';
+import { getTodayList as loadTodayList, subscribeTodayList, saveTodayList } from '../../services/todayListService';
 import { buildClinicalDayView, type ClinicalDayRow } from './utils/clinicalDayView';
 
 function toLocalDateKey(d: Date): string {
@@ -329,12 +329,42 @@ export const CommandCenterPageSprint3: React.FC = () => {
 
     sessionStorage.removeItem(LAST_STARTED_KEY);
 
+    let cancelled = false;
+
     const unsubscribe = subscribeTodayList(user.uid, dateKey, (firestoreItems) => {
       const filteredItems = firestoreItems.filter((item) => {
         const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
         return !removedTodayQuickItemKeysRef.current.has(scopedKey);
       });
       if (!hasLoadedRef.current) {
+        const isSelectedDateToday = dateKey === toLocalDateKey(new Date());
+        if (filteredItems.length === 0 && isSelectedDateToday) {
+          void (async () => {
+            const previousDateKey = toLocalDateKey(new Date(selectedDate.getTime() - 86400000));
+            const previousItems = await loadTodayList(user.uid, previousDateKey);
+            if (cancelled || hasLoadedRef.current || currentDateKeyRef.current !== dateKey) {
+              return;
+            }
+            const previousPendingItems = previousItems.filter((item) => {
+              const status = item.status as string | undefined;
+              return status !== 'completed' && status !== 'discarded';
+            });
+            if (previousPendingItems.length > 0) {
+              await saveTodayList(user.uid, dateKey, previousPendingItems);
+              if (cancelled || currentDateKeyRef.current !== dateKey) {
+                return;
+              }
+              setTodayQuickList(previousPendingItems);
+            } else {
+              setTodayQuickList([]);
+            }
+            pendingTodayQuickItemsRef.current.clear();
+            hasLocalTodayQuickChangesRef.current = false;
+            shouldPersistTodayQuickListRef.current = false;
+            hasLoadedRef.current = true;
+          })();
+          return;
+        }
         const pendingItems = Array.from(pendingTodayQuickItemsRef.current.values()).filter((item) => {
           const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
           return !removedTodayQuickItemKeysRef.current.has(scopedKey);
@@ -356,7 +386,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
       hasLoadedRef.current = true;
     });
 
-    return unsubscribe;
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [user?.uid, selectedDate]);
 
   // Merge in-progress sessions into the quick list whenever they change.
@@ -544,6 +577,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const statusesHiddenWhenOpenResponsibility = new Set<PatientWorkflowStatus>([
     PatientWorkflowStatus.SCHEDULED,
     PatientWorkflowStatus.IN_PROGRESS,
+    PatientWorkflowStatus.ABANDONED,
   ]);
   const resolvedClinicalDayRows = clinicalDayRows.filter((row) => {
     if (!openResponsibilityPatientIds.has(row.patientId)) {
