@@ -220,7 +220,8 @@ class TreatmentPlanService {
     planText: string,
     visitType: 'initial' | 'follow-up',
     soapNote?: any,
-    options: { clinicalDate?: string } = {}
+    options: { clinicalDate?: string } = {},
+    homeProgramTextOverride?: string | null
   ): Promise<string> {
     try {
       const timestampMs = Date.now();
@@ -233,7 +234,11 @@ class TreatmentPlanService {
         ? ensureSpanishClinicalText(planTextForNormalization)
         : planTextForNormalization;
       const planTextToPersist = normalizedPlanText;
-      const structuredPlanFields = this.buildStructuredPlanFields(planTextToPersist);
+      const normalizedHomeProgramTextOverride = homeProgramTextOverride?.trim() || null;
+      const structuredPlanFields = {
+        ...this.buildStructuredPlanFields(planTextToPersist),
+        ...(normalizedHomeProgramTextOverride ? { homeProgramText: normalizedHomeProgramTextOverride } : {}),
+      };
       const clinicalDate = normalizeDateKey(options.clinicalDate);
 
       const modalities = this.extractModalities(planTextToPersist);

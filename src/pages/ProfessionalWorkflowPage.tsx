@@ -6958,6 +6958,14 @@ const ProfessionalWorkflowPage = () => {
         const authorUidForTreatmentPlan = user?.uid;
         const finalizedPlanText = soap.plan;
         const visitTypeForTreatmentPlan = visitType;
+        const decisionHomeProgramItems =
+          visitType === 'initial'
+            ? buildTreatmentDecisionItemsFromPlan(soap.plan || '').homeProgramItems
+            : homeProgramItems;
+        const validDecisionHomeProgramItems = decisionHomeProgramItems.filter((item) => item.label.trim().length > 0);
+        const homeProgramTextOverride = validDecisionHomeProgramItems.length > 0
+          ? validDecisionHomeProgramItems.map((item) => item.label).join('\n')
+          : null;
         if (authorUidForTreatmentPlan) {
           await treatmentPlanService.saveTreatmentPlan(
             patientKeyForTreatmentPlan,
@@ -6966,7 +6974,8 @@ const ProfessionalWorkflowPage = () => {
             finalizedPlanText,
             visitTypeForTreatmentPlan,
             undefined,
-            { clinicalDate: clinicalSessionDateKey }
+            { clinicalDate: clinicalSessionDateKey },
+            homeProgramTextOverride
           );
           console.log('[Workflow] Treatment plan saved for reminders');
         }
