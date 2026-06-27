@@ -304,7 +304,7 @@ exports.vertexAIProxy = functions.region(LOCATION).https.onRequest(async (req, r
       return res.status(400).json({ ok: false, error: 'missing_input', message: "Provide 'prompt' or 'transcript' or 'text'." });
     }
 
-    if (inputText.length > 50000) {
+    if (inputText.length > 65000) {
       return res.status(400).json({ ok: false, error: 'input_too_large' });
     }
 
