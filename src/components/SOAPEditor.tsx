@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, Save, CheckCircle, AlertCircle, Loader2, RefreshCw, Eye, Copy, Download, Check, X, Share2 } from 'lucide-react';
+import { FileText, Save, CheckCircle, AlertCircle, Loader2, RefreshCw, Eye, Copy, Download, Check, X, Share2, Mail } from 'lucide-react';
 import type { SOAPNote } from '../types/vertex-ai';
 import { AnalyticsService } from '../services/analyticsService';
 import { useAuth } from '../hooks/useAuth';
@@ -35,6 +35,8 @@ export interface SOAPEditorProps {
   onUnfinalize?: (soap: SOAPNote) => void;
   onPreview?: (soap: SOAPNote) => void;
   onShare?: () => void; // Callback to open share menu
+  onSendPatientSummary?: () => void;
+  patientSummarySent?: boolean;
   /** When provided and status is finalized, shows "Back to Command Center" and save confirmation. */
   onBackToCommandCenter?: () => void;
   className?: string;
@@ -74,6 +76,8 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   onUnfinalize,
   onPreview,
   onShare,
+  onSendPatientSummary,
+  patientSummarySent = false,
   onBackToCommandCenter,
   className = '',
   isOptimized = false,
@@ -1140,8 +1144,24 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
                     title={t('clinical.actions.exportPdfTitle')}
                   >
                     <Download className="w-4 h-4" />
-                  {t('clinical.actions.exportPdf')}
+                    {t('clinical.actions.exportPdf')}
                   </button>
+                  {onSendPatientSummary && (
+                    patientSummarySent ? (
+                      <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-sm font-medium text-green-700">
+                        <CheckCircle className="w-4 h-4" />
+                        Resumen enviado al paciente
+                      </div>
+                    ) : (
+                      <button
+                        onClick={onSendPatientSummary}
+                        className="inline-flex h-10 min-w-[210px] items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                      >
+                        <Mail className="w-4 h-4" />
+                        Enviar resumen al paciente
+                      </button>
+                    )
+                  )}
                   {onBackToCommandCenter && (
                     <button
                       onClick={onBackToCommandCenter}

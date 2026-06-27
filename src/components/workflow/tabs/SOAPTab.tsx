@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, Loader2, ClipboardList, CheckCircle, Mail } from 'lucide-react';
+import { FileText, Loader2, ClipboardList, CheckCircle } from 'lucide-react';
 import { isSpainPilot } from '@/core/pilotDetection';
 import { PatientSummaryEmailModal } from '../PatientSummaryEmailModal';
 import type { SOAPNote } from '../../../types/vertex-ai';
@@ -196,6 +196,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
     (inClinicItemsOverride && inClinicItemsOverride.length > 0) ||
     (hepItemsOverride && hepItemsOverride.length > 0)
   );
+  const canSendPatientSummary = isSpainPilot() && Boolean(patientEmail) && hasPatientSummaryEmailContent;
   const handleSoapFieldEdited = (fieldEdited: EditableSOAPField) => {
     void trackSOAPEdited({ fieldEdited, field_name: fieldEdited });
   };
@@ -339,6 +340,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             onShare={() => {
               setIsShareMenuOpen(true);
             }}
+            onSendPatientSummary={canSendPatientSummary ? () => setSummaryModalOpen(true) : undefined}
+            patientSummarySent={summarySent}
             // ✅ WORKFLOW OPTIMIZATION: Pass optimization props
             isOptimized={workflowRoute?.analysisLevel === 'optimized'}
             tokenOptimization={soapTokenOptimization}
@@ -362,26 +365,6 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             redFlagDecisions={redFlagDecisions}
             onFieldEdited={handleSoapFieldEdited}
           />
-
-          {/* Spain pilot: Enviar resumen al paciente */}
-          {isSpainPilot() && patientEmail && hasPatientSummaryEmailContent && (
-            <div className="mt-4 flex justify-end">
-              {summarySent ? (
-                <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 px-4 py-2.5 rounded-xl">
-                  <CheckCircle className="w-4 h-4" />
-                  Resumen enviado al paciente
-                </div>
-              ) : (
-                <button
-                  onClick={() => setSummaryModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors"
-                >
-                  <Mail className="w-4 h-4" />
-                  Enviar resumen al paciente
-                </button>
-              )}
-            </div>
-          )}
 
           {/* ✅ CLOSE INITIAL ASSESSMENT: Only for initial visits after finalization */}
           {visitType === 'initial' && soapStatus === 'finalized' && onCloseInitialAssessment && (
