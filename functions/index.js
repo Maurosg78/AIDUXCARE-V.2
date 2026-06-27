@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 const { GoogleAuth } = require('google-auth-library');
+const { defineSecret } = require('firebase-functions/params');
 
 const PROJECT = 'aiduxcare-v2-uat-dev';
 const LOCATION = 'northamerica-northeast1'; // ✅ CANADÁ (Montreal) - PHIPA compliance
@@ -9,6 +10,9 @@ const MODEL = 'gemini-2.5-flash';
 const ENDPOINT = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT}/locations/${LOCATION}/publishers/google/models/${MODEL}:generateContent`;
 
 const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
+const vonageApiKeySecret = defineSecret('VONAGE_API_KEY');
+const vonageApiSecretSecret = defineSecret('VONAGE_API_SECRET');
+const vonageFromNumberSecret = defineSecret('VONAGE_FROM_NUMBER');
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -108,7 +112,17 @@ exports.processWithVertexAI = functions.region(LOCATION).https.onCall(async (dat
  * 
  * Market: CA · en-CA · PHIPA/PIPEDA Ready
  */
-exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, res) => {
+exports.sendConsentSMS = functions
+  .runWith({
+    secrets: [
+      vonageApiKeySecret,
+      vonageApiSecretSecret,
+      vonageFromNumberSecret,
+    ],
+  })
+  .region(LOCATION)
+  .https
+  .onRequest(async (req, res) => {
   applyRestrictedCors(req, res, ['POST', 'OPTIONS']);
 
   if (req.method === 'OPTIONS') {
@@ -131,10 +145,10 @@ exports.sendConsentSMS = functions.region(LOCATION).https.onRequest(async (req, 
       return res.status(400).json({ ok: false, error: 'missing_required_fields', message: 'phone and message are required' });
     }
 
-    // Get Vonage credentials from environment
-    const VONAGE_API_KEY = functions.config().vonage?.api_key || process.env.VONAGE_API_KEY;
-    const VONAGE_API_SECRET = functions.config().vonage?.api_secret || process.env.VONAGE_API_SECRET;
-    const VONAGE_FROM_NUMBER = functions.config().vonage?.from_number || process.env.VONAGE_FROM_NUMBER;
+    // Get Vonage credentials from Firebase Functions Secrets.
+    const VONAGE_API_KEY = vonageApiKeySecret.value();
+    const VONAGE_API_SECRET = vonageApiSecretSecret.value();
+    const VONAGE_FROM_NUMBER = vonageFromNumberSecret.value();
 
     if (!VONAGE_API_KEY || !VONAGE_API_SECRET || !VONAGE_FROM_NUMBER) {
       console.error('[SMS Function] Missing Vonage credentials');
@@ -836,7 +850,6 @@ exports.apiConsentVerify = functions.region(LOCATION).https.onRequest(async (req
 // Secret name: RESEND_API_KEY  →  firebase functions:secrets:set RESEND_API_KEY
 // ---------------------------------------------------------------------------
 const { onCall: onCallV2, HttpsError: HttpsErrorV2 } = require('firebase-functions/v2/https');
-const { defineSecret } = require('firebase-functions/params');
 const { Resend } = require('resend');
 
 const resendApiKeySecret = defineSecret('RESEND_API_KEY');

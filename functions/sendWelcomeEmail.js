@@ -11,6 +11,7 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const { defineSecret } = require('firebase-functions/params');
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -18,6 +19,7 @@ if (!admin.apps.length) {
 }
 
 const LOCATION = 'northamerica-northeast1'; // ✅ CANADÁ (Montreal) - PHIPA compliance
+const sendgridApiKeySecret = defineSecret('SENDGRID_API_KEY');
 
 const maskEmailForLog = (email) => {
   if (!email) {
@@ -104,7 +106,10 @@ const getWelcomeEmailHTML = (displayName, verificationUrl) => `
  * NOTE: This requires configuring SMTP or using a service like SendGrid/Resend
  * For now, this is a template that can be completed when email service is configured
  */
-exports.sendWelcomeEmail = functions.region(LOCATION).firestore
+exports.sendWelcomeEmail = functions
+  .runWith({ secrets: [sendgridApiKeySecret] })
+  .region(LOCATION)
+  .firestore
   .document('users/{userId}')
   .onCreate(async (snap, context) => {
     const userData = snap.data();
@@ -134,7 +139,7 @@ exports.sendWelcomeEmail = functions.region(LOCATION).firestore
     // Example with SendGrid (uncomment and configure):
     /*
     const sgMail = require('@sendgrid/mail');
-    sgMail.setApiKey(functions.config().sendgrid?.api_key);
+    sgMail.setApiKey(sendgridApiKeySecret.value());
     
     const msg = {
       to: email,
@@ -157,4 +162,3 @@ exports.sendWelcomeEmail = functions.region(LOCATION).firestore
   });
 
 console.log("[OK] functions/sendWelcomeEmail.js: Welcome email function ready");
-
