@@ -562,6 +562,26 @@ const dateFromLocalDateKey = (dateKey: string): Date | null => {
   return Number.isFinite(parsed.getTime()) ? parsed : null;
 };
 
+const resolvePatientEmail = (patient: Patient | null | undefined): string => {
+  const patientRecord = patient as
+    | (Patient & {
+        personalInfo?: { email?: unknown };
+        contact?: { email?: unknown };
+        contactInfo?: { email?: unknown };
+      })
+    | null
+    | undefined;
+  const candidates = [
+    patientRecord?.email,
+    patientRecord?.personalInfo?.email,
+    patientRecord?.contact?.email,
+    patientRecord?.contactInfo?.email,
+  ];
+  return candidates
+    .map((value) => (typeof value === 'string' ? value.trim() : ''))
+    .find(Boolean) ?? '';
+};
+
 const ProfessionalWorkflowPage = () => {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
@@ -621,6 +641,7 @@ const ProfessionalWorkflowPage = () => {
   // State for real patient data
   const [currentPatient, setCurrentPatient] = useState<Patient | null>(null);
   const [loadingPatient, setLoadingPatient] = useState(true);
+  const patientSummaryEmail = resolvePatientEmail(currentPatient);
 
   // WO-REDFLAG-FOLLOWUP-002: follow-up red flags from generateFollowUpAnalysis alerts
   const [followUpAlerts, setFollowUpAlerts] = useState<{
@@ -8133,7 +8154,7 @@ const ProfessionalWorkflowPage = () => {
                       }
                       navigate('/command-center');
                     }}
-                    patientEmail={currentPatient?.email}
+                    patientEmail={patientSummaryEmail}
                     patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
                     professionalName={clinicianDisplayName || ''}
                     professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
@@ -8420,7 +8441,7 @@ const ProfessionalWorkflowPage = () => {
                       }
                       navigate('/command-center');
                     }}
-                    patientEmail={currentPatient?.email}
+                    patientEmail={patientSummaryEmail}
                     patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
                     professionalName={clinicianDisplayName || ''}
                     professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
