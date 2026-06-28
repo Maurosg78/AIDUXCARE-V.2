@@ -116,7 +116,7 @@ export const FinalizedSessionActions: React.FC<FinalizedSessionActionsProps> = (
     >
       <button
         type="button"
-        onClick={onCopy}
+        onClick={() => onCopy()}
         className={primaryActionClassName}
         title="Copiar nota finalizada al portapapeles"
       >
@@ -126,7 +126,7 @@ export const FinalizedSessionActions: React.FC<FinalizedSessionActionsProps> = (
 
       <button
         type="button"
-        onClick={onDownloadTxt}
+        onClick={() => onDownloadTxt()}
         className={primaryActionClassName}
         title="Descargar nota finalizada en formato texto"
       >
@@ -136,7 +136,7 @@ export const FinalizedSessionActions: React.FC<FinalizedSessionActionsProps> = (
 
       <button
         type="button"
-        onClick={onExportPdf}
+        onClick={() => onExportPdf()}
         className={secondaryActionClassName}
         title="Exportar nota finalizada como PDF"
       >
@@ -153,7 +153,7 @@ export const FinalizedSessionActions: React.FC<FinalizedSessionActionsProps> = (
         ) : (
           <button
             type="button"
-            onClick={onSendEmail}
+            onClick={() => onSendEmail()}
             className={emailActionClassName}
             title="Enviar resumen de la sesion finalizada al paciente"
           >
@@ -166,7 +166,7 @@ export const FinalizedSessionActions: React.FC<FinalizedSessionActionsProps> = (
       {shouldRenderCertificateAction && (
         <button
           type="button"
-          onClick={onCertificate}
+          onClick={() => onCertificate?.()}
           className={secondaryActionClassName}
           title="Crear certificado desde la sesion finalizada"
         >
@@ -178,7 +178,7 @@ export const FinalizedSessionActions: React.FC<FinalizedSessionActionsProps> = (
       {shouldRenderReferralReportAction && (
         <button
           type="button"
-          onClick={onReferralReport}
+          onClick={() => onReferralReport?.()}
           className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100"
           title="Generar informe de derivacion desde la sesion finalizada"
         >
@@ -189,7 +189,7 @@ export const FinalizedSessionActions: React.FC<FinalizedSessionActionsProps> = (
 
       <button
         type="button"
-        onClick={onBackToCommandCenter}
+        onClick={() => onBackToCommandCenter()}
         className={commandCenterActionClassName}
         title="Volver al Centro de mando"
       >
