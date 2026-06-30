@@ -35,6 +35,7 @@ import logger from '../../shared/utils/logger';
 import { LAST_STARTED_KEY } from './todayListSessionStorage';
 import { getTodayList as loadTodayList, subscribeTodayList, saveTodayList } from '../../services/todayListService';
 import { buildClinicalDayView, type ClinicalDayRow } from './utils/clinicalDayView';
+import { patientHasClosedClinicalEvidenceForDate } from './utils/patientClosedEvidenceForDate';
 
 function toLocalDateKey(d: Date): string {
   const y = d.getFullYear();
@@ -345,9 +346,33 @@ export const CommandCenterPageSprint3: React.FC = () => {
             if (cancelled || hasLoadedRef.current || currentDateKeyRef.current !== dateKey) {
               return;
             }
-            const previousPendingItems = previousItems.filter((item) => {
+            // Filtrar por evidencia clínica real del día anterior.
+            // El campo status del quickItem es legacy y no confiable.
+            const previousPendingItemsRaw = previousItems.filter((item) => {
               const status = item.status as string | undefined;
-              return status !== 'completed' && status !== 'discarded';
+              return status !== 'discarded';
+            });
+            const evidenceChecks = await Promise.all(
+              previousPendingItemsRaw.map(async (item) => {
+                const hasClosedEvidence = await patientHasClosedClinicalEvidenceForDate(
+                  item.patientId,
+                  previousDateKey
+                );
+                return {
+                  item,
+                  hasClosedEvidence,
+                };
+              })
+            );
+            const previousPendingItems = evidenceChecks
+              .filter(({ hasClosedEvidence }) => !hasClosedEvidence)
+              .map(({ item }) => item);
+            console.info('[COMMAND-CENTER] Migration of pending patients', {
+              previousDateKey,
+              targetDateKey: dateKey,
+              totalCandidates: previousPendingItemsRaw.length,
+              filteredOutWithClosedEvidence: previousPendingItemsRaw.length - previousPendingItems.length,
+              migratedCount: previousPendingItems.length,
             });
             if (previousPendingItems.length > 0) {
               await saveTodayList(user.uid, dateKey, previousPendingItems);
