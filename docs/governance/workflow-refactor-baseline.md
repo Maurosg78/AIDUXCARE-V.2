@@ -1,8 +1,8 @@
 # Workflow Refactor Baseline
 ## Baseline de Refactorizacion del Workflow
-[DRAFT v0.1 - PENDING CTO APPROVAL / PENDIENTE APROBACION CTO]
+[DRAFT v0.2 - PENDING CTO APPROVAL / PENDIENTE APROBACION CTO]
 
-**Date / Fecha:** 21 Jun 2026  
+**Date / Fecha:** 01 Jul 2026  
 **Status / Estado:** Draft only / Solo borrador  
 **Source of Truth checked / SoT revisados:** `ENGINEERING.md`, `docs/governance/GOVERNANCE.md`, `docs/governance/REGULATORY_DECISION_TREE.md`, `docs/north/READING_GUIDE.md`
 
@@ -25,6 +25,102 @@ La version canonica solo existe despues de aprobacion CTO documentada.
 To update this document: open a separate PR with no application code.
 Each update must declare version (`v0.2`, `v0.3`, etc.) and date.
 The canonical version exists only after documented CTO approval.
+
+## Clinical Data Provenance Architecture (v0.2 - 01 Jul 2026)
+## Arquitectura de Provenance de Datos Clinicos
+
+### Origen de esta decision
+
+Auditoria PASO 0 (01 Jul 2026) sobre `buildFollowUpPromptV3.ts`
+confirmo que el patron de riesgo identificado en HEP provenance
+(Fases 1 y 2) es sistemico, no aislado. Feedback `koXGYHhijUnb8cTxph1U`
+(P0) confirmo que EVA/dolor puede documentarse en el SOAP sin haber
+sido conversado en la sesion actual.
+
+### Principio de arquitectura (no negociable)
+
+Ningun dato clinico entra al prompt de Gemini sin que su provenance
+este resuelto por codigo antes de construir el texto. El modelo
+de lenguaje NUNCA decide provenance - solo ejecuta instrucciones
+sobre datos ya clasificados.
+
+### Contrato de datos - ClinicalDataPoint<T>
+
+```typescript
+type ProvenanceSource = 'today' | 'historical' | 'unconfirmed';
+
+type ProvenanceSourceDetail =
+  | 'transcript_current_session'
+  | 'physio_structured_input'
+  | 'clinician_checklist'
+  | 'previous_session'
+  | 'baseline_soap'
+  | 'longitudinal_summary'
+  | 'treatment_decision'
+  | 'attachment_reviewed_today';
+
+interface ClinicalDataPoint<T> {
+  value: T;
+  source: ProvenanceSource;
+  sourceDetail: ProvenanceSourceDetail;
+  sessionId?: string;
+  capturedAt?: string;
+  confirmedByClinician?: boolean;
+}
+```
+
+### Regla de oro
+
+Datos con `source: 'historical'` o `source: 'unconfirmed'` NUNCA pueden
+presentarse en el SOAP como hallazgo de la sesion actual.
+Pueden aparecer como contexto longitudinal, etiquetados
+explicitamente como tales.
+
+### Mecanismo de resolucion por tipo de campo
+
+| Campo | Mecanismo | Estado |
+|---|---|---|
+| HEP / home program | Checklist confirmado (`treatmentDecisionConfirmationRef`) | Resuelto - Fases 1 y 2 |
+| Red flags | Gate textual "explicitly mentioned in TODAY'S CLINICAL UPDATE" | Resuelto |
+| Adjuntos revisados | Gate textual "reviewed today" | Resuelto |
+| EVA / dolor | Captura estructurada UI obligatoria - NUNCA regex como fuente canonica | Diseno aprobado, pendiente implementacion |
+| Sintomas / ROM / hallazgos / funcion-tolerancia | `ClinicalDataPoint` con fallback conservador; regex solo como sugerencia UI a confirmar por el fisio | Pendiente diseno detallado |
+
+### Principio anti-patron (registrar explicitamente)
+
+Deteccion automatica por texto (regex/keywords) NUNCA es fuente
+canonica de provenance para datos clinicos que entran al SOAP.
+Puede usarse unicamente como sugerencia a la UI que el
+fisioterapeuta debe confirmar explicitamente antes de que el
+dato se marque como `source: 'today'`.
+
+### Wireframe textual - Captura EVA/dolor (follow-up)
+
+Ubicacion: workflow follow-up (`AnalysisTab` o equivalente), seccion
+"contexto clinico adicional" - fuera del editor de SOAP.
+
+Cuando aparece: solo en sesiones follow-up, antes de generar SOAP.
+
+Obligatoriedad: no bloquea generacion de SOAP. Pero si no
+se completa, el SOAP no puede mencionar EVA/dolor como
+hallazgo de hoy.
+
+Estados:
+- Vacio: "No se documento EVA hoy"
+- Confirmado: "Dolor/EVA confirmado hoy: X/10"
+- Con contexto historico disponible pero sin confirmacion hoy:
+  mostrar EVA previo como referencia, etiquetado
+  "Ultimo EVA registrado: X/10 (sesion anterior) -
+  no confirmado hoy"
+
+### Proxima fase de implementacion (NO EJECUTAR AUN)
+
+1. Campo UI de captura EVA/dolor
+2. Estado tipado `ClinicalDataPoint<number>`
+3. Payload hacia `buildFollowUpPromptV3`
+4. Nueva seccion de prompt: "CURRENT PAIN/EVA - CONFIRMED TODAY"
+5. Tests unitarios + QA manual
+6. Extension posterior a sintomas/ROM/hallazgos/funcion
 
 ## Section A - Responsibility Map
 ## Seccion A - Mapa de responsabilidades
