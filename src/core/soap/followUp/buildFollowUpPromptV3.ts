@@ -16,6 +16,7 @@
  */
 
 import { getSoapJurisdictionContext } from '../../prompts/soapJurisdictionContext';
+import type { ClinicalDataPoint } from '../../../types/clinicalProvenance';
 
 export interface FollowUpPromptV3BaselineSOAP {
   subjective: string;
@@ -48,6 +49,11 @@ export interface FollowUpPromptV3Input {
    * Helps the model generate natural evolution phrasing without inferring treatment.
    */
   painSeriesSummary?: string;
+  /**
+   * Pain/EVA explicitly captured and confirmed by the physiotherapist today.
+   * Historical pain series remains context only and must not imply today's pain level.
+   */
+  currentPainEva?: ClinicalDataPoint<number> | null;
   /**
    * Optional pattern insight from patient trajectory memory.
    * Use as longitudinal memory to describe recurrent response patterns only.
@@ -98,6 +104,7 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
     trajectoryPattern,
     trajectoryConfidence,
     painSeriesSummary,
+    currentPainEva,
     patternInsightSummary,
     currentHepAdherenceSummary,
     hepAdherenceContextOnly,
@@ -238,11 +245,43 @@ Si el fisioterapeuta no mencionó, revisó ni confirmó
 un ejercicio durante esta sesión, no lo incluyas en el Plan.
 Puedes mencionarlo en adherencia o evolución, nunca en Plan.`;
 
+  const painEvaSection = (() => {
+    const hasConfirmedPainToday =
+      currentPainEva?.source === 'today' &&
+      currentPainEva.confirmedByClinician === true &&
+      typeof currentPainEva.value === 'number' &&
+      Number.isFinite(currentPainEva.value);
+    const historicalPainSeries = painSeriesSummary?.trim();
+    const confirmedPainSection = hasConfirmedPainToday
+      ? `CURRENT PAIN/EVA — CONFIRMED TODAY
+
+Dolor/EVA confirmado por el fisioterapeuta en esta sesión: ${currentPainEva.value}/10
+Document this as today's pain level.
+Cuando documentes el dolor/EVA en Objective, usa el formato:
+"Dolor EVA hoy: ${currentPainEva.value}/10 (previo: [valor histórico]/10, sesión anterior)" si existe valor histórico.
+Nunca uses el formato con flecha "previo → actual" sin especificar cuál valor corresponde a hoy y cuál es histórico.
+
+`
+      : '';
+    const historicalPainSection = historicalPainSeries
+      ? `PAIN CONTEXT (HISTORICAL — NOT CONFIRMED TODAY)
+
+${historicalPainSeries}
+Do NOT document this as today's pain level. This is longitudinal reference only.
+
+`
+      : '';
+
+    return `${confirmedPainSection}${historicalPainSection}`;
+  })();
+
   const trajectorySection =
-    (trajectoryPattern && trajectoryPattern.trim().length > 0) || (painSeriesSummary && painSeriesSummary.trim().length > 0)
+    trajectoryPattern && trajectoryPattern.trim().length > 0
       ? `TRAJECTORY PATTERN AND PAIN TREND
 
-${painSeriesSummary && painSeriesSummary.trim().length > 0 ? `Pain series (recent visits): ${painSeriesSummary.trim()}\n\n` : ''}${trajectoryPattern && trajectoryPattern.trim().length > 0 ? `Pain trajectory classification: ${trajectoryPattern.trim()}${trajectoryConfidence ? ` (confidence: ${trajectoryConfidence})` : ''}\nSignal source: longitudinal analysis.\n` : ''}Use this information only to describe patient evolution. Do not infer treatment decisions.
+Pain trajectory classification: ${trajectoryPattern.trim()}${trajectoryConfidence ? ` (confidence: ${trajectoryConfidence})` : ''}
+Signal source: longitudinal analysis.
+Use this information only to describe patient evolution. Do not infer treatment decisions.
 
 `
       : '';
@@ -423,7 +462,7 @@ It may include symptom changes, functional progress, tolerance, or adherence.
 
 ${(clinicalUpdate ?? '').trim() || 'No additional clinical update provided.'}
 
-${reviewedAttachmentsSection}${inClinicSection}${hepSection}${longitudinalSection}${homeProgramContextOnlySection}${trajectorySection}${patternInsightSection}${currentHepAdherenceSection}${hepAdherenceContextOnlySection}${previousPlansSection}
+${reviewedAttachmentsSection}${inClinicSection}${hepSection}${longitudinalSection}${homeProgramContextOnlySection}${painEvaSection}${trajectorySection}${patternInsightSection}${currentHepAdherenceSection}${hepAdherenceContextOnlySection}${previousPlansSection}
 HIERARCHY: today's clinical update and confirmed checklist > baseline SOAP context > previous plan continuity.
 If conflict exists between sources, today's clinical update and confirmed checklist govern today's note.
 Use baseline SOAP only to understand the established condition; do not restate baseline findings as today's content.

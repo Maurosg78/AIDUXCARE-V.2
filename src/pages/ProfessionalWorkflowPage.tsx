@@ -145,6 +145,7 @@ import {
 import { lazy, Suspense } from "react";
 import type { MageePillarNotes } from "../components/workflow/tabs/EvaluationTab";
 import type { TodayFocusItem } from "../utils/parsePlanToFocus";
+import type { ClinicalDataPoint } from "@/types/clinicalProvenance";
 import { SuggestedFocusEditor } from "../components/workflow/SuggestedFocusEditor";
 import TranscriptArea from "../components/workflow/TranscriptArea";
 import { derivePlanFromText } from "../utils/derivePlanFromText";
@@ -838,6 +839,7 @@ const ProfessionalWorkflowPage = () => {
   // WO-FU-PLAN-SPLIT-01: In-clinic vs HEP — FOLLOW-UP ONLY; poblado solo cuando visitType === 'follow-up'
   const [inClinicItems, setInClinicItems] = useState<TodayFocusItem[]>([]);
   const [homeProgramItems, setHomeProgramItems] = useState<TodayFocusItem[]>([]);
+  const [currentPainEva, setCurrentPainEva] = useState<ClinicalDataPoint<number> | null>(null);
   const [treatmentDecisionConfirmation, setTreatmentDecisionConfirmation] =
     useState<TreatmentDecisionConfirmation | null>(null);
   const treatmentDecisionConfirmationRef = useRef<TreatmentDecisionConfirmation | null>(null);
@@ -968,6 +970,27 @@ const ProfessionalWorkflowPage = () => {
     () => dateFromLocalDateKey(clinicalSessionDateKey) ?? sessionStartTime,
     [clinicalSessionDateKey, sessionStartTime]
   );
+  const historicalPainEva = useMemo(() => {
+    const painSeriesSummary = followUpContext?.painSeriesSummary;
+    if (!painSeriesSummary) {
+      return null;
+    }
+
+    const painSeriesParts = painSeriesSummary
+      .split('→')
+      .map((part) => part.trim())
+      .map((part) => Number(part))
+      .filter((value) => Number.isFinite(value));
+    if (painSeriesParts.length === 0) {
+      return null;
+    }
+
+    return painSeriesParts[painSeriesParts.length - 1];
+  }, [followUpContext?.painSeriesSummary]);
+
+  useEffect(() => {
+    setCurrentPainEva(null);
+  }, [patientIdFromUrl, sessionIdFromUrl, clinicalSessionDateKey, visitType]);
   const [transcriptionStartTime, setTranscriptionStartTime] = useState<Date | null>(null);
   const [transcriptionEndTime, setTranscriptionEndTime] = useState<Date | null>(null);
   const [soapGenerationStartTime, setSoapGenerationStartTime] = useState<Date | null>(null);
@@ -5927,6 +5950,7 @@ const ProfessionalWorkflowPage = () => {
         trajectoryPattern,
         trajectoryConfidence,
         painSeriesSummary,
+        currentPainEva,
         patternInsightSummary,
         reviewedAttachmentsSummary,
         currentHepAdherenceSummary,
@@ -6037,7 +6061,7 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, isTranscribing, sessionId, inClinicItems, homeProgramItems, previousTreatmentDecision, previousTreatmentPlan, patientIdFromUrl]);
+  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, isTranscribing, sessionId, inClinicItems, homeProgramItems, currentPainEva, previousTreatmentDecision, previousTreatmentPlan, patientIdFromUrl]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -7972,6 +7996,9 @@ const ProfessionalWorkflowPage = () => {
                     setIsInitialPlanModalOpen={setIsInitialPlanModalOpen}
                     physioNotes={physioNotes}
                     setPhysioNotes={setPhysioNotes}
+                    currentPainEva={currentPainEva}
+                    setCurrentPainEva={setCurrentPainEva}
+                    historicalPainEva={historicalPainEva}
                     recordingTime={recordingTime}
                     isRecording={isRecording}
                     startRecording={startRecording}
@@ -8306,6 +8333,9 @@ const ProfessionalWorkflowPage = () => {
                   setIsInitialPlanModalOpen={setIsInitialPlanModalOpen}
                   physioNotes={physioNotes}
                   setPhysioNotes={setPhysioNotes}
+                  currentPainEva={currentPainEva}
+                  setCurrentPainEva={setCurrentPainEva}
+                  historicalPainEva={historicalPainEva}
                   recordingTime={recordingTime}
                   isRecording={isRecording}
                   startRecording={startRecording}

@@ -41,6 +41,7 @@ import type {
   ClinicalDecisionStatus,
   MedicationDecisionState,
 } from '@/core/clinical-decisions/types';
+import type { ClinicalDataPoint } from '@/types/clinicalProvenance';
 
 /** Strings aligned with TranscriptArea follow-up Vertex CTA (pilot-aware). */
 const FOLLOW_UP_VERTEX_CTA = isSpainPilot()
@@ -119,6 +120,9 @@ export interface AnalysisTabProps {
   // Physio notes
   physioNotes: string;
   setPhysioNotes: (notes: string) => void;
+  currentPainEva?: ClinicalDataPoint<number> | null;
+  setCurrentPainEva?: (painEva: ClinicalDataPoint<number> | null) => void;
+  historicalPainEva?: number | null;
   
   // Transcript area props
   recordingTime: string;
@@ -231,6 +235,9 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   setIsInitialPlanModalOpen,
   physioNotes,
   setPhysioNotes,
+  currentPainEva = null,
+  setCurrentPainEva,
+  historicalPainEva = null,
   recordingTime,
   isRecording,
   startRecording,
@@ -290,6 +297,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   onConfirmFollowUpRedFlags,
 }) => {
   const { t } = useTranslation();
+  const [painEvaInput, setPainEvaInput] = useState('');
   const shouldRequirePhysicalTestAssistance = visitType !== 'follow-up';
   const canContinueToEvaluation =
     !shouldRequirePhysicalTestAssistance || physicalTestAssistanceChoice !== null;
@@ -333,6 +341,33 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       )}
     </div>
   ) : null;
+  const normalizedPainEvaInput = Number(painEvaInput);
+  const hasValidPainEvaInput =
+    painEvaInput.trim().length > 0 &&
+    Number.isFinite(normalizedPainEvaInput) &&
+    normalizedPainEvaInput >= 0 &&
+    normalizedPainEvaInput <= 10;
+  const painEvaIsConfirmedToday =
+    currentPainEva?.source === 'today' &&
+    currentPainEva.confirmedByClinician === true;
+  const canConfirmPainEva =
+    Boolean(setCurrentPainEva) &&
+    Boolean(currentSessionId) &&
+    hasValidPainEvaInput;
+  const confirmPainEvaForToday = () => {
+    if (!setCurrentPainEva || !currentSessionId || !hasValidPainEvaInput) {
+      return;
+    }
+
+    setCurrentPainEva({
+      value: normalizedPainEvaInput,
+      source: 'today',
+      sourceDetail: 'physio_structured_input',
+      sessionId: currentSessionId,
+      capturedAt: new Date().toISOString(),
+      confirmedByClinician: true,
+    });
+  };
   const rawRedFlagsFromInteraction = interactiveResults?.redFlags;
   const normalizedRedFlagsRaw = useMemo(
     () => normalizeRedFlagsForDisplay(rawRedFlagsFromInteraction),
@@ -642,13 +677,53 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       {hideTranscriptArea && followUpHasContent && (
         <div className="mt-4 pt-4 border-t border-slate-200">
           {!hasSoapContent && (
-            <AdditionalClinicalContextInput
-              additionalNotes={physioNotes}
-              setAdditionalNotes={setPhysioNotes}
-              languagePreference={languagePreference}
-              isProcessing={isProcessing}
-              isGeneratingSOAP={isGeneratingSOAP}
-            />
+            <>
+              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-slate-800">Dolor/EVA de hoy</p>
+                    <p className="text-xs text-slate-500">
+                      {painEvaIsConfirmedToday
+                        ? `Dolor/EVA confirmado hoy: ${currentPainEva?.value}/10`
+                        : 'No se documentó EVA hoy'}
+                    </p>
+                    {typeof historicalPainEva === 'number' && Number.isFinite(historicalPainEva) ? (
+                      <p className="text-xs text-slate-500">
+                        Último EVA registrado: {historicalPainEva}/10 (sesión anterior) — no confirmado hoy
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="1"
+                      value={painEvaInput}
+                      onChange={(event) => setPainEvaInput(event.target.value)}
+                      disabled={isProcessing || isGeneratingSOAP}
+                      className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm text-slate-700 focus:border-fuchsia-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400 sm:w-24"
+                      aria-label="Dolor EVA de hoy"
+                    />
+                    <button
+                      type="button"
+                      onClick={confirmPainEvaForToday}
+                      disabled={!canConfirmPainEva || isProcessing || isGeneratingSOAP}
+                      className="inline-flex min-h-[40px] items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Confirmar EVA de hoy
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <AdditionalClinicalContextInput
+                additionalNotes={physioNotes}
+                setAdditionalNotes={setPhysioNotes}
+                languagePreference={languagePreference}
+                isProcessing={isProcessing}
+                isGeneratingSOAP={isGeneratingSOAP}
+              />
+            </>
           )}
           <button
             onClick={handleAnalyzeWithVertex}
