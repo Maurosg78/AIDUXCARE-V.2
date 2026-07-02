@@ -39,7 +39,6 @@ import { resolveConsentChannel } from "@/domain/consent/resolveConsentChannel";
 import { getCurrentJurisdiction } from "@/core/consent/consentJurisdiction";
 import { isSpainPilot } from "@/core/pilotDetection";
 import { reconcileSafetyAfterEvaluation } from "@/core/clinical-safety/reconcileSafetyAfterEvaluation";
-import { ConsentVerificationService } from "../services/consentVerificationService";
 import { PatientService, type Patient } from "../services/patientService";
 import { useSearchParams, useNavigate, useLocation, Link, Navigate } from "react-router-dom";
 import treatmentPlanService from "../services/treatmentPlanService";
@@ -1932,45 +1931,6 @@ const ProfessionalWorkflowPage = () => {
       setActiveTab(initialTab as ActiveTab);
     }
   }, []);
-
-  // Check consent verification before allowing workflow access
-  // ✅ FIX: Make this non-blocking - don't redirect if service fails
-  useEffect(() => {
-    const checkConsentVerification = async () => {
-      const patientId = patientIdFromUrl || demoPatient.id;
-
-      try {
-        // Check if consent is verified
-        const isVerified = await ConsentVerificationService.isConsentVerified(patientId);
-
-        if (!isVerified) {
-          const verificationParams = new URLSearchParams();
-
-          if (sessionTypeFromUrl) {
-            verificationParams.set('type', sessionTypeFromUrl);
-          }
-
-          const verificationQuery = verificationParams.toString();
-          const verificationPath = verificationQuery
-            ? `/consent-verification/${patientId}?${verificationQuery}`
-            : `/consent-verification/${patientId}`;
-
-          // Only redirect if verification explicitly returns false
-          // Don't redirect on errors - allow workflow to continue
-          console.log('[WORKFLOW] Consent not verified, redirecting to verification...');
-          navigate(verificationPath);
-        }
-      } catch (error) {
-        // If verification check fails, log but don't block workflow
-        // This allows the workflow to render even if consent service is unavailable
-        console.warn('[WORKFLOW] Consent verification check failed, allowing workflow to continue:', error);
-      }
-    };
-
-    if (patientIdFromUrl) {
-      checkConsentVerification();
-    }
-  }, [patientIdFromUrl, navigate, sessionTypeFromUrl]);
 
   // ✅ WO-CONSENT-GATE-UI-01: Gate - Check for valid consent (verbal OR digital) with jurisdiction validation
   // This is the ABSOLUTE gate - if no consent, NO clinical UI is rendered
