@@ -68,7 +68,7 @@ describe('buildFollowUpPromptV3', () => {
       clinicalUpdate: 'Update',
       homeProgram: ['Core stability 3x/day', 'Stretching 2x/day'],
     });
-    expect(prompt).toContain('CONTEXT — HOME EXERCISE PROGRAM (if provided)');
+    expect(prompt).toContain('CONTEXT — HOME EXERCISE PROGRAM (clinician decision — canonical)');
     expect(prompt).toContain('Core stability 3x/day');
     expect(prompt).toContain('Stretching 2x/day');
   });
@@ -137,15 +137,15 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).toContain('Do not infer treatment decisions');
   });
 
-  it('includes pain series (recent visits) when painSeriesSummary provided', () => {
+  it('includes historical pain series marked as not confirmed today', () => {
     const prompt = buildFollowUpPromptV3({
       baselineSOAP,
       clinicalUpdate: 'Update',
       painSeriesSummary: '7 → 5 → 4',
     });
-    expect(prompt).toContain('TRAJECTORY PATTERN AND PAIN TREND');
-    expect(prompt).toContain('Pain series (recent visits): 7 → 5 → 4');
-    expect(prompt).toContain('Use this information only to describe patient evolution');
+    expect(prompt).toContain('PAIN CONTEXT (HISTORICAL — NOT CONFIRMED TODAY)');
+    expect(prompt).toContain('7 → 5 → 4');
+    expect(prompt).toContain('Do NOT document this as today\'s pain level');
   });
 
   it('includes PATIENT LONGITUDINAL MEMORY PATTERN when patternInsightSummary provided', () => {
@@ -168,7 +168,7 @@ describe('buildFollowUpPromptV3', () => {
     });
     expect(prompt).toContain('CURRENT HOME PROGRAM ADHERENCE');
     expect(prompt).toContain('HEP adherence today: 3/4 completed (75%).');
-    expect(prompt).toContain('current structured HEP adherence provided');
+    expect(prompt).toContain('Use this as a structured fact from today\'s follow-up checklist');
   });
 
   it('includes PREVIOUS TREATMENT PLAN(S) and continuity guardrail when previousPlansSummary provided', () => {
@@ -239,5 +239,58 @@ describe('buildFollowUpPromptV3', () => {
     expect(prompt).toContain('HEP:');
     expect(prompt).toContain('Do NOT include any "additional recommendations" section');
     expect(prompt).toContain('Do NOT include duplicate labels or expanded duplicate headings');
+  });
+});
+
+describe('buildFollowUpPromptV3 — Seguridad clínica: ambigüedad temporal de dolor/EVA', () => {
+  it('nunca presenta dolor histórico con formato previo → actual cuando no hay confirmación de hoy', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      painSeriesSummary: '7 → 5 → 4',
+    });
+    const ambiguousPainPattern = /Dolor EVA:\s*\d+\/10\s*→\s*\d+\/10/;
+
+    expect(prompt).not.toMatch(ambiguousPainPattern);
+  });
+
+  it('incluye instrucción explícita de atribución temporal cuando hay dolor histórico sin confirmación de hoy', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      painSeriesSummary: '7 → 5 → 4',
+    });
+
+    expect(prompt).toContain('Dolor EVA no evaluado en esta sesión');
+  });
+
+  it('permite formato de confirmación de hoy con contexto histórico cuando SÍ hay dolor confirmado', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      painSeriesSummary: '7 → 5 → 4',
+      currentPainEva: {
+        value: 3,
+        source: 'today',
+        sourceDetail: 'physio_structured_input',
+        sessionId: 'session-1',
+        capturedAt: '2026-07-05T10:00:00.000Z',
+        confirmedByClinician: true,
+      },
+    });
+
+    expect(prompt).toContain('CURRENT PAIN/EVA — CONFIRMED TODAY');
+    expect(prompt).toContain('3');
+  });
+
+  it('la instrucción general de evolución objetiva delega el formato de dolor a la sección específica', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      jurisdiction: 'ES-ES',
+    });
+
+    expect(prompt).not.toContain('"Dolor EVA: [previo]/10 → [actual]/10"');
+    expect(prompt).toContain('el formato de presentación está definido exclusivamente en la sección CURRENT PAIN/EVA');
   });
 });
