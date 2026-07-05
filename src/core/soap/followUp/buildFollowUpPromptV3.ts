@@ -136,7 +136,7 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
 Cuando LONGITUDINAL CONTEXT o TRAJECTORY PATTERN AND PAIN TREND contengan métricas comparativas documentadas, incluye esas métricas en la sección O como evolución objetiva documentada longitudinalmente, no como hallazgos medidos de nuevo hoy.
 
 Formato requerido para datos comparativos:
-- Datos de dolor: "Dolor EVA: [previo]/10 → [actual]/10"
+- Datos de dolor/EVA: el formato de presentación está definido exclusivamente en la sección CURRENT PAIN/EVA o PAIN CONTEXT de este prompt. NO generes tu propio formato de dolor en esta sección — usa únicamente el formato indicado ahí.
 - Datos de ROM: "ROM [movimiento]: [previo]° → [actual]°"
 - Medida funcional/objetiva: "[medida]: [previo] → [actual]"
 - Progreso general solo cuando esté explícitamente documentado: "Evolución clínica: [mejoría/deterioro/estable] desde la sesión anterior"
@@ -149,7 +149,7 @@ Si no hay datos comparativos disponibles, documenta solo los hallazgos de hoy.`;
 When LONGITUDINAL CONTEXT or TRAJECTORY PATTERN AND PAIN TREND contains documented comparative metrics, include those metrics in the O section as longitudinally documented objective evolution, not as newly measured findings from today.
 
 Required format for comparative data:
-- Pain data: "Pain VAS: [previous]/10 → [current]/10"
+- Pain/VAS data: the presentation format is defined exclusively in the CURRENT PAIN/EVA or PAIN CONTEXT section of this prompt. Do NOT generate your own pain format in this section — use only the format indicated there.
 - ROM data: "ROM [movement]: [previous]° → [current]°"
 - Functional/objective measure: "[measure]: [previous] → [current]"
 - General progress only when explicitly documented: "Clinical evolution: [improved/regressed/stable] since last session"
@@ -268,6 +268,7 @@ Nunca uses el formato con flecha "previo → actual" sin especificar cuál valor
 
 ${historicalPainSeries}
 Do NOT document this as today's pain level. This is longitudinal reference only.
+IMPORTANTE: Nunca uses el formato "[valor previo] → [valor actual]" para presentar este dato histórico, porque no existe un valor actual de hoy. Usa el formato: "Dolor EVA no evaluado en esta sesión. Último valor registrado: [valor]/10 (sesión previa)."
 
 `
       : '';
