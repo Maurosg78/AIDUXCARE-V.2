@@ -137,8 +137,8 @@ Cuando LONGITUDINAL CONTEXT o TRAJECTORY PATTERN AND PAIN TREND contengan métri
 
 Formato requerido para datos comparativos:
 - Datos de dolor/EVA: el formato de presentación está definido exclusivamente en la sección CURRENT PAIN/EVA o PAIN CONTEXT de este prompt. NO generes tu propio formato de dolor en esta sección — usa únicamente el formato indicado ahí.
-- Datos de ROM: "ROM [movimiento]: [previo]° → [actual]°"
-- Medida funcional/objetiva: "[medida]: [previo] → [actual]"
+- Datos de ROM: solo incluye ROM como hallazgo de HOY si fue medido en la sesión actual. Si citas un valor de ROM de sesión anterior para contexto, usa el formato explícito: "ROM [movimiento] medido hoy: [valor]° (previo: [valor]°, sesión anterior)". NUNCA uses el formato "[previo]° → [actual]°" sin especificar cuál valor corresponde a hoy.
+- Datos funcionales/dinamometría: mismo principio. Formato: "[medida] medida hoy: [valor] (previo: [valor], sesión anterior)". Si el valor de hoy no fue medido explícitamente, indícalo como "[medida] no evaluada en esta sesión. Último valor registrado: [valor] (sesión previa)."
 - Progreso general solo cuando esté explícitamente documentado: "Evolución clínica: [mejoría/deterioro/estable] desde la sesión anterior"
 
 NO uses lenguaje vago como "progreso estable" o "mejoría general" si hay datos comparativos específicos disponibles.
@@ -150,8 +150,8 @@ When LONGITUDINAL CONTEXT or TRAJECTORY PATTERN AND PAIN TREND contains document
 
 Required format for comparative data:
 - Pain/VAS data: the presentation format is defined exclusively in the CURRENT PAIN/EVA or PAIN CONTEXT section of this prompt. Do NOT generate your own pain format in this section — use only the format indicated there.
-- ROM data: "ROM [movement]: [previous]° → [current]°"
-- Functional/objective measure: "[measure]: [previous] → [current]"
+- ROM data: include ROM as a TODAY finding only if it was measured in the current session. If you cite a prior-session ROM value for context, use the explicit format: "ROM [movement] measured today: [value]° (previous: [value]°, prior session)". NEVER use the format "[previous]° → [current]°" without specifying which value corresponds to today.
+- Functional/dynamometry data: same principle. Format: "[measure] measured today: [value] (previous: [value], prior session)". If today's value was not explicitly measured, document it as "[measure] not evaluated in this session. Last recorded value: [value] (prior session)."
 - General progress only when explicitly documented: "Clinical evolution: [improved/regressed/stable] since last session"
 
 Do NOT use vague language like "stable progress" or "general improvement" if specific comparative data is available.
