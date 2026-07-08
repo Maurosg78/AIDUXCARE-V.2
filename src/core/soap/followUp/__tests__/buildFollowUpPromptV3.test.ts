@@ -293,4 +293,42 @@ describe('buildFollowUpPromptV3 — Seguridad clínica: ambigüedad temporal de 
     expect(prompt).not.toContain('"Dolor EVA: [previo]/10 → [actual]/10"');
     expect(prompt).toContain('el formato de presentación está definido exclusivamente en la sección CURRENT PAIN/EVA');
   });
+
+  it('la instrucción de ROM ya no permite formato flecha sin atribución temporal', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      jurisdiction: 'ES-ES',
+    });
+
+    expect(prompt).not.toContain('"ROM [movimiento]: [previo]° → [actual]°"');
+    expect(prompt).toContain('solo incluye ROM como hallazgo de HOY si fue medido en la sesión actual');
+  });
+
+  it('la instrucción de medidas funcionales/dinamometría exige atribución temporal explícita', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      jurisdiction: 'ES-ES',
+    });
+
+    expect(prompt).not.toContain('"[medida]: [previo] → [actual]"');
+    expect(prompt).toContain('Último valor registrado');
+  });
+
+  it('instrucciones ES y EN de ROM/dinamometría son consistentes', () => {
+    const promptEs = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      jurisdiction: 'ES-ES',
+    });
+    const promptEn = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      jurisdiction: 'CA-ON',
+    });
+
+    expect(promptEs).toContain('NUNCA uses el formato "[previo]° → [actual]°" sin especificar cuál valor corresponde a hoy');
+    expect(promptEn).toContain('NEVER use the format "[previous]° → [current]°" without specifying which value corresponds to today');
+  });
 });
