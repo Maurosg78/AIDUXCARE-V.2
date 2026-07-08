@@ -350,10 +350,20 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   const painEvaIsConfirmedToday =
     currentPainEva?.source === 'today' &&
     currentPainEva.confirmedByClinician === true;
+  const hasPainEvaInputText = painEvaInput.trim().length > 0;
+  const confirmedPainEvaValue = currentPainEva?.value;
+  const painEvaInputMatchesConfirmedValue =
+    painEvaIsConfirmedToday &&
+    confirmedPainEvaValue === normalizedPainEvaInput;
+  const hasUnconfirmedPainEvaClinicalInput =
+    hasPainEvaInputText &&
+    !painEvaInputMatchesConfirmedValue;
   const canConfirmPainEva =
     Boolean(setCurrentPainEva) &&
     Boolean(currentSessionId) &&
     hasValidPainEvaInput;
+  const [isUnconfirmedPainEvaModalOpen, setIsUnconfirmedPainEvaModalOpen] = useState(false);
+  const [shouldGenerateAfterPainEvaConfirmation, setShouldGenerateAfterPainEvaConfirmation] = useState(false);
   const confirmPainEvaForToday = () => {
     if (!setCurrentPainEva || !currentSessionId || !hasValidPainEvaInput) {
       return;
@@ -368,6 +378,41 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
       confirmedByClinician: true,
     });
   };
+  const handleAnalyzeWithPainEvaGate = () => {
+    if (hasUnconfirmedPainEvaClinicalInput) {
+      setIsUnconfirmedPainEvaModalOpen(true);
+      return;
+    }
+
+    void handleAnalyzeWithVertex();
+  };
+  const handleConfirmPainEvaThenGenerate = () => {
+    confirmPainEvaForToday();
+    setShouldGenerateAfterPainEvaConfirmation(true);
+    setIsUnconfirmedPainEvaModalOpen(false);
+  };
+  const handleContinueWithoutPainEvaToday = () => {
+    setPainEvaInput('');
+    setIsUnconfirmedPainEvaModalOpen(false);
+    void handleAnalyzeWithVertex();
+  };
+
+  useEffect(() => {
+    if (!shouldGenerateAfterPainEvaConfirmation) {
+      return;
+    }
+
+    if (!painEvaInputMatchesConfirmedValue) {
+      return;
+    }
+
+    setShouldGenerateAfterPainEvaConfirmation(false);
+    void handleAnalyzeWithVertex();
+  }, [
+    handleAnalyzeWithVertex,
+    painEvaInputMatchesConfirmedValue,
+    shouldGenerateAfterPainEvaConfirmation,
+  ]);
   const rawRedFlagsFromInteraction = interactiveResults?.redFlags;
   const normalizedRedFlagsRaw = useMemo(
     () => normalizeRedFlagsForDisplay(rawRedFlagsFromInteraction),
@@ -726,7 +771,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             </>
           )}
           <button
-            onClick={handleAnalyzeWithVertex}
+            onClick={handleAnalyzeWithPainEvaGate}
             disabled={isProcessing || isGeneratingSOAP}
             className="mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-primary hover:bg-gradient-primary-hover text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition font-apple text-[15px] font-medium"
           >
@@ -752,6 +797,58 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
         }}
         onCancel={() => setIsAddMedicationModalOpen(false)}
       />
+
+      {isUnconfirmedPainEvaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+            <div className="rounded-t-2xl bg-amber-600 p-5 text-white">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-white/20 p-2">
+                  <AlertCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">EVA escrito sin confirmar</h2>
+                  <p className="mt-1 text-sm text-amber-50">
+                    Hay un valor de dolor/EVA escrito que todavía no fue registrado para la sesión de hoy.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4 p-5">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                Valor escrito: <strong>{painEvaInput.trim()}/10</strong>
+              </div>
+              <p className="text-sm text-slate-600">
+                Elige una acción antes de generar la nota para evitar pérdida silenciosa de un dato clínico.
+              </p>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handleConfirmPainEvaThenGenerate}
+                  disabled={!canConfirmPainEva}
+                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Confirmar EVA {painEvaInput.trim()} antes de continuar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleContinueWithoutPainEvaToday}
+                  className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  Continuar sin registrar EVA de hoy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsUnconfirmedPainEvaModalOpen(false)}
+                  className="inline-flex min-h-[40px] w-full items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100"
+                >
+                  Volver y revisar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {analysisError && (
         <>
