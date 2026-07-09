@@ -35,6 +35,32 @@ function getTodayQuickItemKey(item: TodayQuickItem): string {
   return `${item.patientId}::${item.sessionType}`;
 }
 
+export function mergeTodayItemsWithMigratedPendingItems(
+  existingItems: TodayQuickItem[],
+  migratedItems: TodayQuickItem[]
+): TodayQuickItem[] {
+  const mergedByClinicalQueueKey = new Map<string, TodayQuickItem>();
+
+  for (const existingItem of existingItems) {
+    const clinicalQueueKey = getTodayQuickItemKey(existingItem);
+    mergedByClinicalQueueKey.set(clinicalQueueKey, existingItem);
+  }
+
+  for (const migratedItem of migratedItems) {
+    const clinicalQueueKey = getTodayQuickItemKey(migratedItem);
+    const existingItem = mergedByClinicalQueueKey.get(clinicalQueueKey);
+    const shouldPreserveExistingItem = Boolean(existingItem);
+
+    if (shouldPreserveExistingItem) {
+      continue;
+    }
+
+    mergedByClinicalQueueKey.set(clinicalQueueKey, migratedItem);
+  }
+
+  return Array.from(mergedByClinicalQueueKey.values());
+}
+
 export async function collectPendingTodayItemsForMigration(
   params: CollectPendingTodayItemsForMigrationParams
 ): Promise<PendingTodayItemsMigrationResult> {
