@@ -38,6 +38,7 @@ import { buildClinicalDayView, type ClinicalDayRow } from './utils/clinicalDayVi
 import { patientHasClosedClinicalEvidenceForDate } from './utils/patientClosedEvidenceForDate';
 import {
   collectPendingTodayItemsForMigration,
+  mergeTodayItemsWithMigratedPendingItems,
 } from './utils/migratePendingTodayItems';
 
 function toLocalDateKey(d: Date): string {
@@ -418,7 +419,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
               : filteredItems;
             const hasMigratedPendingPatients = pendingMigrationResult.migratedPendingItems.length > 0;
             const mergedClinicalQueueItems = hasMigratedPendingPatients
-              ? mergeTodayQuickItems(existingClinicalQueueItems, pendingMigrationResult.migratedPendingItems)
+              ? mergeTodayItemsWithMigratedPendingItems(existingClinicalQueueItems, pendingMigrationResult.migratedPendingItems)
               : existingClinicalQueueItems;
             console.info('[COMMAND-CENTER] Migration of pending patients', {
               sourceDateKeysWithCandidates: pendingMigrationResult.sourceDateKeysWithCandidates,
