@@ -20,11 +20,13 @@ import { EditProfileModal } from './EditProfileModal';
 import type { TokenUsage } from '../../../services/tokenTrackingService';
 
 export interface CommandCenterHeaderProps {
+  currentDate?: Date;
   tokenUsage?: TokenUsage | null;
   tokenUsageLoading?: boolean;
 }
 
 export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
+  currentDate = new Date(),
   tokenUsage,
   tokenUsageLoading,
 }) => {
@@ -43,7 +45,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
   );
 
   const greetingByHour = useMemo(() => {
-    const hour = new Date().getHours();
+    const hour = currentDate.getHours();
     if (isSpainPilot()) {
       if (hour >= 6 && hour <= 13) return 'Buenos días';
       if (hour >= 14 && hour <= 20) return 'Buenas tardes';
@@ -52,7 +54,7 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
     if (hour >= 6 && hour <= 13) return 'Good morning';
     if (hour >= 14 && hour <= 20) return 'Good afternoon';
     return 'Good evening';
-  }, []);
+  }, [currentDate]);
 
   const greetingLine = useMemo(() => {
     if (!clinicianDisplayName) return '';
@@ -68,8 +70,8 @@ export const CommandCenterHeader: React.FC<CommandCenterHeaderProps> = ({
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    }).format(new Date());
-  }, []);
+    }).format(currentDate);
+  }, [currentDate]);
 
   // WO-PILOT-FIX-03: Logout moved to LayoutWrapper (global nav) — no duplicate here
 

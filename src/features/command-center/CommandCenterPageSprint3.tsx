@@ -36,6 +36,9 @@ import { LAST_STARTED_KEY } from './todayListSessionStorage';
 import { getTodayList as loadTodayList, subscribeTodayList, saveTodayList } from '../../services/todayListService';
 import { buildClinicalDayView, type ClinicalDayRow } from './utils/clinicalDayView';
 import { patientHasClosedClinicalEvidenceForDate } from './utils/patientClosedEvidenceForDate';
+import {
+  collectPendingTodayItemsForMigration,
+} from './utils/migratePendingTodayItems';
 
 function toLocalDateKey(d: Date): string {
   const y = d.getFullYear();
@@ -227,6 +230,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [dismissingOpenResponsibilityId, setDismissingOpenResponsibilityId] = useState<string | null>(null);
   const [todayQuickList, setTodayQuickList] = useState<TodayQuickItem[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
+  const [commandCenterNow, setCommandCenterNow] = useState<Date>(() => new Date());
   const [clinicalDayRows, setClinicalDayRows] = useState<ClinicalDayRow[]>([]);
   const [, setClinicalDayLoading] = useState(false);
   const previousStatusByPatientIdRef = React.useRef(new Map<string, PatientWorkflowStatus>());
@@ -240,6 +244,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   // currentDateKeyRef: tracks the dateKey that the loaded list belongs to.
   // Prevents the save effect from writing items from a previous date under a new dateKey.
   const currentDateKeyRef = React.useRef(toLocalDateKey(new Date()));
+  const currentClinicalDayRef = React.useRef(toLocalDateKey(new Date()));
   const awaitingDocumentationRef = React.useRef<HTMLDivElement>(null);
   const inProgressRef = React.useRef<HTMLDivElement>(null);
   const toSeeRef = React.useRef<HTMLDivElement>(null);
@@ -304,6 +309,50 @@ export const CommandCenterPageSprint3: React.FC = () => {
     inProgressSessions.refetch?.();
   }, [inProgressSessions.refetch]);
 
+  useEffect(() => {
+    const revalidateCurrentClinicalDay = () => {
+      const currentRealDate = new Date();
+      const currentRealDateKey = toLocalDateKey(currentRealDate);
+      const previousClinicalDayKey = currentClinicalDayRef.current;
+      const selectedClinicalDayKey = toLocalDateKey(selectedDate);
+      const hasRealClinicalDayChanged = currentRealDateKey !== previousClinicalDayKey;
+      const wasViewingCurrentClinicalDay = selectedClinicalDayKey === previousClinicalDayKey;
+
+      setCommandCenterNow(currentRealDate);
+
+      if (!hasRealClinicalDayChanged) {
+        return;
+      }
+
+      currentClinicalDayRef.current = currentRealDateKey;
+
+      if (!wasViewingCurrentClinicalDay) {
+        return;
+      }
+
+      setSelectedDate(currentRealDate);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+
+      revalidateCurrentClinicalDay();
+    };
+
+    const clinicalDayIntervalId = window.setInterval(revalidateCurrentClinicalDay, 60000);
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', revalidateCurrentClinicalDay);
+
+    return () => {
+      window.clearInterval(clinicalDayIntervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', revalidateCurrentClinicalDay);
+    };
+  }, [selectedDate]);
+
   // Load today's appointments
   useEffect(() => {
     if (user?.uid) {
@@ -341,45 +390,31 @@ export const CommandCenterPageSprint3: React.FC = () => {
         const isSelectedDateToday = dateKey === toLocalDateKey(new Date());
         if (filteredItems.length === 0 && isSelectedDateToday) {
           void (async () => {
-            const previousDateKey = toLocalDateKey(new Date(selectedDate.getTime() - 86400000));
-            const previousItems = await loadTodayList(user.uid, previousDateKey);
+            const pendingMigrationResult = await collectPendingTodayItemsForMigration({
+              userId: user.uid,
+              targetDate: selectedDate,
+              loadTodayList,
+              hasClosedClinicalEvidence: patientHasClosedClinicalEvidenceForDate,
+            });
             if (cancelled || hasLoadedRef.current || currentDateKeyRef.current !== dateKey) {
               return;
             }
-            // Filtrar por evidencia clínica real del día anterior.
-            // El campo status del quickItem es legacy y no confiable.
-            const previousPendingItemsRaw = previousItems.filter((item) => {
-              const status = item.status as string | undefined;
-              return status !== 'discarded';
-            });
-            const evidenceChecks = await Promise.all(
-              previousPendingItemsRaw.map(async (item) => {
-                const hasClosedEvidence = await patientHasClosedClinicalEvidenceForDate(
-                  item.patientId,
-                  previousDateKey
-                );
-                return {
-                  item,
-                  hasClosedEvidence,
-                };
-              })
-            );
-            const previousPendingItems = evidenceChecks
-              .filter(({ hasClosedEvidence }) => !hasClosedEvidence)
-              .map(({ item }) => item);
             console.info('[COMMAND-CENTER] Migration of pending patients', {
-              previousDateKey,
+              sourceDateKeysWithCandidates: pendingMigrationResult.sourceDateKeysWithCandidates,
+              sourceDateKeysWithMigratedPatients: pendingMigrationResult.sourceDateKeysWithMigratedPatients,
               targetDateKey: dateKey,
-              totalCandidates: previousPendingItemsRaw.length,
-              filteredOutWithClosedEvidence: previousPendingItemsRaw.length - previousPendingItems.length,
-              migratedCount: previousPendingItems.length,
+              lookbackDays: pendingMigrationResult.lookbackDays,
+              totalCandidates: pendingMigrationResult.totalCandidates,
+              filteredOutWithClosedEvidence: pendingMigrationResult.filteredOutWithClosedEvidence,
+              migratedCount: pendingMigrationResult.migratedPendingItems.length,
+              orphanedPendingPatientCount: pendingMigrationResult.orphanedPendingPatientCount,
             });
-            if (previousPendingItems.length > 0) {
-              await saveTodayList(user.uid, dateKey, previousPendingItems);
+            if (pendingMigrationResult.migratedPendingItems.length > 0) {
+              await saveTodayList(user.uid, dateKey, pendingMigrationResult.migratedPendingItems);
               if (cancelled || currentDateKeyRef.current !== dateKey) {
                 return;
               }
-              setTodayQuickList(previousPendingItems);
+              setTodayQuickList(pendingMigrationResult.migratedPendingItems);
             } else {
               setTodayQuickList([]);
             }
@@ -956,7 +991,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Global */}
-      <CommandCenterHeader />
+      <CommandCenterHeader currentDate={commandCenterNow} />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
