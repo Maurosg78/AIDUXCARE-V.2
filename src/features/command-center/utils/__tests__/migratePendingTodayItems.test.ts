@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { TodayQuickItem } from '../../components/TodayPatientsPanel';
 import {
   collectPendingTodayItemsForMigration,
+  mergeTodayItemsWithMigratedPendingItems,
   PENDING_PATIENT_MIGRATION_LOOKBACK_DAYS,
 } from '../migratePendingTodayItems';
 
@@ -108,5 +109,44 @@ describe('collectPendingTodayItemsForMigration — migración multi-día', () =>
     expect(result.migratedPendingItems).toHaveLength(0);
     expect(loadTodayList).toHaveBeenCalledTimes(PENDING_PATIENT_MIGRATION_LOOKBACK_DAYS);
     expect(loadTodayList).not.toHaveBeenCalledWith('user-001', '2026-07-01');
+  });
+
+  it('fusiona paciente pendiente huérfano con pacientes ya agendados hoy, sin reemplazar la agenda existente', () => {
+    const existingTodayItems = [
+      buildQuickItem({
+        patientId: 'today-001',
+        patientName: 'Today Patient One',
+        sessionType: 'initial',
+        status: 'pending',
+      }),
+      buildQuickItem({
+        patientId: 'today-002',
+        patientName: 'Today Patient Two',
+        sessionType: 'followup',
+        status: 'pending',
+      }),
+      buildQuickItem({
+        patientId: 'today-003',
+        patientName: 'Today Patient Three',
+        sessionType: 'followup',
+        status: 'pending',
+      }),
+    ];
+    const migratedPendingItems = [
+      buildQuickItem({
+        patientId: 'orphan-001',
+        patientName: 'Orphan Pending Patient',
+        sessionType: 'followup',
+      }),
+    ];
+
+    const mergedClinicalQueueItems = mergeTodayItemsWithMigratedPendingItems(
+      existingTodayItems,
+      migratedPendingItems
+    );
+
+    expect(mergedClinicalQueueItems).toHaveLength(4);
+    expect(mergedClinicalQueueItems.slice(0, 3)).toEqual(existingTodayItems);
+    expect(mergedClinicalQueueItems[3]).toEqual(migratedPendingItems[0]);
   });
 });
