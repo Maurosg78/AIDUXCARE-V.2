@@ -653,14 +653,16 @@ const logClinicalExtractionCounts = (normalizedResult: ClinicalAnalysis): void =
   const adverseReactionCount = normalizedResult.adverseDrugReactions?.length ?? 0;
   const medicalHistoryCount = normalizedResult.antecedentes_medicos?.length ?? 0;
   const redFlagCount = normalizedResult.red_flags?.length ?? 0;
+  const clinicalHighlightCount = normalizedResult.hallazgos_clinicos?.length ?? 0;
   const extractionCountKeys = [
     'medication_count',
     'adverse_reaction_count',
     'medical_history_count',
     'red_flag_count',
+    'clinical_highlight_count',
   ];
   const extractionCountStage =
-    `extraction_counts: meds=${medicationCount} adr=${adverseReactionCount} history=${medicalHistoryCount} flags=${redFlagCount}`;
+    `extraction_counts: meds=${medicationCount} adr=${adverseReactionCount} history=${medicalHistoryCount} flags=${redFlagCount} highlights=${clinicalHighlightCount}`;
 
   safeLogger.clinicalContextBuilt(extractionCountKeys, extractionCountStage);
 };

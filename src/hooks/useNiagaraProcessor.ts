@@ -22,6 +22,7 @@ type NiagaraProxyPayload = {
   visitType?: 'initial' | 'follow-up';
   attachments?: ClinicalAttachment[];
   orientativeDiagnosis?: string;
+  sessionId?: string | null;
 };
 
 export const useNiagaraProcessor = () => {
@@ -37,6 +38,7 @@ export const useNiagaraProcessor = () => {
     let timestamp: number | undefined;
     let professionalProfile: ProfessionalProfile | null | undefined;
     let orientativeDiagnosis: string | undefined;
+    let clinicalSessionId: string | null | undefined;
 
     if (typeof payload === 'string') {
       // Legacy format: just a string
@@ -49,6 +51,7 @@ export const useNiagaraProcessor = () => {
       timestamp = payload.timestamp;
       professionalProfile = payload.professionalProfile;
       orientativeDiagnosis = payload.orientativeDiagnosis;
+      clinicalSessionId = payload.sessionId;
     }
 
     // Ensure text is a string and not empty
@@ -111,6 +114,48 @@ export const useNiagaraProcessor = () => {
       const cleaned = shouldForceSpanish ? ensureSpanishClinicalAnalysis(guarded.analysis) : guarded.analysis;
       const cleanedResponseKeys = Object.keys(cleaned ?? {});
       safeLogger.clinicalContextBuilt(cleanedResponseKeys, 'niagara_cleaned_response');
+
+      const physicalTestCount = cleaned.evaluaciones_fisicas_sugeridas?.length ?? 0;
+      const clinicalHighlightCount = cleaned.hallazgos_clinicos?.length ?? 0;
+      const redFlagCount = cleaned.red_flags?.length ?? 0;
+      const yellowFlagCount = cleaned.yellow_flags?.length ?? 0;
+      const psychologicalFactorCount = cleaned.biopsychosocial_psychological?.length ?? 0;
+      const socialFactorCount = cleaned.biopsychosocial_social?.length ?? 0;
+      const occupationalFactorCount = cleaned.biopsychosocial_occupational?.length ?? 0;
+      const protectiveFactorCount = cleaned.biopsychosocial_protective?.length ?? 0;
+      const functionalLimitationCount = cleaned.biopsychosocial_functional_limitations?.length ?? 0;
+      const patientStrengthCount = cleaned.biopsychosocial_patient_strengths?.length ?? 0;
+      const psychosocialContextCount = cleaned.contexto_psicosocial?.length ?? 0;
+      const occupationalContextCount = cleaned.contexto_ocupacional?.length ?? 0;
+      const biopsychosocialFactorCount =
+        psychologicalFactorCount +
+        socialFactorCount +
+        occupationalFactorCount +
+        protectiveFactorCount +
+        functionalLimitationCount +
+        patientStrengthCount +
+        psychosocialContextCount +
+        occupationalContextCount;
+      const hasPhysicalTests = physicalTestCount > 0;
+      const hasClinicalHighlights = clinicalHighlightCount > 0;
+      const hasClinicalFlags = redFlagCount > 0 || yellowFlagCount > 0;
+      const hasBiopsychosocialContext = biopsychosocialFactorCount > 0;
+      const hasSuspiciousClinicalExtraction =
+        hasPhysicalTests &&
+        !hasClinicalHighlights &&
+        !hasClinicalFlags &&
+        !hasBiopsychosocialContext;
+
+      if (hasSuspiciousClinicalExtraction) {
+        console.warn('[EXTRACTION-ANOMALY] Physical tests generated but all clinical context sections empty — possible partial extraction failure', {
+          hasPhysicalTests,
+          testsCount: physicalTestCount,
+          hasHighlights: hasClinicalHighlights,
+          hasFlags: hasClinicalFlags,
+          hasBiopsychosocial: hasBiopsychosocialContext,
+          sessionId: clinicalSessionId ?? null,
+        });
+      }
 
       // §1.6 ENGINEERING.md: deterministic post-model guard — runs after normalization, before UI
       const preExtractedMeds = (response?.pre_extracted_medications ?? []) as MedicationMention[];
