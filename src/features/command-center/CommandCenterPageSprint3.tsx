@@ -245,6 +245,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   // Prevents the save effect from writing items from a previous date under a new dateKey.
   const currentDateKeyRef = React.useRef(toLocalDateKey(new Date()));
   const currentClinicalDayRef = React.useRef(toLocalDateKey(new Date()));
+  const hasRunPendingMigrationForDateRef = React.useRef(false);
   const awaitingDocumentationRef = React.useRef<HTMLDivElement>(null);
   const inProgressRef = React.useRef<HTMLDivElement>(null);
   const toSeeRef = React.useRef<HTMLDivElement>(null);
@@ -368,6 +369,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
     pendingTodayQuickItemsRef.current.clear();
     hasLocalTodayQuickChangesRef.current = false;
     shouldPersistTodayQuickListRef.current = false;
+    hasRunPendingMigrationForDateRef.current = false;
     setTodayQuickList([]);
   }, [selectedDate]);
 
@@ -388,7 +390,12 @@ export const CommandCenterPageSprint3: React.FC = () => {
       });
       if (!hasLoadedRef.current) {
         const isSelectedDateToday = dateKey === toLocalDateKey(new Date());
-        if (filteredItems.length === 0 && isSelectedDateToday) {
+        const shouldRunPendingMigrationForClinicalDay =
+          isSelectedDateToday &&
+          !hasRunPendingMigrationForDateRef.current;
+
+        if (shouldRunPendingMigrationForClinicalDay) {
+          hasRunPendingMigrationForDateRef.current = true;
           void (async () => {
             const pendingMigrationResult = await collectPendingTodayItemsForMigration({
               userId: user.uid,
@@ -399,6 +406,20 @@ export const CommandCenterPageSprint3: React.FC = () => {
             if (cancelled || hasLoadedRef.current || currentDateKeyRef.current !== dateKey) {
               return;
             }
+            const pendingItems = Array.from(pendingTodayQuickItemsRef.current.values()).filter((item) => {
+              const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
+              return !removedTodayQuickItemKeysRef.current.has(scopedKey);
+            });
+            const hasPendingClinicalQueueChanges =
+              hasLocalTodayQuickChangesRef.current ||
+              pendingItems.length > 0;
+            const existingClinicalQueueItems = hasPendingClinicalQueueChanges
+              ? mergeTodayQuickItems(filteredItems, pendingItems)
+              : filteredItems;
+            const hasMigratedPendingPatients = pendingMigrationResult.migratedPendingItems.length > 0;
+            const mergedClinicalQueueItems = hasMigratedPendingPatients
+              ? mergeTodayQuickItems(existingClinicalQueueItems, pendingMigrationResult.migratedPendingItems)
+              : existingClinicalQueueItems;
             console.info('[COMMAND-CENTER] Migration of pending patients', {
               sourceDateKeysWithCandidates: pendingMigrationResult.sourceDateKeysWithCandidates,
               sourceDateKeysWithMigratedPatients: pendingMigrationResult.sourceDateKeysWithMigratedPatients,
@@ -409,15 +430,13 @@ export const CommandCenterPageSprint3: React.FC = () => {
               migratedCount: pendingMigrationResult.migratedPendingItems.length,
               orphanedPendingPatientCount: pendingMigrationResult.orphanedPendingPatientCount,
             });
-            if (pendingMigrationResult.migratedPendingItems.length > 0) {
-              await saveTodayList(user.uid, dateKey, pendingMigrationResult.migratedPendingItems);
+            if (hasMigratedPendingPatients || hasPendingClinicalQueueChanges) {
+              await saveTodayList(user.uid, dateKey, mergedClinicalQueueItems);
               if (cancelled || currentDateKeyRef.current !== dateKey) {
                 return;
               }
-              setTodayQuickList(pendingMigrationResult.migratedPendingItems);
-            } else {
-              setTodayQuickList([]);
             }
+            setTodayQuickList(mergedClinicalQueueItems);
             pendingTodayQuickItemsRef.current.clear();
             hasLocalTodayQuickChangesRef.current = false;
             shouldPersistTodayQuickListRef.current = false;
