@@ -35,6 +35,7 @@ describe('collectPendingTodayItemsForMigration — migración multi-día', () =>
 
     expect(result.migratedPendingItems).toHaveLength(1);
     expect(result.migratedPendingItems[0]?.patientId).toBe('patient-001');
+    expect(result.migratedPendingItems[0]?.sourceDateKey).toBe('2026-07-06');
     expect(result.sourceDateKeysWithMigratedPatients).toContain('2026-07-06');
   });
 
