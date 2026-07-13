@@ -1,5 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { FirebaseWhisperService, WhisperTranscriptionResult } from '../services/FirebaseWhisperService';
+import {
+  AudioBackupClinicalContext,
+  persistAudioBackup,
+  updateAudioBackupTranscriptionStatus,
+} from '../services/audioBackupService';
 import type { WhisperMode, WhisperSupportedLanguage } from '../services/OpenAIWhisperService';
 import { hasMediaRecorderSupport } from '../utils/mobileDetection';
 import { micController } from '@/core/audio/micController';
@@ -25,11 +30,15 @@ const HALLUCINATION_PREFIX = 'This is a clinical conversation between a healthca
 export interface UseTranscriptOptions {
   /** Called when a transcription chunk completes (e.g. after stop). Use to persist transcript to Firestore/SessionStorage so it survives unmount. */
   onTranscriptionComplete?: (text: string) => void;
+  /** Provides clinical identifiers for durable audio backup metadata before Whisper transcription starts. */
+  getAudioBackupContext?: () => AudioBackupClinicalContext;
 }
 
 export const useTranscript = (options?: UseTranscriptOptions) => {
   const onTranscriptionCompleteRef = useRef(options?.onTranscriptionComplete);
   onTranscriptionCompleteRef.current = options?.onTranscriptionComplete;
+  const getAudioBackupContextRef = useRef(options?.getAudioBackupContext);
+  getAudioBackupContextRef.current = options?.getAudioBackupContext;
 
   const [transcript, setTranscriptState] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -48,6 +57,11 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
   const pendingChunksRef = useRef<Blob[]>([]);
   const isTranscribingChunkRef = useRef<boolean>(false);
   const transcriptPartsRef = useRef<string[]>([]);
+  const recordingStartedAtRef = useRef<string | null>(null);
+  const activeAudioBackupIdRef = useRef<string | null>(null);
+  const hasCurrentAudioBackupBeenPersistedRef = useRef<boolean>(false);
+  const transcriptionHadFailureRef = useRef<boolean>(false);
+  const lastTranscriptionErrorRef = useRef<string | null>(null);
 
   const appendTranscript = useCallback((text: string, isInterim: boolean = false) => {
     if (!text) return;
@@ -119,6 +133,11 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
       setError(null);
       // Do not clear existing transcript here: we want new recordings to append to any restored text
       interimTranscriptRef.current = '';
+      recordingStartedAtRef.current = new Date().toISOString();
+      activeAudioBackupIdRef.current = null;
+      hasCurrentAudioBackupBeenPersistedRef.current = false;
+      transcriptionHadFailureRef.current = false;
+      lastTranscriptionErrorRef.current = null;
 
       // ✅ SPRINT 2 P3: Get microphone stream FIRST (single permission request)
       // PRIMARY: Use Whisper for accurate medical transcription
@@ -333,6 +352,8 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err);
           console.error('[useTranscript] Error transcribiendo chunk:', errorMessage);
+          transcriptionHadFailureRef.current = true;
+          lastTranscriptionErrorRef.current = errorMessage;
           
           // ✅ SPRINT 2 P3: Show error for ALL failures (user needs to know)
           // Previously errors were hidden, causing confusion
@@ -470,6 +491,27 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
 
           setIsTranscribing(true);
 
+          const recordingStoppedAt = new Date().toISOString();
+          const recordingStartedAt = recordingStartedAtRef.current ?? recordingStoppedAt;
+          const completeAudioBlob = new Blob(chunks, { type: chunks[0].type || mimeType });
+          const audioBackupClinicalContext = getAudioBackupContextRef.current?.() ?? {};
+          const persistedAudioBackup = await persistAudioBackup({
+            audioBlob: completeAudioBlob,
+            recordingStartedAt,
+            recordingStoppedAt,
+            ...audioBackupClinicalContext,
+          });
+          const hasAudioBackupBeenPersisted = Boolean(persistedAudioBackup.id);
+          activeAudioBackupIdRef.current = persistedAudioBackup.id;
+          hasCurrentAudioBackupBeenPersistedRef.current = hasAudioBackupBeenPersisted;
+
+          console.info('[useTranscript] Clinical audio backup persisted before transcription', {
+            audioBackupId: persistedAudioBackup.id,
+            storagePath: persistedAudioBackup.storagePath,
+            sizeBytes: completeAudioBlob.size,
+            hasAudioBackupBeenPersisted,
+          });
+
           // Firebase Cloud Functions 1st-gen request body limit is 10MB.
           // Base64 encoding adds ~33% overhead, so the safe binary threshold per
           // segment is 6.5MB (6.5MB × 1.33 ≈ 8.6MB base64 JSON).
@@ -531,15 +573,49 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
             }, 0);
           }
 
+          const activeAudioBackupId = activeAudioBackupIdRef.current;
+          const hasTranscriptionFailed = transcriptionHadFailureRef.current;
+          const hasFinalTranscript = finalTranscript.length > 0;
+
+          if (activeAudioBackupId && hasTranscriptionFailed) {
+            const transcriptionFailureMessage = lastTranscriptionErrorRef.current ?? 'Transcription failed without a detailed error.';
+            try {
+              await updateAudioBackupTranscriptionStatus(
+                activeAudioBackupId,
+                'failed_retryable',
+                transcriptionFailureMessage,
+              );
+            } catch (statusError) {
+              console.error('[useTranscript] Failed to mark clinical audio backup as retryable failure', statusError);
+            }
+          }
+
+          if (activeAudioBackupId && !hasTranscriptionFailed && hasFinalTranscript) {
+            try {
+              await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'success', null);
+            } catch (statusError) {
+              console.error('[useTranscript] Failed to mark clinical audio backup as successful', statusError);
+            }
+          }
+
           setIsTranscribing(false);
         };
 
-        await processChunksSequentially();
+        try {
+          await processChunksSequentially();
+        } catch (backupError) {
+          const backupErrorMessage = backupError instanceof Error ? backupError.message : String(backupError);
+          console.error('[useTranscript] Clinical audio backup failed before transcription:', backupError);
+          setError(`No se pudo guardar el respaldo de audio clínico. La transcripción no se inició para evitar pérdida silenciosa: ${backupErrorMessage}`);
+          setIsTranscribing(false);
+        }
 
         // Wait for any pending transcriptions to complete before clearing
         setTimeout(() => {
-          audioChunksRef.current = [];
-          pendingChunksRef.current = [];
+          if (hasCurrentAudioBackupBeenPersistedRef.current) {
+            audioChunksRef.current = [];
+            pendingChunksRef.current = [];
+          }
           setIsTranscribing(false);
         }, 500);
       };

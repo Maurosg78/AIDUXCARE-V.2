@@ -1116,6 +1116,20 @@ const ProfessionalWorkflowPage = () => {
     stopRecording: _stopRecording,
     setTranscript,
   } = useTranscript({
+    getAudioBackupContext: () => {
+      const transcriptSessionId = sessionIdForTranscriptRef.current;
+      const activeSessionId = sessionIdRef.current;
+      const reservedSessionId = workflowReservedSessionIdRef.current;
+      const audioBackupSessionId = transcriptSessionId ?? activeSessionId ?? reservedSessionId;
+      const audioBackupPatientId = patientIdForPersistRef.current;
+      const audioBackupUserId = userForPersistRef.current?.uid ?? null;
+
+      return {
+        sessionId: audioBackupSessionId,
+        patientId: audioBackupPatientId,
+        userId: audioBackupUserId,
+      };
+    },
     onTranscriptionComplete: (text) => {
       const sid = sessionIdForTranscriptRef.current;
       const pid = patientIdForPersistRef.current;
