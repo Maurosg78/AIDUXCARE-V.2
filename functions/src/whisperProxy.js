@@ -114,36 +114,64 @@ exports.whisperProxy = onCall(
 
       // Crear FormData para la petición a OpenAI
       const FormData = require('form-data');
-      const formData = new FormData();
-      
-      formData.append('file', audioBuffer, {
-        filename: `audio.${fileExtension}`,
-        contentType: mimeType
-      });
-      formData.append('model', model);
-      
-      if (language && language !== 'auto') {
-        formData.append('language', language);
-      }
+      const buildClinicalAudioFormData = () => {
+        const clinicalAudioFormData = new FormData();
+        clinicalAudioFormData.append('file', audioBuffer, {
+          filename: `audio.${fileExtension}`,
+          contentType: mimeType
+        });
+        clinicalAudioFormData.append('model', model);
 
-      // Prompt clínico optimizado
-      const prompt = 'This is a clinical conversation between a healthcare professional and a patient. Transcribe accurately, preserving medical terminology, anatomical terms, and clinical details.';
-      formData.append('prompt', prompt);
+        if (language && language !== 'auto') {
+          clinicalAudioFormData.append('language', language);
+        }
+
+        // Prompt clínico optimizado
+        const prompt = 'This is a clinical conversation between a healthcare professional and a patient. Transcribe accurately, preserving medical terminology, anatomical terms, and clinical details.';
+        clinicalAudioFormData.append('prompt', prompt);
+        return clinicalAudioFormData;
+      };
+
+      const sleepForRetryBackoff = (delayMs) => new Promise(resolve => setTimeout(resolve, delayMs));
+      const MAX_RETRIES = 3;
+      const RETRY_DELAYS = [2000, 4000, 8000];
 
       // Llamar a la API de OpenAI
       const fetch = require('node-fetch');
-      const response = await fetch(OPENAI_API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          ...formData.getHeaders()
-        },
-        body: formData,
-        timeout: 300000 // 5 minutos
-      });
+      let response;
+      let errorBody = '';
+
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        const clinicalAudioFormData = buildClinicalAudioFormData();
+        response = await fetch(OPENAI_API_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            ...clinicalAudioFormData.getHeaders()
+          },
+          body: clinicalAudioFormData,
+          timeout: 300000 // 5 minutos
+        });
+
+        if (response.ok) {
+          break;
+        }
+
+        errorBody = await response.text();
+        const isRateLimitResponse = response.status === 429;
+        const hasRetryAttemptRemaining = attempt < MAX_RETRIES;
+
+        if (isRateLimitResponse && hasRetryAttemptRemaining) {
+          const retryDelayMs = RETRY_DELAYS[attempt];
+          console.info(`[whisperProxy] 429 — retry ${attempt + 1}/${MAX_RETRIES} in ${retryDelayMs}ms`);
+          await sleepForRetryBackoff(retryDelayMs);
+          continue;
+        }
+
+        break;
+      }
 
       if (!response.ok) {
-        const errorBody = await response.text();
         console.error(`[whisperProxy] Whisper API error`, {
           status: response.status,
           hasErrorBody: Boolean(errorBody),
@@ -178,7 +206,7 @@ exports.whisperProxy = onCall(
         }
 
         throw new HttpsError(
-          'internal',
+          response.status === 429 ? 'resource-exhausted' : 'internal',
           errorMessage
         );
       }
