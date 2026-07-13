@@ -90,7 +90,10 @@ export async function collectPendingTodayItemsForMigration(
 
       migrationCandidateKeys.add(sourcePendingItemKey);
       migrationCandidateEntries.push({
-        item: sourcePendingItem,
+        item: {
+          ...sourcePendingItem,
+          sourceDateKey: sourcePendingItem.sourceDateKey ?? sourceClinicalDateKey,
+        },
         sourceDateKey: sourceClinicalDateKey,
       });
     }

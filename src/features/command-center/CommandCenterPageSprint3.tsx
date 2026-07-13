@@ -1113,25 +1113,26 @@ export const CommandCenterPageSprint3: React.FC = () => {
                 setCreatePatientFromStartSessionModal(false);
                 setShowStartSessionModal(true);
               }}
-              onStartFromToday={async (patientId, sessionType, resumeSessionId) => {
-                const dateKey = toLocalDateKey(selectedDate);
-                sessionStorage.setItem(LAST_STARTED_KEY, JSON.stringify({ patientId, sessionType, dateKey }));
+              onStartFromToday={async (patientId, sessionType, resumeSessionId, sourceDateKey) => {
+                const selectedDateKey = toLocalDateKey(selectedDate);
+                const clinicalDateKey = sourceDateKey ?? selectedDateKey;
+                sessionStorage.setItem(LAST_STARTED_KEY, JSON.stringify({ patientId, sessionType, dateKey: clinicalDateKey }));
                 const patient = await PatientService.getPatientById(patientId);
                 if (!patient) return;
                 setSelectedPatient(patient);
                 if (sessionType === 'initial') {
                   if (resumeSessionId) {
-                    navigate(workflowPath('initial', patientId, dateKey, resumeSessionId));
+                    navigate(workflowPath('initial', patientId, clinicalDateKey, resumeSessionId));
                   } else {
-                    navigate(workflowPath('initial', patientId, dateKey));
+                    navigate(workflowPath('initial', patientId, clinicalDateKey));
                   }
                   return;
                 }
                 if (sessionType === 'followup') {
                   if (resumeSessionId) {
-                    navigate(workflowPath('followup', patientId, dateKey, resumeSessionId));
+                    navigate(workflowPath('followup', patientId, clinicalDateKey, resumeSessionId));
                   } else {
-                    navigate(workflowPath('followup', patientId, dateKey));
+                    navigate(workflowPath('followup', patientId, clinicalDateKey));
                   }
                   return;
                 }

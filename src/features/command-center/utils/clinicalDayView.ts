@@ -25,6 +25,7 @@ export type ClinicalDayRow = {
   resumeSessionId?: string;
   consultationId?: string;
   sessionType?: 'initial' | 'followup' | 'ongoing';
+  sourceDateKey?: string;
 };
 
 type BuildClinicalDayViewOptions = {
@@ -292,6 +293,7 @@ export async function buildClinicalDayView(
         resumeSessionId: session?.id ?? quickItem?.resumeSessionId,
         consultationId: consultation?.id,
         sessionType: (quickItem?.sessionType ?? session?.sessionType ?? undefined) as ClinicalDayRow['sessionType'],
+        sourceDateKey: quickItem?.sourceDateKey,
       };
       const recomputedStatus = getPatientStatus(row.rawData);
       const isStateDesynced = row.status !== recomputedStatus;

@@ -30,6 +30,8 @@ export interface TodayQuickItem {
   patientId: string;
   patientName: string;
   sessionType: 'initial' | 'followup' | 'ongoing';
+  /** Original clinical date for migrated pending items. */
+  sourceDateKey?: string;
   /** Firestore session id when the row comes from an interrupted/in-progress session. */
   resumeSessionId?: string;
   /** Legacy persisted field. UI render must derive status from clinicalDayRows, not from this value. */
@@ -52,6 +54,7 @@ export interface TodayPatientsPanelProps {
     patientId: string,
     sessionType: 'initial' | 'followup' | 'ongoing',
     resumeSessionId?: string,
+    sourceDateKey?: string,
   ) => void;
   /** Remove item from today's quick list. Does not delete the patient record. */
   onRemoveFromToday?: (item: TodayQuickItem) => void;
@@ -251,6 +254,12 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
     const isOverdue =
       row.status === PatientWorkflowStatus.SCHEDULED &&
       isPastDate(displayDate);
+    const rowSourceDateKey = row.sourceDateKey;
+    const displayDateKey = formatDateKey(displayDate);
+    const hasMigratedClinicalDate =
+      typeof rowSourceDateKey === 'string' &&
+      rowSourceDateKey !== '' &&
+      rowSourceDateKey !== displayDateKey;
     const badgeClass = getStatusBadgeClass(row.status);
     const itemStyles = isOverdue
       ? 'border-red-200 bg-red-50/60 hover:bg-red-50/80'
@@ -288,13 +297,14 @@ export const TodayPatientsPanel: React.FC<TodayPatientsPanelProps> = ({
             {sessionType === 'ongoing' && <FileText className="w-3.5 h-3.5" />}
             {t(`shell.sessionType.${sessionType}`)}
             {isOverdue ? <span className="font-medium text-red-700">— {t('shell.todayPatients.overdue')}</span> : null}
+            {hasMigratedClinicalDate ? <span className="font-medium text-amber-700">— Pendiente desde {rowSourceDateKey}</span> : null}
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {primaryActionLabel === 'Iniciar' || primaryActionLabel === 'Continuar' || primaryActionLabel === 'Reanudar' ? (
             <button
               type="button"
-              onClick={() => onStartFromToday?.(row.patientId, sessionType, row.resumeSessionId)}
+              onClick={() => onStartFromToday?.(row.patientId, sessionType, row.resumeSessionId, row.sourceDateKey)}
               className="p-2 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple hover:from-primary-blue-hover hover:to-primary-purple-hover text-white font-apple text-xs font-medium transition-all flex items-center gap-1.5"
             >
               <Play className="w-4 h-4" /> {primaryActionLabel}

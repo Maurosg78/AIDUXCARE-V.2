@@ -42,6 +42,10 @@ function sanitizeTodayQuickItems(items: TodayQuickItem[]): TodayQuickItem[] {
       sanitized.resumeSessionId = item.resumeSessionId;
     }
 
+    if (item.sourceDateKey !== undefined) {
+      sanitized.sourceDateKey = item.sourceDateKey;
+    }
+
     if (item.status !== undefined) {
       sanitized.status = item.status;
     }
