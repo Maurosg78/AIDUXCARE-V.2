@@ -55,9 +55,10 @@ describe('buildFollowUpPromptV3', () => {
     const prompt = buildFollowUpPromptV3({
       baselineSOAP,
       clinicalUpdate: 'Update',
+      inClinicDecisionProvided: true,
       inClinicItems: ['Manual therapy', 'ROM exercises'],
     });
-    expect(prompt).toContain('CONTEXT — IN-CLINIC TREATMENT PERFORMED TODAY (if provided)');
+    expect(prompt).toContain('CONTEXT — IN-CLINIC TREATMENT PERFORMED TODAY (confirmed by clinician)');
     expect(prompt).toContain('Manual therapy');
     expect(prompt).toContain('ROM exercises');
   });
@@ -330,5 +331,88 @@ describe('buildFollowUpPromptV3 — Seguridad clínica: ambigüedad temporal de 
 
     expect(promptEs).toContain('NUNCA uses el formato "[previo]° → [actual]°" sin especificar cuál valor corresponde a hoy');
     expect(promptEn).toContain('NEVER use the format "[previous]° → [current]°" without specifying which value corresponds to today');
+  });
+});
+
+describe('buildFollowUpPromptV3 — Seguridad clínica: provenance de tratamiento en clínica', () => {
+  it('no documenta como realizado un tratamiento explícitamente desmarcado por el fisio hoy', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      inClinicDecisionProvided: true,
+      inClinicItems: ['Movilizaciones y fortalecimiento supervisado', 'Masoterapia'],
+    });
+
+    expect(prompt).toContain('Movilizaciones');
+    expect(prompt).toContain('Masoterapia');
+    expect(prompt).not.toContain('Diatermia');
+  });
+
+  it('genera mensaje explícito cuando el fisio confirma que no se realizó ningún tratamiento en clínica hoy', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      inClinicDecisionProvided: true,
+      inClinicItems: [],
+    });
+
+    expect(prompt).toContain('Ninguno realizado hoy por decisión del profesional');
+    expect(prompt).not.toContain('Diatermia');
+    expect(prompt).not.toContain('Masoterapia');
+    expect(prompt).not.toContain('Movilizaciones');
+  });
+
+  it('no confunde tratamiento previsto histórico con tratamiento confirmado hoy cuando no hay decisión', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      inClinicDecisionProvided: false,
+      inClinicContextOnly: ['Diatermia (Tecarterapia) en RI'],
+    });
+
+    expect(prompt).toContain('NOT CONFIRMED TODAY');
+    expect(prompt).toContain('Do NOT document this as performed today');
+    expect(prompt).toContain('Diatermia');
+    expect(prompt).not.toContain('In-clinic treatment performed today:');
+  });
+
+  it('caso real Maria Dolores — Diatermia desmarcada, resto confirmado', () => {
+    const prompt = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      inClinicDecisionProvided: true,
+      inClinicItems: [
+        'Movilizaciones y fortalecimiento supervisado',
+        'Masoterapia',
+        'Ejercicios de fortalecimiento en cadena cinética abierta',
+      ],
+    });
+
+    expect(prompt).toContain('CONTEXT — IN-CLINIC TREATMENT PERFORMED TODAY (confirmed by clinician)');
+    expect(prompt).toContain('Movilizaciones y fortalecimiento supervisado');
+    expect(prompt).toContain('Masoterapia');
+    expect(prompt).toContain('Ejercicios de fortalecimiento en cadena cinética abierta');
+    expect(prompt).not.toContain('Diatermia');
+  });
+
+  it('instrucciones ES y EN son consistentes para el guardrail de in-clinic', () => {
+    const promptEs = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      jurisdiction: 'ES-ES',
+      inClinicDecisionProvided: true,
+      inClinicItems: [],
+    });
+    const promptEn = buildFollowUpPromptV3({
+      baselineSOAP,
+      clinicalUpdate: 'Update',
+      jurisdiction: 'CA-ON',
+      inClinicDecisionProvided: false,
+      inClinicContextOnly: ['Diatermia (Tecarterapia) en RI'],
+    });
+
+    expect(promptEs).toContain('Ninguno realizado hoy por decisión del profesional');
+    expect(promptEn).toContain('Do NOT document this as performed today');
+    expect(promptEn).toContain('NOT CONFIRMED TODAY');
   });
 });
