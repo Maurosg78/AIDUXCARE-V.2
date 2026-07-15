@@ -111,17 +111,9 @@ export async function saveTodayList(
   dateKey: string,
   items: TodayQuickItem[]
 ): Promise<void> {
-  try {
-    const sanitizedItems = sanitizeTodayQuickItems(items);
-    await setDoc(todayListDoc(uid, dateKey), {
-      items: sanitizedItems,
-      updatedAt: serverTimestamp(),
-    });
-  } catch (error) {
-    console.warn('[todayListService] saveTodayList failed', {
-      dateKey,
-      itemCount: items.length,
-      message: error instanceof Error ? error.message : String(error),
-    });
-  }
+  const sanitizedItems = sanitizeTodayQuickItems(items);
+  await setDoc(todayListDoc(uid, dateKey), {
+    items: sanitizedItems,
+    updatedAt: serverTimestamp(),
+  });
 }
