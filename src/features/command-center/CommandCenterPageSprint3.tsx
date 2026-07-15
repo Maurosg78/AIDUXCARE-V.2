@@ -38,6 +38,7 @@ import { buildClinicalDayView, type ClinicalDayRow } from './utils/clinicalDayVi
 import { patientHasClosedClinicalEvidenceForDate } from './utils/patientClosedEvidenceForDate';
 import {
   collectPendingTodayItemsForMigration,
+  drainMigratedClinicalQueueWrites,
   filterOpenTodayItemsByClosedClinicalEvidence,
   mergeTodayItemsWithMigratedPendingItems,
 } from './utils/migratePendingTodayItems';
@@ -248,6 +249,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const currentDateKeyRef = React.useRef(toLocalDateKey(new Date()));
   const currentClinicalDayRef = React.useRef(toLocalDateKey(new Date()));
   const hasRunPendingMigrationForDateRef = React.useRef(false);
+  const isMigrationWritingRef = React.useRef(false);
   const awaitingDocumentationRef = React.useRef<HTMLDivElement>(null);
   const inProgressRef = React.useRef<HTMLDivElement>(null);
   const toSeeRef = React.useRef<HTMLDivElement>(null);
@@ -265,11 +267,29 @@ export const CommandCenterPageSprint3: React.FC = () => {
     shouldPersistTodayQuickListRef.current = true;
   }, []);
 
+  const persistTodayQuickList = useCallback((
+    dateKey: string,
+    items: TodayQuickItem[],
+    reason: string
+  ) => {
+    if (!user?.uid) {
+      return;
+    }
+    void saveTodayList(user.uid, dateKey, items).catch((error) => {
+      logger.error('[CommandCenter] Failed to persist today clinical queue', {
+        dateKey,
+        itemCount: items.length,
+        reason,
+        error,
+      });
+    });
+  }, [user?.uid]);
+
   const trackPendingTodayQuickItem = useCallback((dateKey: string, item: TodayQuickItem) => {
     if (dateKey !== currentDateKeyRef.current) return;
     hasLocalTodayQuickChangesRef.current = true;
     shouldPersistTodayQuickListRef.current = true;
-    if (hasLoadedRef.current) return;
+    if (hasLoadedRef.current && !isMigrationWritingRef.current) return;
     pendingTodayQuickItemsRef.current.set(getTodayQuickItemKey(item), item);
   }, []);
 
@@ -287,10 +307,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
         const currentKey = getTodayQuickItemKey(currentItem);
         return currentKey !== targetKey;
       });
-      void saveTodayList(user.uid, dateKey, updatedList);
+      persistTodayQuickList(dateKey, updatedList, 'remove_today_quick_item');
       return updatedList;
     });
-  }, [markTodayQuickListForSave, selectedDate, user?.uid]);
+  }, [markTodayQuickListForSave, persistTodayQuickList, selectedDate, user?.uid]);
 
   // WO-COMMAND-CENTER-PATIENT-SEARCH-RESTORE-V1: when arriving from the history view with "New ongoing/assessment" → open Ongoing modal
   useEffect(() => {
@@ -372,6 +392,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
     hasLocalTodayQuickChangesRef.current = false;
     shouldPersistTodayQuickListRef.current = false;
     hasRunPendingMigrationForDateRef.current = false;
+    isMigrationWritingRef.current = false;
     setTodayQuickList([]);
   }, [selectedDate]);
 
@@ -398,63 +419,101 @@ export const CommandCenterPageSprint3: React.FC = () => {
 
         if (shouldRunPendingMigrationForClinicalDay) {
           hasRunPendingMigrationForDateRef.current = true;
+          isMigrationWritingRef.current = true;
           void (async () => {
-            const pendingMigrationResult = await collectPendingTodayItemsForMigration({
-              userId: user.uid,
-              targetDate: selectedDate,
-              loadTodayList,
-              hasClosedClinicalEvidence: patientHasClosedClinicalEvidenceForDate,
-            });
-            const closedEvidenceFilterResult = await filterOpenTodayItemsByClosedClinicalEvidence(
-              filteredItems,
-              dateKey,
-              patientHasClosedClinicalEvidenceForDate
-            );
-            if (cancelled || hasLoadedRef.current || currentDateKeyRef.current !== dateKey) {
-              return;
-            }
-            const openFirestoreItems = closedEvidenceFilterResult.openItems;
-            const pendingItems = Array.from(pendingTodayQuickItemsRef.current.values()).filter((item) => {
-              const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
-              return !removedTodayQuickItemKeysRef.current.has(scopedKey);
-            });
-            const hasPendingLocalChanges = hasLocalTodayQuickChangesRef.current;
-            const hasPendingTransientItems = pendingItems.length > 0;
-            const hasRemovedClosedEvidence =
-              closedEvidenceFilterResult.removedClosedEvidenceCount > 0;
-            const hasPendingClinicalQueueChanges =
-              hasPendingLocalChanges ||
-              hasPendingTransientItems ||
-              hasRemovedClosedEvidence;
-            const existingClinicalQueueItems = hasPendingClinicalQueueChanges
-              ? mergeTodayQuickItems(openFirestoreItems, pendingItems)
-              : openFirestoreItems;
-            const hasMigratedPendingPatients = pendingMigrationResult.migratedPendingItems.length > 0;
-            const mergedClinicalQueueItems = hasMigratedPendingPatients
-              ? mergeTodayItemsWithMigratedPendingItems(existingClinicalQueueItems, pendingMigrationResult.migratedPendingItems)
-              : existingClinicalQueueItems;
-            console.info('[COMMAND-CENTER] Migration of pending patients', {
-              sourceDateKeysWithCandidates: pendingMigrationResult.sourceDateKeysWithCandidates,
-              sourceDateKeysWithMigratedPatients: pendingMigrationResult.sourceDateKeysWithMigratedPatients,
-              targetDateKey: dateKey,
-              lookbackDays: pendingMigrationResult.lookbackDays,
-              totalCandidates: pendingMigrationResult.totalCandidates,
-              filteredOutWithClosedEvidence: pendingMigrationResult.filteredOutWithClosedEvidence,
-              removedExistingItemsWithClosedEvidence: closedEvidenceFilterResult.removedClosedEvidenceCount,
-              migratedCount: pendingMigrationResult.migratedPendingItems.length,
-              orphanedPendingPatientCount: pendingMigrationResult.orphanedPendingPatientCount,
-            });
-            if (hasMigratedPendingPatients || hasPendingClinicalQueueChanges) {
-              await saveTodayList(user.uid, dateKey, mergedClinicalQueueItems);
+            try {
+              const pendingMigrationResult = await collectPendingTodayItemsForMigration({
+                userId: user.uid,
+                targetDate: selectedDate,
+                loadTodayList,
+                hasClosedClinicalEvidence: patientHasClosedClinicalEvidenceForDate,
+              });
+              const closedEvidenceFilterResult = await filterOpenTodayItemsByClosedClinicalEvidence(
+                filteredItems,
+                dateKey,
+                patientHasClosedClinicalEvidenceForDate
+              );
               if (cancelled || currentDateKeyRef.current !== dateKey) {
                 return;
               }
+              const openFirestoreItems = closedEvidenceFilterResult.openItems;
+              const pendingItems = Array.from(pendingTodayQuickItemsRef.current.values()).filter((item) => {
+                const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
+                return !removedTodayQuickItemKeysRef.current.has(scopedKey);
+              });
+              const hasPendingLocalChanges = hasLocalTodayQuickChangesRef.current;
+              const hasPendingTransientItems = pendingItems.length > 0;
+              const hasRemovedClosedEvidence =
+                closedEvidenceFilterResult.removedClosedEvidenceCount > 0;
+              const hasPendingClinicalQueueChanges =
+                hasPendingLocalChanges ||
+                hasPendingTransientItems ||
+                hasRemovedClosedEvidence;
+              const existingClinicalQueueItems = hasPendingClinicalQueueChanges
+                ? mergeTodayQuickItems(openFirestoreItems, pendingItems)
+                : openFirestoreItems;
+              const hasMigratedPendingPatients = pendingMigrationResult.migratedPendingItems.length > 0;
+              let mergedClinicalQueueItems = hasMigratedPendingPatients
+                ? mergeTodayItemsWithMigratedPendingItems(existingClinicalQueueItems, pendingMigrationResult.migratedPendingItems)
+                : existingClinicalQueueItems;
+              console.info('[COMMAND-CENTER] Migration of pending patients', {
+                sourceDateKeysWithCandidates: pendingMigrationResult.sourceDateKeysWithCandidates,
+                sourceDateKeysWithMigratedPatients: pendingMigrationResult.sourceDateKeysWithMigratedPatients,
+                targetDateKey: dateKey,
+                lookbackDays: pendingMigrationResult.lookbackDays,
+                totalCandidates: pendingMigrationResult.totalCandidates,
+                filteredOutWithClosedEvidence: pendingMigrationResult.filteredOutWithClosedEvidence,
+                removedExistingItemsWithClosedEvidence: closedEvidenceFilterResult.removedClosedEvidenceCount,
+                migratedCount: pendingMigrationResult.migratedPendingItems.length,
+                orphanedPendingPatientCount: pendingMigrationResult.orphanedPendingPatientCount,
+              });
+              const shouldPersistInitialClinicalQueue =
+                hasMigratedPendingPatients ||
+                hasPendingClinicalQueueChanges;
+              mergedClinicalQueueItems = await drainMigratedClinicalQueueWrites({
+                dateKey,
+                initialClinicalQueueItems: mergedClinicalQueueItems,
+                shouldPersistInitialClinicalQueue,
+                pendingTodayQuickItems: pendingTodayQuickItemsRef.current,
+                removedTodayQuickItemScopedKeys: removedTodayQuickItemKeysRef.current,
+                hasLocalTodayQuickChanges: () => hasLocalTodayQuickChangesRef.current,
+                onQueuedManualAddStateChange: (hasQueuedManualAdd) => {
+                  hasLocalTodayQuickChangesRef.current = hasQueuedManualAdd;
+                  shouldPersistTodayQuickListRef.current = hasQueuedManualAdd;
+                },
+                onDrainWriteLimitReached: (pendingItemCount) => {
+                  logger.warn('[CommandCenter] Pending patient migration drain limit reached', {
+                    dateKey,
+                    pendingItemCount,
+                  });
+                },
+                saveClinicalQueue: (items) => saveTodayList(user.uid, dateKey, items),
+              });
+              const queuedManualAddItemsAfterDrain = Array.from(pendingTodayQuickItemsRef.current.values()).filter((item) => {
+                const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
+                return !removedTodayQuickItemKeysRef.current.has(scopedKey);
+              });
+              const hasQueuedManualAddsAfterDrain = queuedManualAddItemsAfterDrain.length > 0;
+              const clinicalQueueItemsForState = hasQueuedManualAddsAfterDrain
+                ? mergeTodayQuickItems(mergedClinicalQueueItems, queuedManualAddItemsAfterDrain)
+                : mergedClinicalQueueItems;
+              setTodayQuickList(clinicalQueueItemsForState);
+              if (!hasQueuedManualAddsAfterDrain) {
+                pendingTodayQuickItemsRef.current.clear();
+              }
+              hasLocalTodayQuickChangesRef.current = hasQueuedManualAddsAfterDrain;
+              shouldPersistTodayQuickListRef.current = hasQueuedManualAddsAfterDrain;
+              hasLoadedRef.current = true;
+            } catch (error) {
+              logger.error('[CommandCenter] Pending patient migration failed', {
+                dateKey,
+                error,
+              });
+              setTodayQuickList(filteredItems);
+              hasLoadedRef.current = true;
+            } finally {
+              isMigrationWritingRef.current = false;
             }
-            setTodayQuickList(mergedClinicalQueueItems);
-            pendingTodayQuickItemsRef.current.clear();
-            hasLocalTodayQuickChangesRef.current = false;
-            shouldPersistTodayQuickListRef.current = false;
-            hasLoadedRef.current = true;
           })();
           return;
         }
@@ -477,6 +536,11 @@ export const CommandCenterPageSprint3: React.FC = () => {
         setTodayQuickList((prev) => mergeTodayQuickItems(prev, filteredItems));
       }
       hasLoadedRef.current = true;
+    }, (error) => {
+      logger.error('[CommandCenter] Today clinical queue subscription failed', {
+        dateKey,
+        error,
+      });
     });
 
     return () => {
@@ -537,11 +601,12 @@ export const CommandCenterPageSprint3: React.FC = () => {
     if (!user?.uid) return;
     if (!hasLoadedRef.current) return;
     if (!shouldPersistTodayQuickListRef.current) return;
+    if (isMigrationWritingRef.current) return;
     const dateKey = toLocalDateKey(selectedDate);
     if (dateKey !== currentDateKeyRef.current) return;
     shouldPersistTodayQuickListRef.current = false;
-    saveTodayList(user.uid, dateKey, todayQuickList);
-  }, [user?.uid, selectedDate, todayQuickList]);
+    persistTodayQuickList(dateKey, todayQuickList, 'today_quick_list_effect');
+  }, [persistTodayQuickList, user?.uid, selectedDate, todayQuickList]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -973,8 +1038,8 @@ export const CommandCenterPageSprint3: React.FC = () => {
           existingIndex >= 0
             ? prev.map((item, index) => index === existingIndex ? { ...item, ...completedItem } : item)
             : addToListSafe(prev, completedItem);
-        if (user?.uid && hasLoadedRef.current && dateKey === currentDateKeyRef.current) {
-          void saveTodayList(user.uid, dateKey, updatedList);
+        if (user?.uid && hasLoadedRef.current && dateKey === currentDateKeyRef.current && !isMigrationWritingRef.current) {
+          persistTodayQuickList(dateKey, updatedList, 'ongoing_modal_success');
         }
         return updatedList;
       });
@@ -982,7 +1047,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
         state: baselineSOAP ? { baselineFromOngoing: baselineSOAP } : undefined,
       });
     },
-    [addToListSafe, navigate, selectedDate, trackPendingTodayQuickItem, user?.uid]
+    [addToListSafe, navigate, persistTodayQuickList, selectedDate, trackPendingTodayQuickItem, user?.uid]
   );
 
   const summaryAwaitingDocumentationRows = resolvedClinicalDayRows.filter(
@@ -1337,8 +1402,8 @@ export const CommandCenterPageSprint3: React.FC = () => {
               trackPendingTodayQuickItem(dateKey, nextItem);
               setTodayQuickList((prev) => {
                 const updatedList = addToListSafe(prev, nextItem);
-                if (user?.uid && hasLoadedRef.current && dateKey === currentDateKeyRef.current) {
-                  void saveTodayList(user.uid, dateKey, updatedList);
+                if (user?.uid && hasLoadedRef.current && dateKey === currentDateKeyRef.current && !isMigrationWritingRef.current) {
+                  persistTodayQuickList(dateKey, updatedList, 'manual_add_to_today');
                 }
                 return updatedList;
               });
