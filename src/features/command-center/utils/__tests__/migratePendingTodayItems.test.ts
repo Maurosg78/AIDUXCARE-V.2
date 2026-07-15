@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import type { TodayQuickItem } from '../../components/TodayPatientsPanel';
 import {
   collectPendingTodayItemsForMigration,
+  drainMigratedClinicalQueueWrites,
   filterOpenTodayItemsByClosedClinicalEvidence,
+  MAX_MIGRATED_CLINICAL_QUEUE_DRAIN_WRITES,
   mergeTodayItemsWithMigratedPendingItems,
   PENDING_PATIENT_MIGRATION_LOOKBACK_DAYS,
 } from '../migratePendingTodayItems';
@@ -150,6 +152,128 @@ describe('collectPendingTodayItemsForMigration — migración multi-día', () =>
     expect(mergedClinicalQueueItems).toHaveLength(4);
     expect(mergedClinicalQueueItems.slice(0, 3)).toEqual(existingTodayItems);
     expect(mergedClinicalQueueItems[3]).toEqual(migratedPendingItems[0]);
+  });
+
+  it('drena una adición manual que ocurre mientras el guardado de migración está pendiente', async () => {
+    let releaseFirstSave!: () => void;
+    let firstSaveStarted!: () => void;
+    let hasLocalTodayQuickChanges = false;
+    const firstSaveStartedPromise = new Promise<void>((resolve) => {
+      firstSaveStarted = resolve;
+    });
+    const releaseFirstSavePromise = new Promise<void>((resolve) => {
+      releaseFirstSave = resolve;
+    });
+    const pendingTodayQuickItems = new Map<string, TodayQuickItem>();
+    const removedTodayQuickItemScopedKeys = new Set<string>();
+    const migratedPendingItems = [
+      buildQuickItem({
+        patientId: 'migrated-001',
+        patientName: 'Marta Santamaria',
+        sessionType: 'initial',
+        sourceDateKey: '2026-07-14',
+        status: 'pending',
+      }),
+    ];
+    const queuedManualAddDuringMigration = buildQuickItem({
+      patientId: 'manual-001',
+      patientName: 'Ryan Murdock',
+      sessionType: 'followup',
+    });
+    const savedClinicalQueuePayloads: TodayQuickItem[][] = [];
+    const saveClinicalQueue = vi.fn(async (items: TodayQuickItem[]) => {
+      savedClinicalQueuePayloads.push(items);
+
+      if (savedClinicalQueuePayloads.length === 1) {
+        firstSaveStarted();
+        await releaseFirstSavePromise;
+      }
+    });
+    const drainPromise = drainMigratedClinicalQueueWrites({
+      dateKey: '2026-07-15',
+      initialClinicalQueueItems: migratedPendingItems,
+      shouldPersistInitialClinicalQueue: true,
+      pendingTodayQuickItems,
+      removedTodayQuickItemScopedKeys,
+      hasLocalTodayQuickChanges: () => hasLocalTodayQuickChanges,
+      onQueuedManualAddStateChange: (hasQueuedManualAdd) => {
+        hasLocalTodayQuickChanges = hasQueuedManualAdd;
+      },
+      saveClinicalQueue,
+    });
+
+    await firstSaveStartedPromise;
+
+    pendingTodayQuickItems.set('manual-001::followup', queuedManualAddDuringMigration);
+    hasLocalTodayQuickChanges = true;
+    releaseFirstSave();
+
+    const finalClinicalQueueItems = await drainPromise;
+
+    expect(saveClinicalQueue).toHaveBeenCalledTimes(2);
+    expect(savedClinicalQueuePayloads[0]).toEqual(migratedPendingItems);
+    expect(savedClinicalQueuePayloads[1]).toEqual([
+      migratedPendingItems[0],
+      queuedManualAddDuringMigration,
+    ]);
+    expect(finalClinicalQueueItems).toEqual(savedClinicalQueuePayloads[1]);
+    expect(pendingTodayQuickItems.size).toBe(0);
+    expect(hasLocalTodayQuickChanges).toBe(false);
+  });
+
+  it('termina en 5 escrituras y deja pendientes para el ciclo normal si siguen entrando adds manuales', async () => {
+    let hasLocalTodayQuickChanges = false;
+    const pendingTodayQuickItems = new Map<string, TodayQuickItem>();
+    const removedTodayQuickItemScopedKeys = new Set<string>();
+    const migratedPendingItems = [
+      buildQuickItem({
+        patientId: 'migrated-001',
+        patientName: 'Marta Santamaria',
+        sessionType: 'initial',
+        sourceDateKey: '2026-07-14',
+        status: 'pending',
+      }),
+    ];
+    const savedClinicalQueuePayloads: TodayQuickItem[][] = [];
+    const onDrainWriteLimitReached = vi.fn();
+    const saveClinicalQueue = vi.fn(async (items: TodayQuickItem[]) => {
+      savedClinicalQueuePayloads.push(items);
+
+      const nextManualAddIndex = savedClinicalQueuePayloads.length;
+      const nextManualAdd = buildQuickItem({
+        patientId: `manual-${nextManualAddIndex}`,
+        patientName: `Manual Patient ${nextManualAddIndex}`,
+        sessionType: 'followup',
+      });
+
+      pendingTodayQuickItems.set(
+        `${nextManualAdd.patientId}::${nextManualAdd.sessionType}`,
+        nextManualAdd
+      );
+      hasLocalTodayQuickChanges = true;
+    });
+
+    const finalClinicalQueueItems = await drainMigratedClinicalQueueWrites({
+      dateKey: '2026-07-15',
+      initialClinicalQueueItems: migratedPendingItems,
+      shouldPersistInitialClinicalQueue: true,
+      pendingTodayQuickItems,
+      removedTodayQuickItemScopedKeys,
+      hasLocalTodayQuickChanges: () => hasLocalTodayQuickChanges,
+      onQueuedManualAddStateChange: (hasQueuedManualAdd) => {
+        hasLocalTodayQuickChanges = hasQueuedManualAdd;
+      },
+      onDrainWriteLimitReached,
+      saveClinicalQueue,
+    });
+
+    expect(saveClinicalQueue).toHaveBeenCalledTimes(MAX_MIGRATED_CLINICAL_QUEUE_DRAIN_WRITES);
+    expect(onDrainWriteLimitReached).toHaveBeenCalledWith(1);
+    expect(pendingTodayQuickItems.size).toBe(1);
+    expect(pendingTodayQuickItems.has('manual-5::followup')).toBe(true);
+    expect(hasLocalTodayQuickChanges).toBe(true);
+    expect(finalClinicalQueueItems.some((item) => item.patientId === 'manual-4')).toBe(true);
+    expect(finalClinicalQueueItems.some((item) => item.patientId === 'manual-5')).toBe(false);
   });
 
   it('no vuelve a migrar items ya documentados como deuda clínica pendiente', async () => {
