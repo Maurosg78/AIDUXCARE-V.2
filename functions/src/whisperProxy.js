@@ -135,6 +135,22 @@ exports.whisperProxy = onCall(
       const sleepForRetryBackoff = (delayMs) => new Promise(resolve => setTimeout(resolve, delayMs));
       const MAX_RETRIES = 3;
       const RETRY_DELAYS = [2000, 4000, 8000];
+      const getOpenAiRateLimitHeaders = (openAiResponse) => {
+        const limitRequests = openAiResponse.headers.get('x-ratelimit-limit-requests');
+        const remainingRequests = openAiResponse.headers.get('x-ratelimit-remaining-requests');
+        const resetRequests = openAiResponse.headers.get('x-ratelimit-reset-requests');
+        const limitTokens = openAiResponse.headers.get('x-ratelimit-limit-tokens');
+        const remainingTokens = openAiResponse.headers.get('x-ratelimit-remaining-tokens');
+        const resetTokens = openAiResponse.headers.get('x-ratelimit-reset-tokens');
+        return {
+          limitRequests,
+          remainingRequests,
+          resetRequests,
+          limitTokens,
+          remainingTokens,
+          resetTokens
+        };
+      };
 
       // Llamar a la API de OpenAI
       const fetch = require('node-fetch');
@@ -152,6 +168,9 @@ exports.whisperProxy = onCall(
           body: clinicalAudioFormData,
           timeout: 300000 // 5 minutos
         });
+
+        const rateLimitHeaders = getOpenAiRateLimitHeaders(response);
+        console.info('[whisperProxy] Rate limit headers', rateLimitHeaders);
 
         if (response.ok) {
           break;
