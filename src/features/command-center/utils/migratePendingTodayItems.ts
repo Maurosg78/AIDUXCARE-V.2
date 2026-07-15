@@ -1,6 +1,7 @@
 import type { TodayQuickItem } from '../components/TodayPatientsPanel';
 
 export const PENDING_PATIENT_MIGRATION_LOOKBACK_DAYS = 7;
+export const MAX_MIGRATED_CLINICAL_QUEUE_DRAIN_WRITES = 5;
 
 type LoadTodayList = (userId: string, dateKey: string) => Promise<TodayQuickItem[]>;
 
@@ -27,6 +28,18 @@ export type PendingTodayItemsMigrationResult = {
 export type ClosedEvidenceFilterResult = {
   openItems: TodayQuickItem[];
   removedClosedEvidenceCount: number;
+};
+
+type DrainMigratedClinicalQueueWritesParams = {
+  dateKey: string;
+  initialClinicalQueueItems: TodayQuickItem[];
+  shouldPersistInitialClinicalQueue: boolean;
+  pendingTodayQuickItems: Map<string, TodayQuickItem>;
+  removedTodayQuickItemScopedKeys: Set<string>;
+  hasLocalTodayQuickChanges: () => boolean;
+  onQueuedManualAddStateChange: (hasQueuedManualAdd: boolean) => void;
+  onDrainWriteLimitReached?: (pendingItemCount: number) => void;
+  saveClinicalQueue: (items: TodayQuickItem[]) => Promise<void>;
 };
 
 function toLocalDateKey(d: Date): string {
@@ -146,6 +159,51 @@ export function mergeTodayItemsWithMigratedPendingItems(
   }
 
   return Array.from(mergedByClinicalQueueKey.values());
+}
+
+export async function drainMigratedClinicalQueueWrites(
+  params: DrainMigratedClinicalQueueWritesParams
+): Promise<TodayQuickItem[]> {
+  let mergedClinicalQueueItems = params.initialClinicalQueueItems;
+  let shouldPersistMigratedClinicalQueue = params.shouldPersistInitialClinicalQueue;
+  let drainWriteCount = 0;
+
+  while (
+    shouldPersistMigratedClinicalQueue &&
+    drainWriteCount < MAX_MIGRATED_CLINICAL_QUEUE_DRAIN_WRITES
+  ) {
+    const queuedManualAddItems = Array.from(params.pendingTodayQuickItems.values()).filter((item) => {
+      const scopedKey = `${params.dateKey}::${getTodayQuickItemKey(item)}`;
+      return !params.removedTodayQuickItemScopedKeys.has(scopedKey);
+    });
+    const queuedManualAddKeys = queuedManualAddItems.map(getTodayQuickItemKey);
+    const hasQueuedManualAddDuringMigration =
+      params.hasLocalTodayQuickChanges() ||
+      queuedManualAddItems.length > 0;
+    const clinicalQueueItemsToPersist = hasQueuedManualAddDuringMigration
+      ? mergeTodayItemsWithMigratedPendingItems(mergedClinicalQueueItems, queuedManualAddItems)
+      : mergedClinicalQueueItems;
+
+    drainWriteCount += 1;
+
+    await params.saveClinicalQueue(clinicalQueueItemsToPersist);
+
+    for (const queuedManualAddKey of queuedManualAddKeys) {
+      params.pendingTodayQuickItems.delete(queuedManualAddKey);
+    }
+
+    mergedClinicalQueueItems = clinicalQueueItemsToPersist;
+
+    const queuedManualAddDuringWrite = params.pendingTodayQuickItems.size > 0;
+    params.onQueuedManualAddStateChange(queuedManualAddDuringWrite);
+    shouldPersistMigratedClinicalQueue = queuedManualAddDuringWrite;
+  }
+
+  if (shouldPersistMigratedClinicalQueue) {
+    params.onDrainWriteLimitReached?.(params.pendingTodayQuickItems.size);
+  }
+
+  return mergedClinicalQueueItems;
 }
 
 export async function collectPendingTodayItemsForMigration(
