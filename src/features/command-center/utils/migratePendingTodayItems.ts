@@ -24,6 +24,11 @@ export type PendingTodayItemsMigrationResult = {
   lookbackDays: number;
 };
 
+export type ClosedEvidenceFilterResult = {
+  openItems: TodayQuickItem[];
+  removedClosedEvidenceCount: number;
+};
+
 function toLocalDateKey(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -33,6 +38,88 @@ function toLocalDateKey(d: Date): string {
 
 function getTodayQuickItemKey(item: TodayQuickItem): string {
   return `${item.patientId}::${item.sessionType}`;
+}
+
+function isOpenClinicalQueueStatus(status: string | undefined): boolean {
+  if (status == null) {
+    return true;
+  }
+
+  const isPendingStatus = status === 'pending';
+  const isIncompleteStatus = status === 'incomplete';
+
+  return isPendingStatus || isIncompleteStatus;
+}
+
+function getClinicalEvidenceDateKeys(item: TodayQuickItem, fallbackDateKey: string): string[] {
+  const dateKeys = new Set<string>();
+  const sourceDateKey = item.sourceDateKey;
+  const hasSourceDateKey = sourceDateKey != null;
+  const trimmedSourceDateKey = hasSourceDateKey ? sourceDateKey.trim() : '';
+  const hasNonEmptySourceDateKey = trimmedSourceDateKey !== '';
+
+  if (hasSourceDateKey && hasNonEmptySourceDateKey) {
+    dateKeys.add(sourceDateKey);
+  }
+
+  dateKeys.add(fallbackDateKey);
+
+  return Array.from(dateKeys);
+}
+
+async function hasClosedClinicalEvidenceForAnyDate(
+  item: TodayQuickItem,
+  fallbackDateKey: string,
+  hasClosedClinicalEvidence: HasClosedClinicalEvidence
+): Promise<boolean> {
+  const clinicalEvidenceDateKeys = getClinicalEvidenceDateKeys(item, fallbackDateKey);
+
+  for (const clinicalEvidenceDateKey of clinicalEvidenceDateKeys) {
+    const hasClosedEvidence = await hasClosedClinicalEvidence(item.patientId, clinicalEvidenceDateKey);
+
+    if (hasClosedEvidence) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export async function filterOpenTodayItemsByClosedClinicalEvidence(
+  items: TodayQuickItem[],
+  fallbackDateKey: string,
+  hasClosedClinicalEvidence: HasClosedClinicalEvidence
+): Promise<ClosedEvidenceFilterResult> {
+  const openItems: TodayQuickItem[] = [];
+  let removedClosedEvidenceCount = 0;
+
+  for (const item of items) {
+    const status = item.status as string | undefined;
+    const shouldCheckClinicalEvidence = isOpenClinicalQueueStatus(status);
+
+    if (!shouldCheckClinicalEvidence) {
+      openItems.push(item);
+      continue;
+    }
+
+    const hasClosedEvidence = await hasClosedClinicalEvidenceForAnyDate(
+      item,
+      fallbackDateKey,
+      hasClosedClinicalEvidence
+    );
+
+    if (hasClosedEvidence) {
+      removedClosedEvidenceCount += 1;
+      continue;
+    }
+
+    openItems.push(item);
+  }
+
+  return {
+    openItems,
+    removedClosedEvidenceCount,
+  };
 }
 
 export function mergeTodayItemsWithMigratedPendingItems(
@@ -75,7 +162,7 @@ export async function collectPendingTodayItemsForMigration(
     const sourceClinicalItems = await params.loadTodayList(params.userId, sourceClinicalDateKey);
     const sourcePendingItems = sourceClinicalItems.filter((item) => {
       const status = item.status as string | undefined;
-      return status !== 'discarded';
+      return isOpenClinicalQueueStatus(status);
     });
 
     sourceClinicalDateKeys.push(sourceClinicalDateKey);

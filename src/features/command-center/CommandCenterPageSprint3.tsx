@@ -38,6 +38,7 @@ import { buildClinicalDayView, type ClinicalDayRow } from './utils/clinicalDayVi
 import { patientHasClosedClinicalEvidenceForDate } from './utils/patientClosedEvidenceForDate';
 import {
   collectPendingTodayItemsForMigration,
+  filterOpenTodayItemsByClosedClinicalEvidence,
   mergeTodayItemsWithMigratedPendingItems,
 } from './utils/migratePendingTodayItems';
 
@@ -404,19 +405,30 @@ export const CommandCenterPageSprint3: React.FC = () => {
               loadTodayList,
               hasClosedClinicalEvidence: patientHasClosedClinicalEvidenceForDate,
             });
+            const closedEvidenceFilterResult = await filterOpenTodayItemsByClosedClinicalEvidence(
+              filteredItems,
+              dateKey,
+              patientHasClosedClinicalEvidenceForDate
+            );
             if (cancelled || hasLoadedRef.current || currentDateKeyRef.current !== dateKey) {
               return;
             }
+            const openFirestoreItems = closedEvidenceFilterResult.openItems;
             const pendingItems = Array.from(pendingTodayQuickItemsRef.current.values()).filter((item) => {
               const scopedKey = getTodayQuickItemScopedKey(dateKey, item);
               return !removedTodayQuickItemKeysRef.current.has(scopedKey);
             });
+            const hasPendingLocalChanges = hasLocalTodayQuickChangesRef.current;
+            const hasPendingTransientItems = pendingItems.length > 0;
+            const hasRemovedClosedEvidence =
+              closedEvidenceFilterResult.removedClosedEvidenceCount > 0;
             const hasPendingClinicalQueueChanges =
-              hasLocalTodayQuickChangesRef.current ||
-              pendingItems.length > 0;
+              hasPendingLocalChanges ||
+              hasPendingTransientItems ||
+              hasRemovedClosedEvidence;
             const existingClinicalQueueItems = hasPendingClinicalQueueChanges
-              ? mergeTodayQuickItems(filteredItems, pendingItems)
-              : filteredItems;
+              ? mergeTodayQuickItems(openFirestoreItems, pendingItems)
+              : openFirestoreItems;
             const hasMigratedPendingPatients = pendingMigrationResult.migratedPendingItems.length > 0;
             const mergedClinicalQueueItems = hasMigratedPendingPatients
               ? mergeTodayItemsWithMigratedPendingItems(existingClinicalQueueItems, pendingMigrationResult.migratedPendingItems)
@@ -428,6 +440,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
               lookbackDays: pendingMigrationResult.lookbackDays,
               totalCandidates: pendingMigrationResult.totalCandidates,
               filteredOutWithClosedEvidence: pendingMigrationResult.filteredOutWithClosedEvidence,
+              removedExistingItemsWithClosedEvidence: closedEvidenceFilterResult.removedClosedEvidenceCount,
               migratedCount: pendingMigrationResult.migratedPendingItems.length,
               orphanedPendingPatientCount: pendingMigrationResult.orphanedPendingPatientCount,
             });
@@ -826,13 +839,35 @@ export const CommandCenterPageSprint3: React.FC = () => {
     prev: TodayQuickItem[],
     newItem: TodayQuickItem
   ): TodayQuickItem[] => {
-    const alreadyExists = prev.some(
+    const existingIndex = prev.findIndex(
       (i) =>
         i.patientId === newItem.patientId &&
         i.sessionType === newItem.sessionType
     );
-    if (alreadyExists) return prev;
-    return [...prev, newItem];
+    if (existingIndex === -1) {
+      return [...prev, newItem];
+    }
+
+    const existingItem = prev[existingIndex];
+    const existingStatus = existingItem.status;
+    const isDocumentedStatus = existingStatus === 'documented';
+    const isDoneStatus = existingStatus === 'done';
+    const canRescheduleClosedItem =
+      isDocumentedStatus ||
+      isDoneStatus;
+
+    if (!canRescheduleClosedItem) {
+      return prev;
+    }
+
+    return prev.map((item, index) =>
+      index === existingIndex
+        ? {
+          ...newItem,
+          status: 'pending',
+        }
+        : item
+    );
   }, []);
 
   /** Dismiss an incomplete (red) session so it no longer appears — marks session as cancelled in Firestore. */

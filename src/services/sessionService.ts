@@ -54,8 +54,10 @@ type InProgressSessionRecord = Omit<InProgressSessionSummary, 'updatedAt'> & {
 
 type CompletedSessionRecord = {
   id: string;
+  userId?: string;
   patientId?: string;
   sessionType?: string;
+  status?: string;
   soapStatus?: string;
   updatedAt?: unknown;
   createdAt?: unknown;
@@ -599,20 +601,43 @@ class SessionService {
           });
         });
       }
-      const completedSessionsQuery = query(
-        sessionsRef,
-        where('userId', '==', userId),
-        where('status', '==', 'completed'),
-        limit(50)
-      );
-      const completedSnapshot = await getDocs(completedSessionsQuery);
-      const completedSessionDocs = completedSnapshot.docs;
-      const completedSessions: CompletedSessionRecord[] =
-        completedSessionDocs.map((d) => {
-          const docId = d.id;
-          const docData = d.data();
-          return { id: docId, ...docData };
-        });
+      const resultPatientIds = results.map((session) => session.patientId);
+      const nonEmptyResultPatientIds = resultPatientIds.filter((patientId) => {
+        const trimmedPatientId = patientId.trim();
+        return trimmedPatientId !== '';
+      });
+      const uniqueOpenPatientIds = new Set(nonEmptyResultPatientIds);
+      const openPatientIds = Array.from(uniqueOpenPatientIds);
+      const completedSessions: CompletedSessionRecord[] = [];
+      for (const patientId of openPatientIds) {
+        try {
+          const completedSessionsQuery = query(
+            sessionsRef,
+            where('patientId', '==', patientId),
+            limit(100)
+          );
+          const completedSnapshot = await getDocs(completedSessionsQuery);
+          completedSnapshot.docs.forEach((d) => {
+            const docId = d.id;
+            const docData = d.data();
+            const belongsToCurrentUser = docData.userId === userId;
+            const isCompletedSession = docData.status === 'completed';
+            const shouldSkipCompletedSession =
+              !belongsToCurrentUser ||
+              !isCompletedSession;
+
+            if (shouldSkipCompletedSession) {
+              return;
+            }
+
+            completedSessions.push({ id: docId, ...docData });
+          });
+        } catch (_error) {
+          console.warn('[SessionService] completed session closure query failed for patient; continuing with available closure evidence.', {
+            patientId,
+          });
+        }
+      }
       const latestFinalizedByPatientSessionType = new Map<string, number>();
       for (const session of completedSessions) {
         if (session.soapStatus !== 'finalized') continue;
@@ -629,24 +654,35 @@ class SessionService {
           latestFinalizedByPatientSessionType.set(key, updatedAtMs);
         }
       }
-      const consultationOwnershipFields = ['authorUid', 'ownerUid', 'userId'] as const;
       const consultationDocsById = new Map<string, Record<string, unknown>>();
       const consultationsRef = collection(db, 'consultations');
-      for (const ownershipField of consultationOwnershipFields) {
+      for (const patientId of openPatientIds) {
         try {
           const consultationsQuery = query(
             consultationsRef,
-            where(ownershipField, '==', userId),
-            limit(200)
+            where('patientId', '==', patientId),
+            limit(100)
           );
           const consultationsSnapshot = await getDocs(consultationsQuery);
           for (const consultationDoc of consultationsSnapshot.docs) {
             const data = consultationDoc.data();
+            const belongsToAuthor = data.authorUid === userId;
+            const belongsToOwner = data.ownerUid === userId;
+            const belongsToUser = data.userId === userId;
+            const belongsToCurrentUser =
+              belongsToAuthor ||
+              belongsToOwner ||
+              belongsToUser;
+
+            if (!belongsToCurrentUser) {
+              continue;
+            }
+
             consultationDocsById.set(consultationDoc.id, data);
           }
         } catch (_error) {
           console.warn('[SessionService] consultation closure query failed; continuing with available closure evidence.', {
-            ownershipField,
+            patientId,
           });
         }
       }

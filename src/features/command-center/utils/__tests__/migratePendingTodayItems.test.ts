@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { TodayQuickItem } from '../../components/TodayPatientsPanel';
 import {
   collectPendingTodayItemsForMigration,
+  filterOpenTodayItemsByClosedClinicalEvidence,
   mergeTodayItemsWithMigratedPendingItems,
   PENDING_PATIENT_MIGRATION_LOOKBACK_DAYS,
 } from '../migratePendingTodayItems';
@@ -149,5 +150,65 @@ describe('collectPendingTodayItemsForMigration — migración multi-día', () =>
     expect(mergedClinicalQueueItems).toHaveLength(4);
     expect(mergedClinicalQueueItems.slice(0, 3)).toEqual(existingTodayItems);
     expect(mergedClinicalQueueItems[3]).toEqual(migratedPendingItems[0]);
+  });
+
+  it('no vuelve a migrar items ya documentados como deuda clínica pendiente', async () => {
+    const loadTodayList = vi.fn(async (_userId: string, dateKey: string) => {
+      if (dateKey === '2026-07-08') {
+        return [
+          buildQuickItem({
+            status: 'documented',
+          }),
+        ];
+      }
+
+      return [];
+    });
+    const hasClosedClinicalEvidence = vi.fn(async () => false);
+
+    const result = await collectPendingTodayItemsForMigration({
+      userId: 'user-001',
+      targetDate: new Date('2026-07-09T12:00:00'),
+      loadTodayList,
+      hasClosedClinicalEvidence,
+    });
+
+    expect(result.migratedPendingItems).toHaveLength(0);
+    expect(result.totalCandidates).toBe(0);
+  });
+
+  it('elimina de la cola actual un pendiente migrado cuando su fecha clínica fuente ya tiene evidencia cerrada', async () => {
+    const existingTodayItems = [
+      buildQuickItem({
+        patientId: 'closed-001',
+        patientName: 'Closed Patient',
+        sourceDateKey: '2026-07-14',
+        status: 'pending',
+      }),
+      buildQuickItem({
+        patientId: 'open-001',
+        patientName: 'Open Patient',
+        sourceDateKey: '2026-07-14',
+        status: 'pending',
+      }),
+    ];
+    const hasClosedClinicalEvidence = vi.fn(async (patientId: string, dateKey: string) => {
+      const isClosedPatient = patientId === 'closed-001';
+      const isSourceClinicalDate = dateKey === '2026-07-14';
+      const shouldReportClosedEvidence =
+        isClosedPatient &&
+        isSourceClinicalDate;
+      return shouldReportClosedEvidence;
+    });
+
+    const result = await filterOpenTodayItemsByClosedClinicalEvidence(
+      existingTodayItems,
+      '2026-07-15',
+      hasClosedClinicalEvidence
+    );
+
+    expect(result.openItems).toHaveLength(1);
+    expect(result.openItems[0]?.patientId).toBe('open-001');
+    expect(result.removedClosedEvidenceCount).toBe(1);
   });
 });

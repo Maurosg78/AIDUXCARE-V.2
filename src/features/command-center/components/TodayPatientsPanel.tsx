@@ -35,7 +35,7 @@ export interface TodayQuickItem {
   /** Firestore session id when the row comes from an interrupted/in-progress session. */
   resumeSessionId?: string;
   /** Legacy persisted field. UI render must derive status from clinicalDayRows, not from this value. */
-  status?: 'pending' | 'documented' | 'done' | 'incomplete';
+  status?: 'pending' | 'documented' | 'done' | 'incomplete' | 'discarded';
 }
 
 export type ClinicalQueueGroupKey = 'awaitingDocumentation' | 'inProgress' | 'toSee';

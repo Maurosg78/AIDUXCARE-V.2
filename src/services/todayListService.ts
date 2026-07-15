@@ -12,7 +12,12 @@ const todayListDoc = (uid: string, dateKey: string) =>
   doc(db, 'users', uid, 'todayLists', dateKey);
 
 function normalizeItems(raw: TodayQuickItem[]): TodayQuickItem[] {
-  return raw.map((item) => {
+  const visibleItems = raw.filter((item) => {
+    const persistedStatus = item.status as string | undefined;
+    return persistedStatus !== 'discarded';
+  });
+
+  return visibleItems.map((item) => {
     const persistedStatus = item.status;
     const normalizedDocumentedStatus =
       persistedStatus === 'done'
