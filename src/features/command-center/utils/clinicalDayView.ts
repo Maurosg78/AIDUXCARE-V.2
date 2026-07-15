@@ -26,6 +26,7 @@ export type ClinicalDayRow = {
   consultationId?: string;
   sessionType?: 'initial' | 'followup' | 'ongoing';
   sourceDateKey?: string;
+  addedManuallyToday?: boolean;
 };
 
 type BuildClinicalDayViewOptions = {
@@ -33,6 +34,32 @@ type BuildClinicalDayViewOptions = {
   sessions: InProgressSession[];
   quickItems: TodayQuickItem[];
 };
+
+export function resolveClinicalDayRowsForOpenResponsibilities(
+  clinicalDayRows: ClinicalDayRow[],
+  openResponsibilityPatientIds: Set<string>
+): ClinicalDayRow[] {
+  const statusesHiddenWhenOpenResponsibility = new Set<PatientWorkflowStatus>([
+    PatientWorkflowStatus.SCHEDULED,
+    PatientWorkflowStatus.IN_PROGRESS,
+    PatientWorkflowStatus.ABANDONED,
+  ]);
+
+  return clinicalDayRows.filter((row) => {
+    if (!openResponsibilityPatientIds.has(row.patientId)) {
+      return true;
+    }
+
+    const wasAddedManuallyToday = row.addedManuallyToday === true;
+    const shouldBypassOpenResponsibilityFilter = wasAddedManuallyToday;
+
+    if (shouldBypassOpenResponsibilityFilter) {
+      return true;
+    }
+
+    return !statusesHiddenWhenOpenResponsibility.has(row.status);
+  });
+}
 
 /**
  * Doctrine for B7 / patient workflow v1:
@@ -294,6 +321,7 @@ export async function buildClinicalDayView(
         consultationId: consultation?.id,
         sessionType: (quickItem?.sessionType ?? session?.sessionType ?? undefined) as ClinicalDayRow['sessionType'],
         sourceDateKey: quickItem?.sourceDateKey,
+        addedManuallyToday: quickItem?.addedManuallyToday,
       };
       const recomputedStatus = getPatientStatus(row.rawData);
       const isStateDesynced = row.status !== recomputedStatus;

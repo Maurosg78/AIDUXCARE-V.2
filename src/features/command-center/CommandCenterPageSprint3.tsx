@@ -34,7 +34,11 @@ import { PatientWorkflowStatus } from '../../domain/patientStatus';
 import logger from '../../shared/utils/logger';
 import { LAST_STARTED_KEY } from './todayListSessionStorage';
 import { getTodayList as loadTodayList, subscribeTodayList, saveTodayList } from '../../services/todayListService';
-import { buildClinicalDayView, type ClinicalDayRow } from './utils/clinicalDayView';
+import {
+  buildClinicalDayView,
+  resolveClinicalDayRowsForOpenResponsibilities,
+  type ClinicalDayRow,
+} from './utils/clinicalDayView';
 import { patientHasClosedClinicalEvidenceForDate } from './utils/patientClosedEvidenceForDate';
 import {
   collectPendingTodayItemsForMigration,
@@ -100,6 +104,7 @@ function getTodayQuickItemSignature(item: TodayQuickItem): string {
     item.patientName ?? '',
     item.resumeSessionId ?? '',
     item.status ?? '',
+    item.addedManuallyToday === true ? 'manual' : '',
   ].join('::');
 }
 
@@ -732,18 +737,10 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const openResponsibilityPatientIds = new Set(
     openClinicalResponsibilities.map((session) => session.patientId)
   );
-  const statusesHiddenWhenOpenResponsibility = new Set<PatientWorkflowStatus>([
-    PatientWorkflowStatus.SCHEDULED,
-    PatientWorkflowStatus.IN_PROGRESS,
-    PatientWorkflowStatus.ABANDONED,
-  ]);
-  const resolvedClinicalDayRows = clinicalDayRows.filter((row) => {
-    if (!openResponsibilityPatientIds.has(row.patientId)) {
-      return true;
-    }
-
-    return !statusesHiddenWhenOpenResponsibility.has(row.status);
-  });
+  const resolvedClinicalDayRows = resolveClinicalDayRowsForOpenResponsibilities(
+    clinicalDayRows,
+    openResponsibilityPatientIds
+  );
 
   // withPatientRequired implementation
   const withPatientRequired = async (
@@ -915,6 +912,21 @@ export const CommandCenterPageSprint3: React.FC = () => {
 
     const existingItem = prev[existingIndex];
     const existingStatus = existingItem.status;
+    const wasAddedManuallyToday = newItem.addedManuallyToday === true;
+    const shouldMarkExistingManualAdd =
+      wasAddedManuallyToday &&
+      existingItem.addedManuallyToday !== true;
+    if (shouldMarkExistingManualAdd) {
+      return prev.map((item, index) =>
+        index === existingIndex
+          ? {
+            ...item,
+            addedManuallyToday: true,
+            status: 'pending',
+          }
+          : item
+      );
+    }
     const isDocumentedStatus = existingStatus === 'documented';
     const isDoneStatus = existingStatus === 'done';
     const canRescheduleClosedItem =
@@ -1398,6 +1410,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
                 patientId: patient.id,
                 patientName: patient.fullName || patient.firstName || 'Patient',
                 sessionType: type,
+                addedManuallyToday: true,
               };
               trackPendingTodayQuickItem(dateKey, nextItem);
               setTodayQuickList((prev) => {

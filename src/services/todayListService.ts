@@ -51,6 +51,10 @@ function sanitizeTodayQuickItems(items: TodayQuickItem[]): TodayQuickItem[] {
       sanitized.sourceDateKey = item.sourceDateKey;
     }
 
+    if (item.addedManuallyToday !== undefined) {
+      sanitized.addedManuallyToday = item.addedManuallyToday;
+    }
+
     if (item.status !== undefined) {
       sanitized.status = item.status;
     }
