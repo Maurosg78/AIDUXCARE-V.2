@@ -5852,6 +5852,14 @@ const ProfessionalWorkflowPage = () => {
       const homeProgramContextOnly = !homeProgramDecisionWasProvided
         ? homeProgramItems.map((item) => item.label)
         : [];
+      const inClinicDecisionWasProvided = Boolean(treatmentDecisionConfirmationRef.current);
+      const inClinicItemsConfirmedPerformedToday = inClinicItems.filter((item) => item.completed === true);
+      const inClinicItemsForPrompt = inClinicDecisionWasProvided
+        ? inClinicItemsConfirmedPerformedToday.map((item) => item.label)
+        : [];
+      const inClinicContextOnly = !inClinicDecisionWasProvided
+        ? inClinicItems.map((item) => item.label)
+        : [];
       console.info('[HEP-PROVENANCE-GATE]', {
         homeProgramItemsCount: homeProgramItems.length,
         homeProgramDecisionProvided: homeProgramDecisionWasProvided,
@@ -5930,7 +5938,9 @@ const ProfessionalWorkflowPage = () => {
         currentHepAdherenceSummary,
         hepAdherenceContextOnly,
         previousPlansSummary,
-        inClinicItems: inClinicItems.length > 0 ? inClinicItems.map((i) => i.label) : undefined,
+        inClinicItems: inClinicItemsForPrompt,
+        inClinicContextOnly,
+        inClinicDecisionProvided: inClinicDecisionWasProvided,
         homeProgram: homeProgramItemsForPrompt,
         homeProgramContextOnly,
         homeProgramDecisionProvided: homeProgramDecisionWasProvided,

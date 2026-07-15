@@ -81,6 +81,10 @@ export interface FollowUpPromptV3Input {
   reviewedAttachmentsSummary?: string;
   /** In-clinic treatment performed today. Optional. */
   inClinicItems?: string[];
+  /** Previous in-clinic items loaded for continuity but not confirmed in today's session. */
+  inClinicContextOnly?: string[];
+  /** Whether the clinician explicitly edited or confirmed today's in-clinic treatment decision. */
+  inClinicDecisionProvided?: boolean;
   /** Home exercise program (current or adjusted). Optional. */
   homeProgram?: string[];
   /** Previous HEP items that were loaded for continuity but not confirmed in today's session. */
@@ -111,9 +115,11 @@ export function buildFollowUpPromptV3(input: FollowUpPromptV3Input): string {
     previousPlansSummary,
     reviewedAttachmentsSummary,
     inClinicItems = [],
+    inClinicContextOnly = [],
     homeProgram = [],
     homeProgramContextOnly = [],
   } = input;
+  const inClinicDecisionWasProvided = input.inClinicDecisionProvided === true;
   const homeProgramDecisionWasMade = input.homeProgramDecisionProvided === true;
 
   if (!baselineSOAP) {
@@ -168,18 +174,59 @@ If no comparative data is available, document only today's findings.`;
   const ass = (baselineSOAP.assessment ?? '').trim() || 'Not documented.';
   const plan = (baselineSOAP.plan ?? '').trim() || 'Not documented.';
 
-  const inClinicSection =
-    inClinicItems.length > 0
-      ? `CONTEXT — IN-CLINIC TREATMENT PERFORMED TODAY (if provided)
+  const inClinicSection = (() => {
+    const hasDecision = inClinicDecisionWasProvided;
+    const hasItems = inClinicItems.length > 0;
+    const contextItems = inClinicContextOnly.length > 0
+      ? inClinicContextOnly
+      : inClinicItems;
 
-Only consider these items if present.
-Do NOT assume additional interventions.
+    if (!hasDecision && !hasItems) {
+      if (contextItems.length === 0) {
+        return '';
+      }
+
+      return `CONTEXT — PREVIOUSLY PLANNED IN-CLINIC TREATMENT (NOT CONFIRMED TODAY)
+
+${contextItems.join('\n\n')}
+
+Do NOT document this as performed today. This is longitudinal reference only.
+
+`;
+    }
+
+    if (hasDecision && !hasItems) {
+      return `CONTEXT — IN-CLINIC TREATMENT PERFORMED TODAY
+
+TRATAMIENTO EN CLÍNICA: Ninguno realizado hoy por decisión del profesional.
+
+`;
+    }
+
+    if (hasDecision && hasItems) {
+      return `CONTEXT — IN-CLINIC TREATMENT PERFORMED TODAY (confirmed by clinician)
+
+Only these items were confirmed as performed today.
+Do NOT assume additional interventions beyond this list.
 
 In-clinic treatment performed today:
 ${inClinicItems.map((item) => `${item}`).join('\n\n')}
 
-`
-      : '';
+`;
+    }
+
+    if (contextItems.length === 0) {
+      return '';
+    }
+
+    return `CONTEXT — PREVIOUSLY PLANNED IN-CLINIC TREATMENT (NOT CONFIRMED TODAY)
+
+${contextItems.join('\n\n')}
+
+Do NOT document this as performed today. This is longitudinal reference only.
+
+`;
+  })();
 
   const hepSection = (() => {
     const currentHepItems = homeProgram;
