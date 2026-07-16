@@ -35,30 +35,80 @@ type BuildClinicalDayViewOptions = {
   quickItems: TodayQuickItem[];
 };
 
-export function resolveClinicalDayRowsForOpenResponsibilities(
+export type ClinicalDayQueuePresentation = {
+  todayQueueRows: ClinicalDayRow[];
+  carriedForwardPendingRows: ClinicalDayRow[];
+};
+
+export function isCarriedForwardWithoutClinicianAction(
+  row: Pick<ClinicalDayRow, 'addedManuallyToday' | 'sourceDateKey'>
+): boolean {
+  const wasAddedManuallyToday = row.addedManuallyToday === true;
+  const hasPreviousClinicalDaySource =
+    typeof row.sourceDateKey === 'string' &&
+    row.sourceDateKey.trim() !== '';
+  const isCarriedForwardWithoutClinicianAction =
+    hasPreviousClinicalDaySource &&
+    !wasAddedManuallyToday;
+
+  return isCarriedForwardWithoutClinicianAction;
+}
+
+export function resolveClinicalDayRowsForQueuePresentation(
   clinicalDayRows: ClinicalDayRow[],
   openResponsibilityPatientIds: Set<string>
-): ClinicalDayRow[] {
+): ClinicalDayQueuePresentation {
   const statusesHiddenWhenOpenResponsibility = new Set<PatientWorkflowStatus>([
     PatientWorkflowStatus.SCHEDULED,
     PatientWorkflowStatus.IN_PROGRESS,
     PatientWorkflowStatus.ABANDONED,
   ]);
+  const todayQueueRows: ClinicalDayRow[] = [];
+  const carriedForwardPendingRows: ClinicalDayRow[] = [];
 
-  return clinicalDayRows.filter((row) => {
+  for (const row of clinicalDayRows) {
+    if (isCarriedForwardWithoutClinicianAction(row)) {
+      carriedForwardPendingRows.push(row);
+      continue;
+    }
+
     if (!openResponsibilityPatientIds.has(row.patientId)) {
-      return true;
+      todayQueueRows.push(row);
+      continue;
     }
 
     const wasAddedManuallyToday = row.addedManuallyToday === true;
     const shouldBypassOpenResponsibilityFilter = wasAddedManuallyToday;
 
     if (shouldBypassOpenResponsibilityFilter) {
-      return true;
+      todayQueueRows.push(row);
+      continue;
     }
 
-    return !statusesHiddenWhenOpenResponsibility.has(row.status);
-  });
+    const shouldHideOpenResponsibilityDuplicate =
+      statusesHiddenWhenOpenResponsibility.has(row.status);
+
+    if (!shouldHideOpenResponsibilityDuplicate) {
+      todayQueueRows.push(row);
+    }
+  }
+
+  return {
+    todayQueueRows,
+    carriedForwardPendingRows,
+  };
+}
+
+export function resolveClinicalDayRowsForOpenResponsibilities(
+  clinicalDayRows: ClinicalDayRow[],
+  openResponsibilityPatientIds: Set<string>
+): ClinicalDayRow[] {
+  const clinicalDayQueuePresentation = resolveClinicalDayRowsForQueuePresentation(
+    clinicalDayRows,
+    openResponsibilityPatientIds
+  );
+
+  return clinicalDayQueuePresentation.todayQueueRows;
 }
 
 /**

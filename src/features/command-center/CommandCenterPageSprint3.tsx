@@ -36,7 +36,7 @@ import { LAST_STARTED_KEY } from './todayListSessionStorage';
 import { getTodayList as loadTodayList, subscribeTodayList, saveTodayList } from '../../services/todayListService';
 import {
   buildClinicalDayView,
-  resolveClinicalDayRowsForOpenResponsibilities,
+  resolveClinicalDayRowsForQueuePresentation,
   type ClinicalDayRow,
 } from './utils/clinicalDayView';
 import { patientHasClosedClinicalEvidenceForDate } from './utils/patientClosedEvidenceForDate';
@@ -209,6 +209,51 @@ function getOpenResponsibilitySortTime(
   }
 
   return responsibilityDate.getTime();
+}
+
+function resolveCarriedForwardPendingDate(row: ClinicalDayRow): Date | null {
+  if (!row.sourceDateKey) {
+    return null;
+  }
+
+  const carriedForwardDate = new Date(`${row.sourceDateKey}T12:00:00`);
+  const carriedForwardTime = carriedForwardDate.getTime();
+  if (!Number.isFinite(carriedForwardTime)) {
+    return null;
+  }
+
+  return carriedForwardDate;
+}
+
+function getCarriedForwardPendingAgeDays(
+  row: ClinicalDayRow,
+  referenceDate: Date
+): number {
+  const carriedForwardDate = resolveCarriedForwardPendingDate(row);
+  if (!carriedForwardDate) {
+    return 0;
+  }
+
+  const referenceDay = new Date(referenceDate);
+  referenceDay.setHours(12, 0, 0, 0);
+
+  const elapsedMilliseconds = referenceDay.getTime() - carriedForwardDate.getTime();
+  const elapsedDays = Math.floor(elapsedMilliseconds / 86400000);
+  const normalizedElapsedDays = Math.max(elapsedDays, 0);
+
+  return normalizedElapsedDays;
+}
+
+function formatCarriedForwardPendingDate(row: ClinicalDayRow): string {
+  const carriedForwardDate = resolveCarriedForwardPendingDate(row);
+  if (!carriedForwardDate) {
+    return row.sourceDateKey ?? '';
+  }
+
+  return carriedForwardDate.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+  });
 }
 
 export const CommandCenterPageSprint3: React.FC = () => {
@@ -737,10 +782,15 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const openResponsibilityPatientIds = new Set(
     openClinicalResponsibilities.map((session) => session.patientId)
   );
-  const resolvedClinicalDayRows = resolveClinicalDayRowsForOpenResponsibilities(
+  const clinicalDayQueuePresentation = resolveClinicalDayRowsForQueuePresentation(
     clinicalDayRows,
     openResponsibilityPatientIds
   );
+  const resolvedClinicalDayRows = clinicalDayQueuePresentation.todayQueueRows;
+  const carriedForwardPendingRows = clinicalDayQueuePresentation.carriedForwardPendingRows;
+  const openClinicalResponsibilityCount =
+    openClinicalResponsibilities.length +
+    carriedForwardPendingRows.length;
 
   // withPatientRequired implementation
   const withPatientRequired = async (
@@ -1134,7 +1184,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
             <PatientSearchBar />
           </div>
 
-          {openClinicalResponsibilities.length > 0 && (
+          {openClinicalResponsibilityCount > 0 && (
             <div className="bg-white border border-amber-200 rounded-2xl p-4 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1">
                 <div>
@@ -1146,7 +1196,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
                   </p>
                 </div>
                 <span className="text-xs font-semibold text-amber-800 bg-amber-100 border border-amber-200 rounded-full px-2.5 py-1 self-start sm:self-auto">
-                  {openClinicalResponsibilities.length}
+                  {openClinicalResponsibilityCount}
                 </span>
               </div>
               <div className="mt-3 space-y-1.5">
@@ -1187,6 +1237,62 @@ export const CommandCenterPageSprint3: React.FC = () => {
                           className="px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-apple text-xs font-medium transition-all"
                         >
                           {actionLabel}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {carriedForwardPendingRows.map((row) => {
+                  const normalizedSessionType = row.sessionType ?? 'followup';
+                  const pendingDate = formatCarriedForwardPendingDate(row);
+                  const pendingAgeDays = getCarriedForwardPendingAgeDays(row, selectedDate);
+                  const isHighUrgencyPending = pendingAgeDays > 2;
+                  const pendingAgeText = isHighUrgencyPending
+                    ? `Pendiente hace ${pendingAgeDays} días`
+                    : `Pendiente desde ${pendingDate}`;
+                  const rowClassName = isHighUrgencyPending
+                    ? 'flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl border border-orange-300 bg-orange-100 px-3 py-2.5'
+                    : 'flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/50 px-3 py-2.5';
+                  const badgeClassName = isHighUrgencyPending
+                    ? 'text-[11px] font-semibold text-orange-900 bg-orange-200 border border-orange-300 rounded-full px-2 py-0.5'
+                    : 'text-[11px] font-semibold text-amber-800 bg-amber-100 border border-amber-200 rounded-full px-2 py-0.5';
+
+                  return (
+                    <div
+                      key={`carried-forward-${row.patientId}-${normalizedSessionType}`}
+                      className={rowClassName}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="font-medium font-apple text-sm text-slate-900 truncate">
+                            {row.patientName || t('shell.startSessionModal.patientFallbackName')}
+                          </div>
+                          <span className={badgeClassName}>
+                            Cita no atendida
+                          </span>
+                        </div>
+                        <div className="text-xs font-apple font-light text-slate-600">
+                          {t(`shell.sessionType.${normalizedSessionType}`)}
+                          {` · ${pendingAgeText}`}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 sm:flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const selectedClinicalDateKey = toLocalDateKey(selectedDate);
+                            const clinicalDateKey = row.sourceDateKey ?? selectedClinicalDateKey;
+                            const workflowUrl = workflowPath(
+                              normalizedSessionType,
+                              row.patientId,
+                              clinicalDateKey,
+                              row.resumeSessionId
+                            );
+                            navigate(workflowUrl);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-apple text-xs font-medium transition-all"
+                        >
+                          {t('shell.openClinicalResponsibilities.resume')}
                         </button>
                       </div>
                     </div>
