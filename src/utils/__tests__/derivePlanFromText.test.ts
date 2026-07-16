@@ -38,4 +38,79 @@ HOME EXERCISE PROGRAM (HEP):
     expect(derived.homeProgram).toContain('Ejercicios activos asistidos de ROM para muñeca y dedos, 3x/día');
     expect(derived.homeProgram).toContain('Desensibilización de la cicatriz quirúrgica');
   });
+
+  it('merges five orphaned parenthetical notes into their preceding HEP items', () => {
+    const persistedLines = [
+      'Hielo local 10 minutos',
+      '(Manejo de dolor e inflamación)',
+      'Movilidad activa de hombro',
+      '(Sin superar el umbral de dolor)',
+      'Isométricos de rotación externa',
+      '(Tres series de diez repeticiones)',
+      'Deslizamientos sobre mesa',
+      '(Realizar dos veces al día).',
+      'Automasaje periarticular',
+      '(Según tolerancia)',
+    ];
+    const homeProgramText = persistedLines.join('\n');
+    const planInput = { homeProgramText };
+    const derived = derivePlanFromText(planInput);
+
+    expect(derived.homeProgram).toEqual([
+      'Hielo local 10 minutos (Manejo de dolor e inflamación)',
+      'Movilidad activa de hombro (Sin superar el umbral de dolor)',
+      'Isométricos de rotación externa (Tres series de diez repeticiones)',
+      'Deslizamientos sobre mesa (Realizar dos veces al día)',
+      'Automasaje periarticular (Según tolerancia)',
+    ]);
+  });
+
+  it('preserves five HEP items already formatted as one exercise-note line', () => {
+    const persistedLines = [
+      'Hielo local: manejo de dolor e inflamación',
+      'Movilidad activa de hombro: sin superar el umbral de dolor',
+      'Isométricos de rotación externa: tres series de diez repeticiones',
+      'Deslizamientos sobre mesa: realizar dos veces al día',
+      'Automasaje periarticular: según tolerancia',
+    ];
+    const homeProgramText = persistedLines.join('\n');
+    const planInput = { homeProgramText };
+    const derived = derivePlanFromText(planInput);
+
+    expect(derived.homeProgram).toEqual(persistedLines);
+  });
+
+  it('reconstructs Maria Dolores persisted HEP as five items instead of ten', () => {
+    const persistedLines = [
+      'Hielo en RI, calor musculatura periarticular',
+      '(Manejo dolor/inflamación)',
+      'Movilidad activa y autoasistida de RI',
+      '(Mantener rango sin dolor)',
+      'Isométricos de rotadores',
+      '(Progresión según tolerancia)',
+      'Ejercicios de control escapular',
+      '(Priorizar calidad del movimiento)',
+      'Automasaje de musculatura periarticular',
+      '(Aplicación domiciliaria)',
+    ];
+    const homeProgramText = persistedLines.join('\n');
+    const planInput = { homeProgramText };
+    const derived = derivePlanFromText(planInput);
+
+    expect(derived.homeProgram).toEqual([
+      'Hielo en RI, calor musculatura periarticular (Manejo dolor/inflamación)',
+      'Movilidad activa y autoasistida de RI (Mantener rango sin dolor)',
+      'Isométricos de rotadores (Progresión según tolerancia)',
+      'Ejercicios de control escapular (Priorizar calidad del movimiento)',
+      'Automasaje de musculatura periarticular (Aplicación domiciliaria)',
+    ]);
+  });
+
+  it('preserves the Wibbi line format', () => {
+    const homeProgramText = 'Wibbi: movilidad guiada según tolerancia';
+    const planInput = { homeProgramText };
+    const derived = derivePlanFromText(planInput);
+
+    expect(derived.homeProgram).toEqual([homeProgramText]);
+  });
 });

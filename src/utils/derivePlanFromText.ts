@@ -101,10 +101,37 @@ function classifyLine(line: string): 'inClinic' | 'homeProgram' {
   return 'inClinic';
 }
 
+function mergeOrphanedParentheticalLines(lines: string[]): string[] {
+  const mergedLines: string[] = [];
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    const isParentheticalLine = /^\(.+\)\.?$/.test(trimmedLine);
+    const previousLineIndex = mergedLines.length - 1;
+    const previousLine = mergedLines[previousLineIndex];
+    let trimmedPreviousLine = '';
+    if (previousLine !== undefined) {
+      trimmedPreviousLine = previousLine.trim();
+    }
+    const hasPreviousItemLine = trimmedPreviousLine.length > 0;
+    const previousLineEndsWithParentheses = /\)\.?$/.test(trimmedPreviousLine);
+    const previousLineAcceptsParentheticalNote = !previousLineEndsWithParentheses;
+    const isParentheticalLineWithPreviousItem = isParentheticalLine && hasPreviousItemLine;
+    const shouldMergeWithPreviousLine = isParentheticalLineWithPreviousItem && previousLineAcceptsParentheticalNote;
+    if (shouldMergeWithPreviousLine) {
+      const mergedLine = `${trimmedPreviousLine} ${trimmedLine}`;
+      mergedLines[previousLineIndex] = mergedLine;
+      continue;
+    }
+    mergedLines.push(line);
+  }
+  return mergedLines;
+}
+
 /** Extrae ítems de un bloque (líneas no vacías, sin el bullet inicial). */
 function linesToItems(lines: string[]): string[] {
   const items: string[] = [];
-  for (const line of lines) {
+  const mergedLines = mergeOrphanedParentheticalLines(lines);
+  for (const line of mergedLines) {
     const withoutMarkdown = line.replace(/\*\*/g, '');
     const withoutBullet = withoutMarkdown.replace(/^[\s•\-*]+\s*/, '');
     const normalizedInlineBullets = withoutBullet.replace(/\s+-\s+/g, '\n- ');
