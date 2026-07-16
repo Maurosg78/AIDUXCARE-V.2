@@ -24,6 +24,7 @@
     "build": "vite build",
     "build:ci": "tsc && vite build --config vite.config.ci.ts",
     "deploy:staging": "npm run build && firebase deploy --only hosting,functions --project aiduxcare-v2-uat-dev",
+    "deploy:pilot:vps": "bash scripts/deploy-pilot-vps.sh",
     "build:migration": "tsc --project tsconfig.migration.json && vite build",
     "lint:prod": "eslint \"src/**/*.{ts,tsx}\" --report-unused-disable-directives --max-warnings 0",
     "lint": "eslint .",
