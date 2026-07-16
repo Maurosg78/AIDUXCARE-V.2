@@ -5,6 +5,7 @@ import type { TodayQuickItem } from '../../components/TodayPatientsPanel';
 import {
   buildClinicalDayView,
   resolveClinicalDayRowsForOpenResponsibilities,
+  resolveClinicalDayRowsForQueuePresentation,
 } from '../clinicalDayView';
 
 vi.mock('../../../../repositories/encountersRepo', () => ({
@@ -126,10 +127,55 @@ describe('buildClinicalDayView', () => {
       rows,
       openResponsibilityPatientIds
     );
+    const clinicalDayQueuePresentation = resolveClinicalDayRowsForQueuePresentation(
+      rows,
+      openResponsibilityPatientIds
+    );
 
     expect(rows[0]?.status).toBe(PatientWorkflowStatus.SCHEDULED);
     expect(rows[0]?.addedManuallyToday).toBe(true);
     expect(resolvedRows).toHaveLength(1);
     expect(resolvedRows[0]?.patientName).toBe('Adrian Jameel Sawyer');
+    expect(clinicalDayQueuePresentation.todayQueueRows).toHaveLength(1);
+    expect(clinicalDayQueuePresentation.carriedForwardPendingRows).toHaveLength(0);
+  });
+
+  it('classifies a carried-forward pending patient as Pendiente de cerrar instead of Por atender', async () => {
+    const rows = await buildClinicalDayView(
+      new Date('2026-07-15T12:00:00'),
+      [
+        buildPatient({
+          id: 'marta-001',
+          firstName: 'Marta',
+          lastName: 'Santamaria',
+          fullName: 'Marta Santamaria',
+        }),
+      ],
+      {
+        appointments: [],
+        sessions: [],
+        quickItems: [
+          buildQuickItem({
+            patientId: 'marta-001',
+            patientName: 'Marta Santamaria',
+            sessionType: 'initial',
+            sourceDateKey: '2026-07-14',
+          }),
+        ],
+      }
+    );
+    const openResponsibilityPatientIds = new Set<string>();
+
+    const clinicalDayQueuePresentation = resolveClinicalDayRowsForQueuePresentation(
+      rows,
+      openResponsibilityPatientIds
+    );
+
+    expect(rows[0]?.patientName).toBe('Marta Santamaria');
+    expect(rows[0]?.sourceDateKey).toBe('2026-07-14');
+    expect(rows[0]?.addedManuallyToday).toBeUndefined();
+    expect(clinicalDayQueuePresentation.todayQueueRows).toHaveLength(0);
+    expect(clinicalDayQueuePresentation.carriedForwardPendingRows).toHaveLength(1);
+    expect(clinicalDayQueuePresentation.carriedForwardPendingRows[0]?.patientName).toBe('Marta Santamaria');
   });
 });
