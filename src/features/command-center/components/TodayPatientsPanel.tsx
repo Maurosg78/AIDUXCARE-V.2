@@ -25,6 +25,13 @@ export interface TodayAppointment {
   }[];
 }
 
+export type CarriedForwardDiscardReason =
+  | 'no_show'
+  | 'rescheduled'
+  | 'patient_cancelled'
+  | 'discharged'
+  | 'other';
+
 /** Quick-schedule item: patient + session type for today's list */
 export interface TodayQuickItem {
   patientId: string;
@@ -38,6 +45,14 @@ export interface TodayQuickItem {
   resumeSessionId?: string;
   /** Legacy persisted field. UI render must derive status from clinicalDayRows, not from this value. */
   status?: 'pending' | 'documented' | 'done' | 'incomplete' | 'discarded';
+  /** Clinician-selected reason for closing a carried-forward unattended appointment. */
+  discardedReason?: CarriedForwardDiscardReason | null;
+  /** Optional clinician-authored detail when discardedReason is "other". */
+  discardedReasonText?: string | null;
+  /** ISO timestamp for the explicit clinician discard decision. */
+  discardedAt?: string;
+  /** Authenticated user who made the discard decision. */
+  discardedBy?: string;
 }
 
 export type ClinicalQueueGroupKey = 'awaitingDocumentation' | 'inProgress' | 'toSee';

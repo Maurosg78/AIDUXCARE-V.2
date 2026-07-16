@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Trash2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { SessionTypeService, type SessionType } from '../../services/sessionTypeService';
 import { useAppointmentSchedule, type Appointment } from './hooks/useAppointmentSchedule';
@@ -28,12 +29,22 @@ import { PatientSelectorModal } from './components/PatientSelectorModal';
 import { StartSessionTwoStepModal } from './components/StartSessionTwoStepModal';
 import { CreatePatientModal } from './components/CreatePatientModal';
 import { OngoingPatientIntakeModal } from './components/OngoingPatientIntakeModal';
+import {
+  DiscardCarriedForwardPatientModal,
+  type CarriedForwardDiscardSelection,
+} from './components/DiscardCarriedForwardPatientModal';
 import { FloatingAssistant } from '../../components/FloatingAssistant';
 import { PatientWorkflowStatus } from '../../domain/patientStatus';
 
 import logger from '../../shared/utils/logger';
 import { LAST_STARTED_KEY } from './todayListSessionStorage';
-import { getTodayList as loadTodayList, subscribeTodayList, saveTodayList } from '../../services/todayListService';
+import {
+  discardCarriedForwardTodayItem,
+  getTodayList as loadTodayList,
+  removeCarriedForwardOccurrenceFromCurrentItems,
+  subscribeTodayList,
+  saveTodayList,
+} from '../../services/todayListService';
 import {
   buildClinicalDayView,
   resolveClinicalDayRowsForQueuePresentation,
@@ -281,6 +292,9 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const [startSessionModalMode, setStartSessionModalMode] = useState<StartSessionModalMode>('start_now');
   const [dismissOpenResponsibilityItem, setDismissOpenResponsibilityItem] = useState<InProgressSession | null>(null);
   const [dismissingOpenResponsibilityId, setDismissingOpenResponsibilityId] = useState<string | null>(null);
+  const [carriedForwardDiscardTarget, setCarriedForwardDiscardTarget] = useState<ClinicalDayRow | null>(null);
+  const [isDiscardingCarriedForward, setIsDiscardingCarriedForward] = useState(false);
+  const [carriedForwardDiscardError, setCarriedForwardDiscardError] = useState<string | null>(null);
   const [todayQuickList, setTodayQuickList] = useState<TodayQuickItem[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [commandCenterNow, setCommandCenterNow] = useState<Date>(() => new Date());
@@ -1054,6 +1068,77 @@ export const CommandCenterPageSprint3: React.FC = () => {
     navigate(workflowPath(workflowType, session.patientId, sessionDateKey, session.id));
   }, [navigate]);
 
+  const handleDiscardCarriedForwardPatient = useCallback(async (
+    selection: CarriedForwardDiscardSelection
+  ): Promise<void> => {
+    if (!carriedForwardDiscardTarget) {
+      return;
+    }
+
+    if (!user?.uid) {
+      return;
+    }
+
+    const sourceDateKey = carriedForwardDiscardTarget.sourceDateKey;
+    if (!sourceDateKey) {
+      setCarriedForwardDiscardError('No se pudo identificar la cita original.');
+      return;
+    }
+
+    const currentDateKey = toLocalDateKey(selectedDate);
+    const patientId = carriedForwardDiscardTarget.patientId;
+    const sessionType = carriedForwardDiscardTarget.sessionType ?? 'followup';
+    const discardedAt = new Date().toISOString();
+    const discardParams = {
+      userId: user.uid,
+      currentDateKey,
+      sourceDateKey,
+      patientId,
+      sessionType,
+      discardedReason: selection.discardedReason,
+      discardedReasonText: selection.discardedReasonText,
+      discardedAt,
+    };
+
+    setIsDiscardingCarriedForward(true);
+    setCarriedForwardDiscardError(null);
+
+    try {
+      await discardCarriedForwardTodayItem(discardParams);
+      const discardedQuickItem: TodayQuickItem = {
+        patientId,
+        patientName: carriedForwardDiscardTarget.patientName,
+        sessionType,
+        sourceDateKey,
+      };
+      const discardedScopedKey = getTodayQuickItemScopedKey(
+        currentDateKey,
+        discardedQuickItem
+      );
+      const discardedQueueKey = getTodayQuickItemKey(discardedQuickItem);
+
+      removedTodayQuickItemKeysRef.current.add(discardedScopedKey);
+      pendingTodayQuickItemsRef.current.delete(discardedQueueKey);
+      setTodayQuickList((currentItems) => {
+        const visibleItems = removeCarriedForwardOccurrenceFromCurrentItems(
+          currentItems,
+          discardParams
+        );
+        return visibleItems;
+      });
+      setCarriedForwardDiscardTarget(null);
+    } catch (error) {
+      logger.error('[CommandCenter] Failed to discard carried-forward appointment', {
+        currentDateKey,
+        sourceDateKey,
+        error,
+      });
+      setCarriedForwardDiscardError('No se pudo descartar la cita. Intenta nuevamente.');
+    } finally {
+      setIsDiscardingCarriedForward(false);
+    }
+  }, [carriedForwardDiscardTarget, selectedDate, user?.uid]);
+
   const handleDismissOpenResponsibility = useCallback(async () => {
     if (!dismissOpenResponsibilityItem || !user?.uid) {
       return;
@@ -1277,6 +1362,17 @@ export const CommandCenterPageSprint3: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 sm:flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCarriedForwardDiscardError(null);
+                            setCarriedForwardDiscardTarget(row);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-50 font-apple"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          Descartar
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -1598,6 +1694,21 @@ export const CommandCenterPageSprint3: React.FC = () => {
           </div>
         </div>
       )}
+
+      <DiscardCarriedForwardPatientModal
+        isOpen={carriedForwardDiscardTarget !== null}
+        patientName={carriedForwardDiscardTarget?.patientName ?? ''}
+        isSubmitting={isDiscardingCarriedForward}
+        errorMessage={carriedForwardDiscardError}
+        onClose={() => {
+          if (isDiscardingCarriedForward) {
+            return;
+          }
+          setCarriedForwardDiscardError(null);
+          setCarriedForwardDiscardTarget(null);
+        }}
+        onConfirm={handleDiscardCarriedForwardPatient}
+      />
 
       {/* Floating Assistant */}
       <FloatingAssistant />
