@@ -27,6 +27,7 @@ export type ClinicalDayRow = {
   sessionType?: 'initial' | 'followup' | 'ongoing';
   sourceDateKey?: string;
   addedManuallyToday?: boolean;
+  addedManuallyOnDateKey?: string;
 };
 
 type BuildClinicalDayViewOptions = {
@@ -40,23 +41,54 @@ export type ClinicalDayQueuePresentation = {
   carriedForwardPendingRows: ClinicalDayRow[];
 };
 
-export function isCarriedForwardWithoutClinicianAction(
-  row: Pick<ClinicalDayRow, 'addedManuallyToday' | 'sourceDateKey'>
+type ManualAdditionContext = Pick<
+  ClinicalDayRow,
+  'addedManuallyOnDateKey' | 'addedManuallyToday' | 'sourceDateKey'
+>;
+
+function hasPreviousClinicalDaySource(row: ManualAdditionContext): boolean {
+  const sourceDateKey = row.sourceDateKey?.trim();
+  const hasPreviousSource = Boolean(sourceDateKey);
+  return hasPreviousSource;
+}
+
+function wasAddedManuallyForClinicalDay(
+  row: ManualAdditionContext,
+  presentedClinicalDateKey: string
 ): boolean {
-  const wasAddedManuallyToday = row.addedManuallyToday === true;
-  const hasPreviousClinicalDaySource =
-    typeof row.sourceDateKey === 'string' &&
-    row.sourceDateKey.trim() !== '';
+  const manualAdditionDateKey = row.addedManuallyOnDateKey?.trim();
+  const hasDatedManualAddition = Boolean(manualAdditionDateKey);
+  if (hasDatedManualAddition) {
+    return manualAdditionDateKey === presentedClinicalDateKey;
+  }
+
+  const hasPreviousSource = hasPreviousClinicalDaySource(row);
+  const isLegacyUnmigratedManualAddition =
+    row.addedManuallyToday === true &&
+    !hasPreviousSource;
+  return isLegacyUnmigratedManualAddition;
+}
+
+export function isCarriedForwardWithoutClinicianAction(
+  row: ManualAdditionContext,
+  presentedClinicalDateKey: string
+): boolean {
+  const hasPreviousSource = hasPreviousClinicalDaySource(row);
+  const wasAddedManuallyForPresentedClinicalDay = wasAddedManuallyForClinicalDay(
+    row,
+    presentedClinicalDateKey
+  );
   const isCarriedForwardWithoutClinicianAction =
-    hasPreviousClinicalDaySource &&
-    !wasAddedManuallyToday;
+    hasPreviousSource &&
+    !wasAddedManuallyForPresentedClinicalDay;
 
   return isCarriedForwardWithoutClinicianAction;
 }
 
 export function resolveClinicalDayRowsForQueuePresentation(
   clinicalDayRows: ClinicalDayRow[],
-  openResponsibilityPatientIds: Set<string>
+  openResponsibilityPatientIds: Set<string>,
+  presentedClinicalDateKey: string
 ): ClinicalDayQueuePresentation {
   const statusesHiddenWhenOpenResponsibility = new Set<PatientWorkflowStatus>([
     PatientWorkflowStatus.SCHEDULED,
@@ -67,7 +99,7 @@ export function resolveClinicalDayRowsForQueuePresentation(
   const carriedForwardPendingRows: ClinicalDayRow[] = [];
 
   for (const row of clinicalDayRows) {
-    if (isCarriedForwardWithoutClinicianAction(row)) {
+    if (isCarriedForwardWithoutClinicianAction(row, presentedClinicalDateKey)) {
       carriedForwardPendingRows.push(row);
       continue;
     }
@@ -77,8 +109,10 @@ export function resolveClinicalDayRowsForQueuePresentation(
       continue;
     }
 
-    const wasAddedManuallyToday = row.addedManuallyToday === true;
-    const shouldBypassOpenResponsibilityFilter = wasAddedManuallyToday;
+    const shouldBypassOpenResponsibilityFilter = wasAddedManuallyForClinicalDay(
+      row,
+      presentedClinicalDateKey
+    );
 
     if (shouldBypassOpenResponsibilityFilter) {
       todayQueueRows.push(row);
@@ -101,11 +135,13 @@ export function resolveClinicalDayRowsForQueuePresentation(
 
 export function resolveClinicalDayRowsForOpenResponsibilities(
   clinicalDayRows: ClinicalDayRow[],
-  openResponsibilityPatientIds: Set<string>
+  openResponsibilityPatientIds: Set<string>,
+  presentedClinicalDateKey: string
 ): ClinicalDayRow[] {
   const clinicalDayQueuePresentation = resolveClinicalDayRowsForQueuePresentation(
     clinicalDayRows,
-    openResponsibilityPatientIds
+    openResponsibilityPatientIds,
+    presentedClinicalDateKey
   );
 
   return clinicalDayQueuePresentation.todayQueueRows;
@@ -372,6 +408,7 @@ export async function buildClinicalDayView(
         sessionType: (quickItem?.sessionType ?? session?.sessionType ?? undefined) as ClinicalDayRow['sessionType'],
         sourceDateKey: quickItem?.sourceDateKey,
         addedManuallyToday: quickItem?.addedManuallyToday,
+        addedManuallyOnDateKey: quickItem?.addedManuallyOnDateKey,
       };
       const recomputedStatus = getPatientStatus(row.rawData);
       const isStateDesynced = row.status !== recomputedStatus;

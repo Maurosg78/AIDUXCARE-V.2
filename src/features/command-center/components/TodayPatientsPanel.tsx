@@ -39,8 +39,10 @@ export interface TodayQuickItem {
   sessionType: 'initial' | 'followup' | 'ongoing';
   /** Original clinical date for migrated pending items. */
   sourceDateKey?: string;
-  /** Explicit clinician action: patient was manually added to the selected clinical day. */
+  /** Legacy marker retained for clients that have not yet written the dated audit field. */
   addedManuallyToday?: boolean;
+  /** Clinical date on which the clinician explicitly added the patient. */
+  addedManuallyOnDateKey?: string;
   /** Firestore session id when the row comes from an interrupted/in-progress session. */
   resumeSessionId?: string;
   /** Legacy persisted field. UI render must derive status from clinicalDayRows, not from this value. */

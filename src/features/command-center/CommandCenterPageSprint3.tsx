@@ -116,6 +116,7 @@ function getTodayQuickItemSignature(item: TodayQuickItem): string {
     item.resumeSessionId ?? '',
     item.status ?? '',
     item.addedManuallyToday === true ? 'manual' : '',
+    item.addedManuallyOnDateKey ?? '',
   ].join('::');
 }
 
@@ -796,9 +797,11 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const openResponsibilityPatientIds = new Set(
     openClinicalResponsibilities.map((session) => session.patientId)
   );
+  const presentedClinicalDateKey = toLocalDateKey(selectedDate);
   const clinicalDayQueuePresentation = resolveClinicalDayRowsForQueuePresentation(
     clinicalDayRows,
-    openResponsibilityPatientIds
+    openResponsibilityPatientIds,
+    presentedClinicalDateKey
   );
   const resolvedClinicalDayRows = clinicalDayQueuePresentation.todayQueueRows;
   const carriedForwardPendingRows = clinicalDayQueuePresentation.carriedForwardPendingRows;
@@ -977,15 +980,20 @@ export const CommandCenterPageSprint3: React.FC = () => {
     const existingItem = prev[existingIndex];
     const existingStatus = existingItem.status;
     const wasAddedManuallyToday = newItem.addedManuallyToday === true;
+    const manualAdditionDateKey = newItem.addedManuallyOnDateKey;
+    const manualAdditionFlagChanged = existingItem.addedManuallyToday !== true;
+    const manualAdditionDateChanged =
+      existingItem.addedManuallyOnDateKey !== manualAdditionDateKey;
     const shouldMarkExistingManualAdd =
       wasAddedManuallyToday &&
-      existingItem.addedManuallyToday !== true;
+      (manualAdditionFlagChanged || manualAdditionDateChanged);
     if (shouldMarkExistingManualAdd) {
       return prev.map((item, index) =>
         index === existingIndex
           ? {
             ...item,
             addedManuallyToday: true,
+            addedManuallyOnDateKey: manualAdditionDateKey,
             status: 'pending',
           }
           : item
@@ -1613,6 +1621,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
                 patientName: patient.fullName || patient.firstName || 'Patient',
                 sessionType: type,
                 addedManuallyToday: true,
+                addedManuallyOnDateKey: dateKey,
               };
               trackPendingTodayQuickItem(dateKey, nextItem);
               setTodayQuickList((prev) => {
