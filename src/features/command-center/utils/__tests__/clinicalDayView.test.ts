@@ -6,6 +6,7 @@ import {
   buildClinicalDayView,
   resolveClinicalDayRowsForOpenResponsibilities,
   resolveClinicalDayRowsForQueuePresentation,
+  resolveSeenTodayRows,
 } from '../clinicalDayView';
 
 vi.mock('../../../../repositories/encountersRepo', () => ({
@@ -293,5 +294,146 @@ describe('buildClinicalDayView', () => {
       'Adrian Jameel Sawyer',
       'Renan Ben Moshe',
     ]);
+  });
+
+  it('classifies the completed Renan encounter as seen today while Adrian and Gary remain pending', async () => {
+    mockGetEncountersByPatient.mockImplementation(async (patientId) => {
+      if (patientId !== 'XBGFTJihiRk5tg6icO7k') {
+        return [];
+      }
+
+      return [
+        {
+          id: 'ly3lzla0fXTjD33kfWGK',
+          patientId: 'XBGFTJihiRk5tg6icO7k',
+          sessionId: 'ff0w27nBbmMoVe1MnUOKq7gKEd32-1784715449083',
+          authorUid: 'ff0w27nBbmMoVe1MnUOKq7gKEd32',
+          status: 'completed',
+          encounterDate: {
+            toDate: () => new Date('2026-07-22T10:00:00.000Z'),
+          },
+          createdAt: {
+            toDate: () => new Date('2026-07-22T10:18:49.829Z'),
+          },
+          updatedAt: {
+            toDate: () => new Date('2026-07-22T10:18:49.829Z'),
+          },
+        },
+      ] as Awaited<ReturnType<typeof encountersRepo.getEncountersByPatient>>;
+    });
+
+    const rows = await buildClinicalDayView(
+      new Date('2026-07-22T12:00:00'),
+      [
+        buildPatient({
+          id: 'XBGFTJihiRk5tg6icO7k',
+          firstName: 'Renan',
+          lastName: 'Moshe',
+          fullName: 'Renan Ben Moshe',
+        }),
+        buildPatient({
+          id: 'Js4Dx0RO3lJAiDTGPwH9',
+          firstName: 'Adrian',
+          lastName: 'Sawyer',
+          fullName: 'Adrian Jameel Sawyer',
+        }),
+        buildPatient({
+          id: 'gary-001',
+          firstName: 'Gary',
+          lastName: 'Goff',
+          fullName: 'Gary Goff',
+        }),
+      ],
+      {
+        appointments: [],
+        sessions: [],
+        quickItems: [
+          buildQuickItem({
+            patientId: 'XBGFTJihiRk5tg6icO7k',
+            patientName: 'Renan Ben Moshe',
+            sourceDateKey: '2026-07-20',
+            addedManuallyToday: true,
+          }),
+          buildQuickItem({
+            patientId: 'Js4Dx0RO3lJAiDTGPwH9',
+            patientName: 'Adrian Jameel Sawyer',
+            sourceDateKey: '2026-07-15',
+            addedManuallyToday: true,
+          }),
+          buildQuickItem({
+            patientId: 'gary-001',
+            patientName: 'Gary Goff',
+            sourceDateKey: '2026-07-13',
+          }),
+        ],
+      }
+    );
+    const presentation = resolveClinicalDayRowsForQueuePresentation(
+      rows,
+      new Set<string>(),
+      '2026-07-22'
+    );
+    const seenTodayRows = resolveSeenTodayRows(rows);
+
+    expect(seenTodayRows.map((row) => row.patientName)).toEqual(['Renan Ben Moshe']);
+    expect(seenTodayRows[0]).toMatchObject({
+      status: PatientWorkflowStatus.DOCUMENTED_FINAL,
+      hasClosedClinicalEvidenceForDate: true,
+    });
+    expect(presentation.todayQueueRows.map((row) => row.patientName)).toEqual(['Renan Ben Moshe']);
+    expect(presentation.carriedForwardPendingRows.map((row) => row.patientName)).toEqual([
+      'Adrian Jameel Sawyer',
+      'Gary Goff',
+    ]);
+  });
+
+  it('treats a finalized consultation for the presented date as closed clinical evidence', async () => {
+    mockGetNotesByPatient.mockResolvedValue([
+      {
+        id: 'note-followup-001',
+        patientId: 'patient-001',
+        sessionId: 'session-followup-001',
+        clinicalDate: '2026-07-22',
+        soapData: {
+          subjective: 'S',
+          objective: 'O',
+          assessment: 'A',
+          plan: 'P',
+          confidence: 0.85,
+          timestamp: '2026-07-22T10:00:00.000Z',
+        },
+        encryptedData: {
+          iv: 'iv',
+          encryptedData: 'encrypted',
+        },
+        createdAt: '2026-07-22T10:00:00.000Z',
+        updatedAt: '2026-07-22T10:01:00.000Z',
+        ownerUid: 'owner-001',
+        status: 'finalized',
+      },
+    ]);
+
+    const rows = await buildClinicalDayView(
+      new Date('2026-07-22T12:00:00'),
+      [buildPatient()],
+      {
+        appointments: [],
+        sessions: [],
+        quickItems: [
+          buildQuickItem({
+            sourceDateKey: '2026-07-20',
+          }),
+        ],
+      }
+    );
+    const presentation = resolveClinicalDayRowsForQueuePresentation(
+      rows,
+      new Set<string>(),
+      '2026-07-22'
+    );
+
+    expect(resolveSeenTodayRows(rows)).toHaveLength(1);
+    expect(presentation.todayQueueRows).toHaveLength(1);
+    expect(presentation.carriedForwardPendingRows).toHaveLength(0);
   });
 });
