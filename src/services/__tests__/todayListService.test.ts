@@ -8,6 +8,7 @@ const firestoreMocks = vi.hoisted(() => ({
   document: vi.fn(),
   runTransaction: vi.fn(),
   serverTimestamp: vi.fn(() => 'server-timestamp'),
+  setDocument: vi.fn(),
 }));
 
 vi.mock('firebase/firestore', async () => {
@@ -17,6 +18,7 @@ vi.mock('firebase/firestore', async () => {
     doc: firestoreMocks.document,
     runTransaction: firestoreMocks.runTransaction,
     serverTimestamp: firestoreMocks.serverTimestamp,
+    setDoc: firestoreMocks.setDocument,
   };
 });
 
@@ -29,6 +31,7 @@ import {
   discardCarriedForwardTodayItem,
   normalizeTodayQuickItems,
   removeCarriedForwardOccurrenceFromCurrentItems,
+  saveTodayList,
 } from '../todayListService';
 
 function buildQuickItem(overrides: Partial<TodayQuickItem> = {}): TodayQuickItem {
@@ -44,6 +47,31 @@ function buildQuickItem(overrides: Partial<TodayQuickItem> = {}): TodayQuickItem
 beforeEach(() => {
   vi.clearAllMocks();
   firestoreMocks.document.mockImplementation((...segments: unknown[]) => segments.join('/'));
+  firestoreMocks.setDocument.mockResolvedValue(undefined);
+});
+
+describe('saveTodayList', () => {
+  it('persists the clinical date of an explicit manual addition', async () => {
+    const manuallyAddedItem = buildQuickItem({
+      addedManuallyToday: true,
+      addedManuallyOnDateKey: '2026-07-22',
+    });
+
+    await saveTodayList(
+      'clinician-001',
+      '2026-07-22',
+      [manuallyAddedItem]
+    );
+
+    const persistedPayload = firestoreMocks.setDocument.mock.calls[0]?.[1];
+    const persistedItem = persistedPayload?.items?.[0];
+
+    expect(persistedItem).toMatchObject({
+      patientId: 'patient-001',
+      addedManuallyToday: true,
+      addedManuallyOnDateKey: '2026-07-22',
+    });
+  });
 });
 
 describe('discardCarriedForwardTodayItem', () => {
