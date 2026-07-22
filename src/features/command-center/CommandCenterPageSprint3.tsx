@@ -48,6 +48,7 @@ import {
 import {
   buildClinicalDayView,
   resolveClinicalDayRowsForQueuePresentation,
+  resolveSeenTodayRows,
   type ClinicalDayRow,
 } from './utils/clinicalDayView';
 import { patientHasClosedClinicalEvidenceForDate } from './utils/patientClosedEvidenceForDate';
@@ -1216,9 +1217,7 @@ export const CommandCenterPageSprint3: React.FC = () => {
   const summaryToSeeRows = resolvedClinicalDayRows.filter(
     (row) => row.status === PatientWorkflowStatus.SCHEDULED
   );
-  const summarySeenTodayRows = resolvedClinicalDayRows.filter(
-    (row) => row.status === PatientWorkflowStatus.DOCUMENTED_FINAL
-  );
+  const summarySeenTodayRows = resolveSeenTodayRows(clinicalDayRows);
   const clinicalQueueGroupRefs = {
     awaitingDocumentation: awaitingDocumentationRef,
     inProgress: inProgressRef,

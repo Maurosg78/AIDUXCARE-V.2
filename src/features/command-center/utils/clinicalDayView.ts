@@ -10,6 +10,7 @@ import type { PatientListItem } from '../hooks/usePatientsList';
 import type { Appointment } from '../hooks/useAppointmentSchedule';
 import type { InProgressSession } from '../hooks/useInProgressSessions';
 import type { TodayQuickItem } from '../components/TodayPatientsPanel';
+import { isClosedEncounterStatus, noteHasFinalizedSoap } from './closedClinicalEvidence';
 
 export type ClinicalDayRow = {
   patientId: string;
@@ -22,6 +23,7 @@ export type ClinicalDayRow = {
   hasEncounter: boolean;
   hasSession: boolean;
   hasConsultation: boolean;
+  hasClosedClinicalEvidenceForDate: boolean;
   resumeSessionId?: string;
   consultationId?: string;
   sessionType?: 'initial' | 'followup' | 'ongoing';
@@ -99,6 +101,11 @@ export function resolveClinicalDayRowsForQueuePresentation(
   const carriedForwardPendingRows: ClinicalDayRow[] = [];
 
   for (const row of clinicalDayRows) {
+    if (row.hasClosedClinicalEvidenceForDate) {
+      todayQueueRows.push(row);
+      continue;
+    }
+
     if (isCarriedForwardWithoutClinicianAction(row, presentedClinicalDateKey)) {
       carriedForwardPendingRows.push(row);
       continue;
@@ -131,6 +138,12 @@ export function resolveClinicalDayRowsForQueuePresentation(
     todayQueueRows,
     carriedForwardPendingRows,
   };
+}
+
+export function resolveSeenTodayRows(
+  clinicalDayRows: ClinicalDayRow[]
+): ClinicalDayRow[] {
+  return clinicalDayRows.filter((row) => row.hasClosedClinicalEvidenceForDate);
 }
 
 export function resolveClinicalDayRowsForOpenResponsibilities(
@@ -349,7 +362,11 @@ export async function buildClinicalDayView(
 
         return toLocalDateKey(encounterDate) === dateKey;
       });
-      const encounter = encountersForDate[0] ?? null;
+      const closedEncounterForDate = encountersForDate.find((candidateEncounter) => {
+        const candidateStatus = candidateEncounter.status;
+        return isClosedEncounterStatus(candidateStatus);
+      });
+      const encounter = closedEncounterForDate ?? encountersForDate[0] ?? null;
 
       const notes = await PersistenceService.getNotesByPatient(patient.id);
       const consultation = pickBestConsultation(notes, dateKey, encounter?.sessionId);
@@ -367,9 +384,11 @@ export async function buildClinicalDayView(
         : null;
       const soapStatus = consultationSoapStatus ?? sessionSoapStatus ?? quickItemSoapStatus;
       const encounterStatus = encounter?.status;
-      const encounterClosed =
-        encounterStatus === 'completed' ||
-        encounterStatus === 'signed';
+      const encounterClosed = isClosedEncounterStatus(encounterStatus);
+      const hasFinalizedConsultation = consultation != null && noteHasFinalizedSoap(consultation);
+      const hasClosedClinicalEvidenceForDate =
+        encounterClosed ||
+        hasFinalizedConsultation;
       const rawFlags: PatientWorkflowInput = {
         hasAppointment,
         appointmentStatus,
@@ -403,6 +422,7 @@ export async function buildClinicalDayView(
         hasEncounter,
         hasSession,
         hasConsultation,
+        hasClosedClinicalEvidenceForDate,
         resumeSessionId: session?.id ?? quickItem?.resumeSessionId,
         consultationId: consultation?.id,
         sessionType: (quickItem?.sessionType ?? session?.sessionType ?? undefined) as ClinicalDayRow['sessionType'],
