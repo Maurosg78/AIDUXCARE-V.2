@@ -1,5 +1,6 @@
 import { encountersRepo } from '../../../repositories/encountersRepo';
-import { PersistenceService, type SavedNote } from '../../../services/PersistenceService';
+import { PersistenceService } from '../../../services/PersistenceService';
+import { isClosedEncounterStatus, noteHasFinalizedSoap } from './closedClinicalEvidence';
 
 function toLocalDateKey(date: Date): string {
   const year = date.getFullYear();
@@ -11,16 +12,6 @@ function toLocalDateKey(date: Date): string {
 
 function isValidDateKey(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
-}
-
-function noteHasFinalizedSoap(note: SavedNote): boolean {
-  const noteRecord = note as SavedNote & { soapStatus?: string };
-  const noteStatus = note.status;
-  const soapStatus = noteRecord.soapStatus;
-  const hasFinalizedStatus = noteStatus === 'finalized';
-  const hasFinalizedSoapStatus = soapStatus === 'finalized';
-
-  return hasFinalizedStatus || hasFinalizedSoapStatus;
 }
 
 /**
@@ -44,9 +35,7 @@ export async function patientHasClosedClinicalEvidenceForDate(
     const encounters = await encountersRepo.getEncountersByPatient(patientId, 50);
     const hasClosedEncounterForDate = encounters.some((encounter) => {
       const encounterStatus = encounter.status;
-      const isClosedEncounter =
-        encounterStatus === 'completed' ||
-        encounterStatus === 'signed';
+      const isClosedEncounter = isClosedEncounterStatus(encounterStatus);
       if (!isClosedEncounter) {
         return false;
       }
