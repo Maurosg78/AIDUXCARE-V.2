@@ -112,6 +112,7 @@ export interface SOAPTabProps {
   patientFirstName?: string;
   professionalName?: string;
   professionalTitle?: string;
+  professionalLicense?: string;
   sessionDateKey?: string;
   inClinicItemsOverride?: string[];
   hepItemsOverride?: string[];
@@ -180,6 +181,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   patientFirstName,
   professionalName,
   professionalTitle,
+  professionalLicense,
   sessionDateKey,
   inClinicItemsOverride,
   hepItemsOverride,
@@ -348,6 +350,13 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             tokenOptimization={soapTokenOptimization}
             isTreatmentDecisionConfirmed={isTreatmentDecisionConfirmed}
             onTreatmentDecisionConfirmationChange={onTreatmentDecisionConfirmationChange}
+            finalizedActionContext={{
+              sessionDateKey: sessionDateKey ?? '',
+              patientName: patientName ?? '',
+              patientEmail,
+              professionalName: professionalName ?? '',
+              professionalLicense,
+            }}
             onBackToCommandCenter={onBackToCommandCenter}
             sessionState={
               sessionId

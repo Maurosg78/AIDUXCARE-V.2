@@ -19,6 +19,7 @@ import { getSoapReviewConfig } from '@/core/jurisdiction/JurisdictionEngine';
 import { isSpainPilot } from '@/core/pilotDetection';
 import { localizeModalityLabel } from '@/utils/treatmentPlanModalities';
 import { buildSoapPlainText } from '@/utils/soapPlainTextExport';
+import { FinalizedSessionActions } from '@/components/session/FinalizedSessionActions';
 
 export type SOAPStatus = 'draft' | 'finalized';
 
@@ -59,6 +60,13 @@ export interface SOAPEditorProps {
   onFieldEdited?: (fieldEdited: 'subjective' | 'objective' | 'assessment' | 'plan' | 'follow_up') => void;
   isTreatmentDecisionConfirmed?: boolean;
   onTreatmentDecisionConfirmationChange?: (confirmed: boolean) => void;
+  finalizedActionContext?: {
+    sessionDateKey: string;
+    patientName: string;
+    patientEmail?: string;
+    professionalName: string;
+    professionalLicense?: string;
+  };
 }
 
 export const SOAPEditor: React.FC<SOAPEditorProps> = ({
@@ -87,6 +95,7 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   onFieldEdited,
   isTreatmentDecisionConfirmed = false,
   onTreatmentDecisionConfirmationChange,
+  finalizedActionContext,
 }) => {
   const { t } = useTranslation();
   const soapReview = getSoapReviewConfig();
@@ -105,6 +114,11 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
   const [referralPreview, setReferralPreview] = useState<ReferralReportResult | null>(null);
   const [showReferralModal, setShowReferralModal] = useState(false);
   const esPilotEnabled = isSpainPilot();
+  const useNewActionsPanel =
+    import.meta.env.DEV &&
+    import.meta.env.VITE_USE_NEW_ACTIONS_PANEL === 'true' &&
+    Boolean(finalizedActionContext) &&
+    Boolean(onBackToCommandCenter);
   const hasReferralStopDecision = Object.values(redFlagDecisions ?? {})
     .some((decision) => decision.decision === 'referral_stop');
   const exportLocale = esPilotEnabled ? 'es-ES' : 'en-CA';
@@ -1101,7 +1115,37 @@ export const SOAPEditor: React.FC<SOAPEditorProps> = ({
               )}
             </>
           )}
-          {status === 'finalized' && currentSOAP && (
+          {status === 'finalized' && currentSOAP && useNewActionsPanel && finalizedActionContext && onBackToCommandCenter && (
+            <FinalizedSessionActions
+              soapNote={{
+                subjective: currentSOAP.subjective || '',
+                objective: currentSOAP.objective || '',
+                assessment: currentSOAP.assessment || '',
+                plan: currentSOAP.plan || '',
+              }}
+              sessionId={sessionId || sessionState?.sessionId || 'session-unavailable'}
+              sessionDateKey={finalizedActionContext.sessionDateKey}
+              patientName={finalizedActionContext.patientName}
+              patientEmail={finalizedActionContext.patientEmail}
+              professionalName={finalizedActionContext.professionalName}
+              professionalLicense={finalizedActionContext.professionalLicense}
+              canEmail={Boolean(onSendPatientSummary)}
+              canCertificate={false}
+              canReferralReport={esPilotEnabled && Boolean(sessionState) && hasReferralStopDecision}
+              onCopy={handleCopyToClipboard}
+              onDownloadTxt={handleDownloadAsText}
+              onExportPdf={handleExportPDF}
+              onSendEmail={onSendPatientSummary || (() => undefined)}
+              onReferralReport={
+                esPilotEnabled && sessionState && hasReferralStopDecision
+                  ? handleReferralPreview
+                  : undefined
+              }
+              onBackToCommandCenter={onBackToCommandCenter}
+              emailSent={patientSummarySent}
+            />
+          )}
+          {status === 'finalized' && currentSOAP && !useNewActionsPanel && (
             <>
               {!isEditingFinalized ? (
                 <>
