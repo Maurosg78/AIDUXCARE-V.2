@@ -27,6 +27,7 @@ import type { WorkflowRoute } from '../../../services/workflowRouterService';
 import type { ClinicalAttachment } from '../../../services/clinicalAttachmentService';
 import type { WhisperSupportedLanguage } from '../../../services/OpenAIWhisperService';
 import { trackSOAPEdited } from '../../../services/analytics/AnalyticsEvents';
+import { SocraticSyntheticDemoPanel } from '../SocraticSyntheticDemoPanel';
 
 export interface SOAPTabProps {
   // SOAP note state
@@ -365,6 +366,8 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
             redFlagDecisions={redFlagDecisions}
             onFieldEdited={handleSoapFieldEdited}
           />
+
+          {import.meta.env.DEV && <SocraticSyntheticDemoPanel />}
 
           {/* ✅ CLOSE INITIAL ASSESSMENT: Only for initial visits after finalization */}
           {visitType === 'initial' && soapStatus === 'finalized' && onCloseInitialAssessment && (
