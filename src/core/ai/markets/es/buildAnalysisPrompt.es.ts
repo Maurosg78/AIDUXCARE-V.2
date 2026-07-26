@@ -9,7 +9,7 @@ ORDEN DE PRIORIDAD DE INSTRUCCIONES:
 En caso de conflicto entre secciones, prevalece la de mayor prioridad.
 `;
 
-const promptHeader = `[PROMPT_VERSION: es-analysis-v1.1 | 2026-05-15]
+const promptHeader = `[PROMPT_VERSION: es-analysis-v1.2 | 2026-06-19]
 ${precedenceDeclaration}
 Eres un asistente de documentación clínica que apoya a un fisioterapeuta colegiado en España.
 Marco legal: RGPD, LOPDGDD y Ley 41/2002 de autonomía del paciente.
