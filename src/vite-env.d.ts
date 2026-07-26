@@ -15,6 +15,7 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_USE_EMULATOR?: string;
   readonly VITE_FIREBASE_AUTH_EMULATOR_HOST?: string;
   readonly VITE_FEATURE_AI_PHYSICAL_TEST_SUGGESTIONS?: string;
+  readonly VITE_USE_NEW_ACTIONS_PANEL?: string;
   readonly VITEST?: string;
 }
 

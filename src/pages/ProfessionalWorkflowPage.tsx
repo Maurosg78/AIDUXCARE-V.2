@@ -8169,6 +8169,7 @@ const ProfessionalWorkflowPage = () => {
                     patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
                     professionalName={clinicianDisplayName || ''}
                     professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
+                    professionalLicense={professionalProfile?.licenseNumber}
                     sessionDateKey={clinicalSessionDateKey}
                     inClinicItemsOverride={inClinicItems.map((item) => item.label)}
                     hepItemsOverride={localSoapNote?.plan ? derivePlanFromText(localSoapNote.plan).homeProgram : homeProgramItems.map((item) => item.label)}
@@ -8459,6 +8460,7 @@ const ProfessionalWorkflowPage = () => {
                     patientFirstName={currentPatient?.firstName || (currentPatient as any)?.personalInfo?.firstName || ''}
                     professionalName={clinicianDisplayName || ''}
                     professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
+                    professionalLicense={professionalProfile?.licenseNumber}
                     sessionDateKey={clinicalSessionDateKey}
                     inClinicItemsOverride={inClinicItems.map((item) => item.label)}
                     hepItemsOverride={localSoapNote?.plan ? derivePlanFromText(localSoapNote.plan).homeProgram : homeProgramItems.map((item) => item.label)}
