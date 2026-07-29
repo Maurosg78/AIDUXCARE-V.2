@@ -17,6 +17,11 @@ export type TreatmentDecisionItem = {
   label: string;
   completed: boolean;
   notes?: string;
+  /** Clinician-authored tombstone. A removed item remains in the decision for audit but is never rehydrated. */
+  removedPermanently?: boolean;
+  removedPermanentlyAt?: string;
+  removedPermanentlyBy?: string;
+  removedPermanentlyReason?: string;
 };
 
 export type TreatmentDecision = {
@@ -91,7 +96,15 @@ interface SessionData {
   };
   attachments?: ClinicalAttachment[];
   /** Sprint A (follow-up): HEP compliance for this session doc only — source of truth on `sessions/{id}`. */
-  hepCompliance?: Array<{ itemId: string; done: boolean; date: string }>;
+  hepCompliance?: Array<{
+    itemId: string;
+    done: boolean;
+    date: string;
+    removedPermanently?: boolean;
+    removedPermanentlyAt?: string;
+    removedPermanentlyBy?: string;
+    removedPermanentlyReason?: string;
+  }>;
   treatmentDecision?: TreatmentDecision;
   writeState?: 'draft' | 'soap_generated' | 'soap_saved' | 'encounter_saved' | 'fully_committed' | 'commit_failed';
   lastCommitStep?: string;
@@ -246,7 +259,22 @@ class SessionService {
     const item = value as Record<string, unknown>;
     const hasId = typeof item.id === 'string' && item.id.trim() !== '';
     const hasLabel = typeof item.label === 'string' && item.label.trim() !== '';
-    return hasId && hasLabel;
+    const hasValidRemovalFlag =
+      item.removedPermanently === undefined || typeof item.removedPermanently === 'boolean';
+    const hasValidRemovalTimestamp =
+      item.removedPermanentlyAt === undefined || typeof item.removedPermanentlyAt === 'string';
+    const hasValidRemovalAuthor =
+      item.removedPermanentlyBy === undefined || typeof item.removedPermanentlyBy === 'string';
+    const hasValidRemovalReason =
+      item.removedPermanentlyReason === undefined || typeof item.removedPermanentlyReason === 'string';
+    return (
+      hasId &&
+      hasLabel &&
+      hasValidRemovalFlag &&
+      hasValidRemovalTimestamp &&
+      hasValidRemovalAuthor &&
+      hasValidRemovalReason
+    );
   }
 
   private isTreatmentDecision(value: unknown): value is TreatmentDecision {

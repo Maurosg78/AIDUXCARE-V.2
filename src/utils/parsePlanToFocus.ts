@@ -12,6 +12,10 @@ export interface TodayFocusItem {
   label: string;      // editable
   completed: boolean; // checkbox state
   notes?: string;      // editable (collapsible)
+  removedPermanently?: boolean;
+  removedPermanentlyAt?: string;
+  removedPermanentlyBy?: string;
+  removedPermanentlyReason?: string;
   source: 'plan';     // fijo
 }
 

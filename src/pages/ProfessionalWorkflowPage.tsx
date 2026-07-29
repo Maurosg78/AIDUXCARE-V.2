@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Play, Square, Mic, Loader2, CheckCircle, Download, Copy, Brain, Stethoscope, ClipboardList, ChevronsRight, AlertCircle, UploadCloud, Paperclip, X, Users, Plus, Info, LogOut, ArrowLeft, FileText } from "lucide-react";
+import { Play, Square, Mic, Loader2, CheckCircle, Download, Copy, Brain, Stethoscope, ClipboardList, ChevronsRight, AlertCircle, UploadCloud, Paperclip, X, Users, Plus, Info, LogOut, ArrowLeft, FileText, Trash2 } from "lucide-react";
 import type { WhisperSupportedLanguage } from "../services/OpenAIWhisperService";
 import { useSharedWorkflowState } from "../hooks/useSharedWorkflowState";
 import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
 import { useTranscript } from "../hooks/useTranscript";
 import { useTimer } from "../hooks/useTimer";
 import sessionService from "../services/sessionService";
-import type { TreatmentDecision, TreatmentDecisionItem } from "../services/sessionService";
+import type { TreatmentDecision } from "../services/sessionService";
 import { useAuth } from "../hooks/useAuth";
 import { useProfessionalProfile as useProfessionalProfileContext } from "../context/ProfessionalProfileContext";
 import type { ClinicalAnalysis } from "../utils/cleanVertexResponse";
@@ -103,6 +103,7 @@ import { SessionStorage } from "../services/session-storage";
 import { FirestoreAuditLogger } from "../core/audit/FirestoreAuditLogger";
 import { createBaseline, createBaselineFromMinimalSOAP } from "../services/clinicalBaselineService";
 import { CloseInitialAssessmentConfirmModal } from "../components/workflow/CloseInitialAssessmentConfirmModal";
+import { DiscontinueHomeProgramItemModal } from "../components/workflow/DiscontinueHomeProgramItemModal";
 import { setSessionCompleted } from "@/features/command-center/todayListSessionStorage";
 import ReferralReportModal from "../components/ReferralReportModal";
 import CertificateEsModal from "../components/CertificateEsModal";
@@ -153,6 +154,12 @@ import {
   buildValueMetricsEvent,
 } from "@/features/workflow/finalization/finalizationAnalytics";
 import { safeLogger } from '../utils/safeLogger';
+import {
+  hydrateTreatmentDecisionItems,
+  isActiveTreatmentDecisionItem,
+  markTreatmentDecisionItemRemoved,
+  normalizeTreatmentDecisionItem,
+} from '../utils/treatmentDecisionItems';
 
 // ✅ ISO COMPLIANCE: Lazy load heavy components for better performance and memory management
 const AnalysisTab = lazy(() => import("../components/workflow/tabs/AnalysisTab").then(m => ({ default: m.default })));
@@ -195,16 +202,6 @@ type TreatmentDecisionConfirmation = {
   confirmedAt: string;
 };
 
-function normalizeTreatmentDecisionItem(item: TodayFocusItem): TreatmentDecisionItem {
-  const normalizedItem: TreatmentDecisionItem = {
-    id: item.id,
-    label: item.label,
-    completed: Boolean(item.completed),
-    ...(item.notes ? { notes: item.notes } : {}),
-  };
-  return normalizedItem;
-}
-
 function buildTreatmentDecision(
   visitType: VisitType,
   inClinicItems: TodayFocusItem[],
@@ -234,17 +231,6 @@ function buildTreatmentDecision(
     homeProgramItems: homeProgramItems.map(normalizeTreatmentDecisionItem),
   };
   return treatmentDecision;
-}
-
-function hydrateTreatmentDecisionItems(items: TreatmentDecisionItem[]): TodayFocusItem[] {
-  const hydratedItems = items.map((item) => ({
-    id: item.id,
-    label: item.label,
-    completed: false,
-    ...(item.notes ? { notes: item.notes } : {}),
-    source: 'plan' as const,
-  }));
-  return hydratedItems;
 }
 
 function buildTreatmentDecisionItemsFromPlan(planText: string): {
@@ -838,6 +824,8 @@ const ProfessionalWorkflowPage = () => {
   // WO-FU-PLAN-SPLIT-01: In-clinic vs HEP — FOLLOW-UP ONLY; poblado solo cuando visitType === 'follow-up'
   const [inClinicItems, setInClinicItems] = useState<TodayFocusItem[]>([]);
   const [homeProgramItems, setHomeProgramItems] = useState<TodayFocusItem[]>([]);
+  const [homeProgramItemPendingRemoval, setHomeProgramItemPendingRemoval] =
+    useState<TodayFocusItem | null>(null);
   const [currentPainEva, setCurrentPainEva] = useState<ClinicalDataPoint<number> | null>(null);
   const [treatmentDecisionConfirmation, setTreatmentDecisionConfirmation] =
     useState<TreatmentDecisionConfirmation | null>(null);
@@ -1034,6 +1022,10 @@ const ProfessionalWorkflowPage = () => {
 
   const { sharedState, updatePhysicalEvaluation, resetSharedWorkflowState, sessionData } = useSharedWorkflowState(patientId);
   const { user } = useAuth(); // Must be called before useEffect that uses it
+  const activeHomeProgramItems = useMemo(
+    () => homeProgramItems.filter(isActiveTreatmentDecisionItem),
+    [homeProgramItems],
+  );
   const { profile: professionalProfile } = useProfessionalProfileContext();
   const consentSmsJurisdiction = useMemo(() => {
     const practiceCountry = `${professionalProfile?.practiceCountry || professionalProfile?.country || ''}`.trim().toUpperCase();
@@ -5146,11 +5138,18 @@ const ProfessionalWorkflowPage = () => {
       if (!uid) return;
       const stableKey = hepSessionKey;
       const sid = stableKey ?? sessionId ?? `${uid}-${sessionStartTime.getTime()}`;
-      const hepCompliance = next.map((i) => ({
-        itemId: i.id,
-        done: i.completed,
-        date: new Date().toISOString(),
-      }));
+      const hepCompliance = next.map((i) => {
+        const complianceItem = {
+          itemId: i.id,
+          done: i.completed,
+          date: new Date().toISOString(),
+          ...(i.removedPermanently === true ? { removedPermanently: true } : {}),
+          ...(i.removedPermanentlyAt ? { removedPermanentlyAt: i.removedPermanentlyAt } : {}),
+          ...(i.removedPermanentlyBy ? { removedPermanentlyBy: i.removedPermanentlyBy } : {}),
+          ...(i.removedPermanentlyReason ? { removedPermanentlyReason: i.removedPermanentlyReason } : {}),
+        };
+        return complianceItem;
+      });
       const patientName =
         currentPatient?.fullName ||
         `${currentPatient?.firstName ?? ''} ${currentPatient?.lastName ?? ''}`.trim() ||
@@ -5178,6 +5177,37 @@ const ProfessionalWorkflowPage = () => {
       currentPatient?.lastName,
       patientId,
       sessionTypeFromUrl,
+    ],
+  );
+
+  const handleConfirmPermanentHomeProgramRemoval = useCallback(
+    (reason?: string) => {
+      const itemToRemove = homeProgramItemPendingRemoval;
+      const removedBy = user?.uid;
+      if (!itemToRemove || !removedBy) {
+        setAnalysisError('No se pudo registrar quién eliminó el ejercicio. Vuelve a iniciar sesión e inténtalo de nuevo.');
+        return;
+      }
+
+      const removedPermanentlyAt = new Date().toISOString();
+      const updatedItems = homeProgramItems.map((item) =>
+        item.id === itemToRemove.id
+          ? markTreatmentDecisionItemRemoved(item, {
+              removedPermanentlyAt,
+              removedPermanentlyBy: removedBy,
+              removedPermanentlyReason: reason,
+            })
+          : item,
+      );
+
+      updateHomeProgramItems(updatedItems);
+      setHomeProgramItemPendingRemoval(null);
+    },
+    [
+      homeProgramItemPendingRemoval,
+      homeProgramItems,
+      updateHomeProgramItems,
+      user?.uid,
     ],
   );
 
@@ -5535,8 +5565,8 @@ const ProfessionalWorkflowPage = () => {
           }
         );
       }
-      if (visitType === 'follow-up' && homeProgramItems.length > 0) {
-        organized.context.homeProgramPrescribed = homeProgramItems.map((i) => i.label);
+      if (visitType === 'follow-up' && activeHomeProgramItems.length > 0) {
+        organized.context.homeProgramPrescribed = activeHomeProgramItems.map((i) => i.label);
       }
 
       const summaryGenerated = Boolean(organized);
@@ -5838,8 +5868,8 @@ const ProfessionalWorkflowPage = () => {
     try {
       await trackSOAPGenerationStarted({ visitType: 'follow-up', source: 'followup_single_call' });
       const currentJurisdiction = getCurrentJurisdiction();
-      const hepCompletedCount = homeProgramItems.filter((item) => item.completed).length;
-      const hepTotalCount = homeProgramItems.length;
+      const hepCompletedCount = activeHomeProgramItems.filter((item) => item.completed).length;
+      const hepTotalCount = activeHomeProgramItems.length;
       const hasHepChecklist = hepTotalCount > 0;
       const hepAdherencePercent = hasHepChecklist ? Math.round((hepCompletedCount / hepTotalCount) * 100) : undefined;
       const homeProgramDecisionWasProvided = Boolean(treatmentDecisionConfirmationRef.current);
@@ -5847,10 +5877,10 @@ const ProfessionalWorkflowPage = () => {
         ? 'confirmed_today'
         : 'historical_unconfirmed';
       const homeProgramItemsForPrompt = homeProgramDecisionWasProvided
-        ? homeProgramItems.map((item) => item.label)
+        ? activeHomeProgramItems.map((item) => item.label)
         : [];
       const homeProgramContextOnly = !homeProgramDecisionWasProvided
-        ? homeProgramItems.map((item) => item.label)
+        ? activeHomeProgramItems.map((item) => item.label)
         : [];
       const inClinicDecisionWasProvided = Boolean(treatmentDecisionConfirmationRef.current);
       const inClinicItemsConfirmedPerformedToday = inClinicItems.filter((item) => item.completed === true);
@@ -5861,7 +5891,9 @@ const ProfessionalWorkflowPage = () => {
         ? inClinicItems.map((item) => item.label)
         : [];
       console.info('[HEP-PROVENANCE-GATE]', {
-        homeProgramItemsCount: homeProgramItems.length,
+        homeProgramItemsCount: activeHomeProgramItems.length,
+        homeProgramItemsRemovedPermanently:
+          homeProgramItems.length - activeHomeProgramItems.length,
         homeProgramDecisionProvided: homeProgramDecisionWasProvided,
         homeProgramSentToPromptAsActive: homeProgramItemsForPrompt.length,
         homeProgramSentAsContextOnly: homeProgramContextOnly.length,
@@ -6045,7 +6077,7 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, isTranscribing, sessionId, inClinicItems, homeProgramItems, currentPainEva, previousTreatmentDecision, previousTreatmentPlan, patientIdFromUrl]);
+  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, isTranscribing, sessionId, inClinicItems, homeProgramItems, activeHomeProgramItems, currentPainEva, previousTreatmentDecision, previousTreatmentPlan, patientIdFromUrl]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -6664,8 +6696,8 @@ const ProfessionalWorkflowPage = () => {
               }
             );
             const memoryService = new PatientTrajectoryMemoryService();
-            const hepCompletedCount = homeProgramItems.filter((item) => item.completed).length;
-            const hepTotalCount = homeProgramItems.length;
+            const hepCompletedCount = activeHomeProgramItems.filter((item) => item.completed).length;
+            const hepTotalCount = activeHomeProgramItems.length;
             const hepAdherenceRate = hepTotalCount > 0 ? hepCompletedCount / hepTotalCount : undefined;
             const longitudinalSnapshot = await memoryService.buildEncounterLongitudinalSnapshot(patientId, s, {
               hepAdherenceRate,
@@ -6991,7 +7023,9 @@ const ProfessionalWorkflowPage = () => {
           visitType === 'initial'
             ? buildTreatmentDecisionItemsFromPlan(soap.plan || '').homeProgramItems
             : homeProgramItems;
-        const validDecisionHomeProgramItems = decisionHomeProgramItems.filter((item) => item.label.trim().length > 0);
+        const validDecisionHomeProgramItems = decisionHomeProgramItems.filter(
+          (item) => isActiveTreatmentDecisionItem(item) && item.label.trim().length > 0,
+        );
         const homeProgramTextOverride = validDecisionHomeProgramItems.length > 0
           ? validDecisionHomeProgramItems.map((item) => item.label).join('\n')
           : null;
@@ -7397,6 +7431,12 @@ const ProfessionalWorkflowPage = () => {
         baselineId={closeInitialConfirmData?.baselineId}
         sessionDateKey={clinicalSessionDateKey}
       />
+      <DiscontinueHomeProgramItemModal
+        isOpen={homeProgramItemPendingRemoval != null}
+        itemLabel={homeProgramItemPendingRemoval?.label ?? ''}
+        onClose={() => setHomeProgramItemPendingRemoval(null)}
+        onConfirm={handleConfirmPermanentHomeProgramRemoval}
+      />
       {/* WO-PILOT-FIX-07: Two-line header - Professional identity + Session context */}
       <header className="border-b border-slate-200 bg-white px-6 py-4">
         <div className="mx-auto max-w-6xl flex flex-col gap-2">
@@ -7597,7 +7637,7 @@ const ProfessionalWorkflowPage = () => {
                   const baselineAssessmentRaw = followUpClinicalState?.baselineSOAP?.assessment ?? '';
                   const baselineAssessmentTrimmed = baselineAssessmentRaw.trim();
                   const hasBriefingAssessmentColumn = baselineAssessmentTrimmed.length > 0;
-                  const hasBriefingHepColumn = homeProgramItems.length > 0;
+                  const hasBriefingHepColumn = activeHomeProgramItems.length > 0;
                   const shouldShowBriefingBodyRow =
                     showClinicalBriefing && (hasBriefingAssessmentColumn || hasBriefingHepColumn);
                   const todayFocusRaw = previousTreatmentPlan?.nextSessionFocus ?? '';
@@ -7704,8 +7744,8 @@ const ProfessionalWorkflowPage = () => {
                                 <p className="text-[10px] font-medium uppercase tracking-widest text-emerald-600 mb-1">
                                   Ejercicios en casa
                                 </p>
-                                {homeProgramItems.length >= 2 ? (() => {
-                                  const allHepCompleted = homeProgramItems.every((item) => item.completed);
+                                {activeHomeProgramItems.length >= 2 ? (() => {
+                                  const allHepCompleted = activeHomeProgramItems.every((item) => item.completed);
                                   return (
                                     <button
                                       type="button"
@@ -7713,7 +7753,9 @@ const ProfessionalWorkflowPage = () => {
                                         const nextCompleted = !allHepCompleted;
                                         const updatedHepItems = homeProgramItems.map((item) => ({
                                           ...item,
-                                          completed: nextCompleted,
+                                          completed: item.removedPermanently === true
+                                            ? item.completed
+                                            : nextCompleted,
                                         }));
                                         updateHomeProgramItems(updatedHepItems);
                                       }}
@@ -7727,7 +7769,7 @@ const ProfessionalWorkflowPage = () => {
                                 })() : null}
                               </div>
                               <ul className="space-y-2">
-                                {homeProgramItems.map((item) => {
+                                {activeHomeProgramItems.map((item) => {
                                   const hepCheckboxId = `patient-context-hep-${item.id}`;
                                   return (
                                     <li key={item.id} className="flex items-start gap-3">
@@ -7749,6 +7791,18 @@ const ProfessionalWorkflowPage = () => {
                                       >
                                         <span className="font-medium text-slate-900">{item.label}</span>
                                       </label>
+                                      {soapStatus !== 'finalized' ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => setHomeProgramItemPendingRemoval(item)}
+                                          aria-label={`${t('workflow.homeProgram.removeFromPlan')}: ${item.label}`}
+                                          title={t('workflow.homeProgram.removeFromPlan')}
+                                          className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 hover:text-red-800"
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                          <span>{t('workflow.homeProgram.removeFromPlan')}</span>
+                                        </button>
+                                      ) : null}
                                     </li>
                                   );
                                 })}
@@ -8172,7 +8226,7 @@ const ProfessionalWorkflowPage = () => {
                     professionalLicense={professionalProfile?.licenseNumber}
                     sessionDateKey={clinicalSessionDateKey}
                     inClinicItemsOverride={inClinicItems.map((item) => item.label)}
-                    hepItemsOverride={localSoapNote?.plan ? derivePlanFromText(localSoapNote.plan).homeProgram : homeProgramItems.map((item) => item.label)}
+                    hepItemsOverride={localSoapNote?.plan ? derivePlanFromText(localSoapNote.plan).homeProgram : activeHomeProgramItems.map((item) => item.label)}
                     patientName={currentPatient?.fullName ?? `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
                     redFlagDecisions={redFlagDecisions}
                   />
@@ -8463,7 +8517,7 @@ const ProfessionalWorkflowPage = () => {
                     professionalLicense={professionalProfile?.licenseNumber}
                     sessionDateKey={clinicalSessionDateKey}
                     inClinicItemsOverride={inClinicItems.map((item) => item.label)}
-                    hepItemsOverride={localSoapNote?.plan ? derivePlanFromText(localSoapNote.plan).homeProgram : homeProgramItems.map((item) => item.label)}
+                    hepItemsOverride={localSoapNote?.plan ? derivePlanFromText(localSoapNote.plan).homeProgram : activeHomeProgramItems.map((item) => item.label)}
                     patientName={currentPatient?.fullName ?? `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
                     redFlagDecisions={redFlagDecisions}
                   />
