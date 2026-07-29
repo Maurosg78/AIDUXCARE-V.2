@@ -1,4 +1,5 @@
-import { act, render, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -20,18 +21,54 @@ const testState = vi.hoisted(() => {
       '- Mantener movilidad activa dentro de tolerancia',
     ].join('\n'),
   };
+  const lucianaBaselineSoap = {
+    subjective: 'Paciente refiere recuperación funcional progresiva de la mano.',
+    objective: 'Fuerza de prensión y pinza recuperadas.',
+    assessment: 'Progreso funcional favorable con objetivos específicos ya alcanzados.',
+    plan: [
+      'TRATAMIENTO EN CLÍNICA:',
+      '- Movilización articular y trabajo de cicatriz',
+      'PROGRAMA DE EJERCICIOS EN CASA:',
+      '- Fortalecimiento progresivo de prensión y pinza: Continuar fortalecimiento',
+      '- Teclear con pulgar en móvil: Integrar función móvil',
+    ].join('\n'),
+  };
+  const lucianaFinalSoap = {
+    subjective: 'Paciente refiere recuperación funcional progresiva de la mano.',
+    objective: 'Fuerza de prensión y pinza recuperadas.',
+    assessment: 'La función de pinza está recuperada y se retira la actividad funcional con móvil.',
+    plan: [
+      'TRATAMIENTO EN CLÍNICA:',
+      '- Movilización articular y trabajo de cicatriz',
+      'PROGRAMA DE EJERCICIOS EN CASA:',
+      '- Fortalecimiento progresivo de prensión y pinza: Continuar fortalecimiento',
+    ].join('\n'),
+  };
 
   return {
     mariaDoloresSoap,
+    lucianaBaselineSoap,
+    lucianaFinalSoap,
     soapTabProps: null as Record<string, unknown> | null,
     focusEditorProps: null as Record<string, unknown> | null,
     createSessionWithId: vi.fn(),
+    getClinicalState: vi.fn(),
+    getLatestFinalizedTreatmentDecision: vi.fn(),
+    getPatientById: vi.fn(),
+    getSessionById: vi.fn(),
+    getTreatmentPlan: vi.fn(),
+    saveTreatmentPlan: vi.fn(),
     updateSession: vi.fn(),
     saveSOAPNoteWithRetry: vi.fn(),
   };
 });
 
 const MARIA_DOLORES_SOAP: SOAPNote = testState.mariaDoloresSoap;
+const LUCIANA_BASELINE_SOAP: SOAPNote = testState.lucianaBaselineSoap;
+const LUCIANA_FINAL_SOAP: SOAPNote = testState.lucianaFinalSoap;
+const LUCIANA_MOBILE_HEP_LABEL = 'Teclear con pulgar en móvil: Integrar función móvil';
+const LUCIANA_ACTIVE_HEP_LABEL =
+  'Fortalecimiento progresivo de prensión y pinza: Continuar fortalecimiento';
 
 const MARIA_DOLORES_IN_CLINIC_ITEMS = [
   {
@@ -100,22 +137,9 @@ vi.mock('../../services/sessionService', () => ({
     createSessionWithId: testState.createSessionWithId,
     findReusableSessionForDayAndType: vi.fn().mockResolvedValue(null),
     getInProgressSessions: vi.fn().mockResolvedValue([]),
-    getLatestFinalizedTreatmentDecision: vi.fn().mockResolvedValue(null),
+    getLatestFinalizedTreatmentDecision: testState.getLatestFinalizedTreatmentDecision,
     getNotesByPatient: vi.fn().mockResolvedValue([]),
-    getSessionById: vi.fn().mockResolvedValue({
-      id: 'session-maria-dolores',
-      patientId: 'patient-maria-dolores',
-      patientName: 'Maria Dolores',
-      userId: 'physio-test',
-      sessionType: 'followup',
-      sessionDateKey: '2026-07-07',
-      status: 'draft',
-      soapStatus: 'draft',
-      soapNote: testState.mariaDoloresSoap,
-      transcript: 'Seguimiento sintético de regresión.',
-      physicalTests: [],
-      attachments: [],
-    }),
+    getSessionById: testState.getSessionById,
     isFirstSession: vi.fn().mockResolvedValue(false),
     updateSession: testState.updateSession,
   },
@@ -159,26 +183,14 @@ vi.mock('../../services/workflowRouterService', () => ({
 }));
 
 vi.mock('../../services/clinicalStateService', () => ({
-  getClinicalState: vi.fn().mockResolvedValue({
-    hasBaseline: true,
-    baselineSOAP: testState.mariaDoloresSoap,
-  }),
+  getClinicalState: testState.getClinicalState,
 }));
 
 vi.mock('../../services/treatmentPlanService', () => ({
   default: {
-    getTreatmentPlan: vi.fn().mockResolvedValue({
-      planText: testState.mariaDoloresSoap.plan,
-      inClinicText: [
-        'Diatermia (Tecarterapia) en RI',
-        'Movilizaciones y fortalecimiento supervisado',
-        'Masoterapia',
-        'Ejercicios de fortalecimiento en cadena cinética abierta',
-      ].join('\n'),
-      homeProgramText: 'Mantener movilidad activa dentro de tolerancia',
-    }),
+    getTreatmentPlan: testState.getTreatmentPlan,
     getTreatmentReminder: vi.fn().mockResolvedValue(null),
-    saveTreatmentPlan: vi.fn().mockResolvedValue(undefined),
+    saveTreatmentPlan: testState.saveTreatmentPlan,
   },
 }));
 
@@ -189,6 +201,7 @@ vi.mock('../../services/PersistenceServiceEnhanced', () => ({
 vi.mock('../../services/PersistenceService', () => ({
   default: {
     getNoteById: vi.fn().mockResolvedValue(null),
+    getNotesByPatient: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -209,15 +222,7 @@ vi.mock('../../services/patientTrajectoryMemoryService', () => ({
 
 vi.mock('../../services/patientService', () => ({
   PatientService: {
-    getPatientById: vi.fn().mockResolvedValue({
-      id: 'patient-maria-dolores',
-      firstName: 'Maria',
-      lastName: 'Dolores',
-      fullName: 'Maria Dolores',
-      email: 'synthetic@example.test',
-      activeBaselineId: 'baseline-maria-dolores',
-      status: 'active',
-    }),
+    getPatientById: testState.getPatientById,
     updatePatient: vi.fn().mockResolvedValue(undefined),
   },
   default: {
@@ -419,6 +424,51 @@ describe('handleFinalizeSOAP incremental Golden Master', () => {
     testState.focusEditorProps = null;
     testState.createSessionWithId.mockReset();
     testState.createSessionWithId.mockResolvedValue('session-maria-dolores');
+    testState.getClinicalState.mockReset();
+    testState.getClinicalState.mockResolvedValue({
+      hasBaseline: true,
+      baselineSOAP: testState.mariaDoloresSoap,
+    });
+    testState.getLatestFinalizedTreatmentDecision.mockReset();
+    testState.getLatestFinalizedTreatmentDecision.mockResolvedValue(null);
+    testState.getPatientById.mockReset();
+    testState.getPatientById.mockResolvedValue({
+      id: 'patient-maria-dolores',
+      firstName: 'Maria',
+      lastName: 'Dolores',
+      fullName: 'Maria Dolores',
+      email: 'synthetic@example.test',
+      activeBaselineId: 'baseline-maria-dolores',
+      status: 'active',
+    });
+    testState.getSessionById.mockReset();
+    testState.getSessionById.mockResolvedValue({
+      id: 'session-maria-dolores',
+      patientId: 'patient-maria-dolores',
+      patientName: 'Maria Dolores',
+      userId: 'physio-test',
+      sessionType: 'followup',
+      sessionDateKey: '2026-07-07',
+      status: 'draft',
+      soapStatus: 'draft',
+      soapNote: testState.mariaDoloresSoap,
+      transcript: 'Seguimiento sintético de regresión.',
+      physicalTests: [],
+      attachments: [],
+    });
+    testState.getTreatmentPlan.mockReset();
+    testState.getTreatmentPlan.mockResolvedValue({
+      planText: testState.mariaDoloresSoap.plan,
+      inClinicText: [
+        'Diatermia (Tecarterapia) en RI',
+        'Movilizaciones y fortalecimiento supervisado',
+        'Masoterapia',
+        'Ejercicios de fortalecimiento en cadena cinética abierta',
+      ].join('\n'),
+      homeProgramText: 'Mantener movilidad activa dentro de tolerancia',
+    });
+    testState.saveTreatmentPlan.mockReset();
+    testState.saveTreatmentPlan.mockResolvedValue(undefined);
     testState.updateSession.mockReset();
     testState.updateSession.mockResolvedValue(undefined);
     testState.saveSOAPNoteWithRetry.mockReset();
@@ -514,5 +564,214 @@ describe('handleFinalizeSOAP incremental Golden Master', () => {
         }),
       })
     );
+  });
+
+  it('elimina permanentemente el HEP de función móvil de Luciana y no lo hidrata en la siguiente sesión', async () => {
+    const user = userEvent.setup();
+    const initialTreatmentDecision = {
+      source: 'physio_final_decision' as const,
+      updatedAt: '2026-07-29T16:59:24.920Z',
+      acceptedAt: '2026-07-29T16:35:06.030Z',
+      acceptedBy: 'physio-test',
+      sourceSessionId: 'session-luciana-previous',
+      confirmationMethod: 'edited' as const,
+      inClinicItems: [
+        {
+          id: 'in-clinic-0',
+          label: 'Movilización articular y trabajo de cicatriz',
+          completed: true,
+        },
+      ],
+      homeProgramItems: [
+        {
+          id: 'hep-3',
+          label: LUCIANA_ACTIVE_HEP_LABEL,
+          completed: true,
+        },
+        {
+          id: 'hep-4',
+          label: LUCIANA_MOBILE_HEP_LABEL,
+          completed: false,
+        },
+      ],
+    };
+
+    testState.getClinicalState.mockResolvedValue({
+      hasBaseline: true,
+      baselineSOAP: LUCIANA_BASELINE_SOAP,
+    });
+    testState.getLatestFinalizedTreatmentDecision.mockResolvedValue(initialTreatmentDecision);
+    testState.getPatientById.mockResolvedValue({
+      id: 'SOOZY6swk9FCz1GDWE6I',
+      firstName: 'Luciana',
+      lastName: 'Correa Ben Moshe',
+      fullName: 'Luciana Correa Ben Moshe',
+      email: 'luciana.synthetic@example.test',
+      activeBaselineId: 'baseline-luciana',
+      status: 'active',
+    });
+    testState.getSessionById.mockImplementation(async (sessionId: string) => {
+      if (sessionId === 'session-luciana-current') {
+        return {
+          id: sessionId,
+          patientId: 'SOOZY6swk9FCz1GDWE6I',
+          patientName: 'Luciana Correa Ben Moshe',
+          userId: 'physio-test',
+          sessionType: 'followup',
+          sessionDateKey: '2026-07-29',
+          status: 'draft',
+          soapStatus: 'draft',
+          soapNote: LUCIANA_BASELINE_SOAP,
+          transcript: 'Seguimiento sintético de Luciana.',
+          physicalTests: [],
+          attachments: [],
+        };
+      }
+      if (sessionId === 'session-luciana-next') {
+        return {
+          id: sessionId,
+          patientId: 'SOOZY6swk9FCz1GDWE6I',
+          patientName: 'Luciana Correa Ben Moshe',
+          userId: 'physio-test',
+          sessionType: 'followup',
+          sessionDateKey: '2026-07-30',
+          status: 'draft',
+          soapStatus: 'draft',
+          soapNote: null,
+          transcript: 'Siguiente seguimiento sintético de Luciana.',
+          physicalTests: [],
+          attachments: [],
+        };
+      }
+      return null;
+    });
+    testState.getTreatmentPlan.mockResolvedValue({
+      planText: LUCIANA_BASELINE_SOAP.plan,
+      inClinicText: 'Movilización articular y trabajo de cicatriz',
+      homeProgramText: [
+        LUCIANA_ACTIVE_HEP_LABEL,
+        LUCIANA_MOBILE_HEP_LABEL,
+      ].join('\n'),
+    });
+    testState.saveSOAPNoteWithRetry.mockResolvedValue({
+      noteId: 'note-luciana',
+      noteStatus: 'finalized',
+      retries: 0,
+      success: true,
+      usedBackup: false,
+    });
+
+    const currentSession = render(
+      <MemoryRouter
+        initialEntries={[
+          '/workflow?type=followup&patientId=SOOZY6swk9FCz1GDWE6I&sessionId=session-luciana-current&resume=true',
+        ]}
+      >
+        <ProfessionalWorkflowPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(LUCIANA_MOBILE_HEP_LABEL)).toBeInTheDocument();
+    });
+
+    const removeFromPlanButton = screen.getByRole('button', {
+      name: (accessibleName) =>
+        accessibleName.includes('workflow.homeProgram.removeFromPlan') &&
+        accessibleName.includes(LUCIANA_MOBILE_HEP_LABEL),
+    });
+    await user.click(removeFromPlanButton);
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await user.type(
+      screen.getByRole('textbox', { name: /workflow\.homeProgram\.removalReasonLabel/i }),
+      'La pinza está recuperada al 100%.',
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: /workflow\.homeProgram\.confirmPermanentRemoval/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText(LUCIANA_MOBILE_HEP_LABEL)).not.toBeInTheDocument();
+      expect(testState.soapTabProps?.isTreatmentDecisionConfirmed).toBe(true);
+    });
+
+    const handleFinalizeSOAP = testState.soapTabProps?.handleFinalizeSOAP as
+      | ((soap: SOAPNote) => Promise<void>)
+      | undefined;
+    expect(handleFinalizeSOAP).toBeTypeOf('function');
+
+    await act(async () => {
+      await handleFinalizeSOAP?.(LUCIANA_FINAL_SOAP);
+    });
+
+    const sessionPersistenceCalls = [
+      ...testState.updateSession.mock.calls,
+      ...testState.createSessionWithId.mock.calls,
+    ];
+    const finalizedSessionSaveCall = sessionPersistenceCalls.find((call) => {
+      const payload = call[1] as Record<string, unknown> | undefined;
+      return (
+        payload?.soapStatus === 'finalized' &&
+        payload?.status === 'completed' &&
+        payload != null &&
+        'treatmentDecision' in payload
+      );
+    });
+
+    expect(finalizedSessionSaveCall).toBeDefined();
+    const finalizedPayload = finalizedSessionSaveCall?.[1] as {
+      soapNote: SOAPNote;
+      treatmentDecision: {
+        homeProgramItems: Array<Record<string, unknown>>;
+      };
+    };
+    expect(finalizedPayload.soapNote.plan).not.toContain(LUCIANA_MOBILE_HEP_LABEL);
+    expect(finalizedPayload.treatmentDecision.homeProgramItems).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'hep-3',
+          label: LUCIANA_ACTIVE_HEP_LABEL,
+        }),
+        expect.objectContaining({
+          id: 'hep-4',
+          label: LUCIANA_MOBILE_HEP_LABEL,
+          completed: false,
+          removedPermanently: true,
+          removedPermanentlyAt: expect.any(String),
+          removedPermanentlyBy: 'physio-test',
+          removedPermanentlyReason: 'La pinza está recuperada al 100%.',
+        }),
+      ]),
+    );
+    const persistedActiveItem = finalizedPayload.treatmentDecision.homeProgramItems.find(
+      (item) => item.id === 'hep-3',
+    );
+    expect(persistedActiveItem).not.toHaveProperty('removedPermanently');
+    const savedHomeProgramOverride = testState.saveTreatmentPlan.mock.calls.at(-1)?.[7];
+    expect(savedHomeProgramOverride).toBe(LUCIANA_ACTIVE_HEP_LABEL);
+
+    const finalizedTreatmentDecision = finalizedPayload.treatmentDecision;
+    currentSession.unmount();
+    testState.soapTabProps = null;
+    testState.focusEditorProps = null;
+    testState.getLatestFinalizedTreatmentDecision.mockResolvedValue(finalizedTreatmentDecision);
+
+    render(
+      <MemoryRouter
+        initialEntries={[
+          '/workflow?type=followup&patientId=SOOZY6swk9FCz1GDWE6I&sessionId=session-luciana-next&resume=true',
+        ]}
+      >
+        <ProfessionalWorkflowPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(LUCIANA_ACTIVE_HEP_LABEL)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(LUCIANA_MOBILE_HEP_LABEL)).not.toBeInTheDocument();
   });
 });
