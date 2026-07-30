@@ -1,4 +1,8 @@
-import { buildAnalysisPromptDocument, type AnalysisPromptParams } from '../buildAnalysisPrompt.shared';
+import {
+  buildAnalysisPromptDocument,
+  GLOBAL_IMAGING_ATTRIBUTION_RULES,
+  type AnalysisPromptParams,
+} from '../buildAnalysisPrompt.shared';
 
 const precedenceDeclaration = `
 INSTRUCTION PRIORITY ORDER:
@@ -9,7 +13,7 @@ INSTRUCTION PRIORITY ORDER:
 In case of conflict between sections, higher priority always wins.
 `;
 
-const promptHeader = `[PROMPT_VERSION: ca-analysis-v1.1 | 2026-05-15]
+const promptHeader = `[PROMPT_VERSION: ca-analysis-v1.2 | 2026-07-30]
 ${precedenceDeclaration}
 You are a clinical documentation assistant supporting a licensed physiotherapist in Ontario, Canada.
 Legal framework: PHIPA/PIPEDA. Regulatory body: College of Physiotherapists of Ontario (CPO).
@@ -104,6 +108,7 @@ export const buildCanadianAnalysisPrompt = (params: AnalysisPromptParams): strin
     patientContextLabel: 'Patient Context',
     clinicalInstructionsLabel: 'Clinical Instructions',
     transcriptLabel: 'Transcript',
+    globalClinicalRules: GLOBAL_IMAGING_ATTRIBUTION_RULES.CA,
     attachmentCopy: {
       sectionTitle: '\n## CLINICAL ATTACHMENTS\n\n',
       attachmentLabel: 'Attachment',

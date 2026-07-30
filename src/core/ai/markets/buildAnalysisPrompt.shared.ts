@@ -51,12 +51,28 @@ type AnalysisPromptCopy = {
   clinicalInstructionsLabel: string;
   transcriptLabel: string;
   attachmentCopy: AttachmentCopy;
-  // §1.7: Optional global attribution rule for imaging content from transcript.
-  // Provided by markets that need imaging attribution (e.g. ES). Absent = no injection.
-  globalClinicalRules?: string;
+  // §1.7: Required global attribution rule for imaging content from transcript.
+  globalClinicalRules: string;
 };
 
 const SHARED_PROMPT_VERSION = '[PROMPT_VERSION: shared-analysis-v1.1 | 2026-05-15]';
+
+// ENGINEERING.md §1.12 — source attribution for imaging discussed in a transcript.
+// Keep the localized variants together so every market consumes the same policy boundary.
+export const GLOBAL_IMAGING_ATTRIBUTION_RULES = {
+  ES: `[REGLA DE ATRIBUCIÓN — IMÁGENES CLÍNICAS EN TRANSCRIPCIÓN]
+Cuando la transcripción incluya comentarios del profesional sobre imágenes clínicas (radiografías, RM, TAC, ecografías):
+- Conserva la información, pero formula el hallazgo como "Comentado por el profesional durante la sesión: [hallazgo], pendiente de correlación clínica y sin sustituir informe radiológico."
+- NO uses frases como "la radiografía muestra…" o "hallazgos radiológicos…" a menos que provengan de un informe radiológico o médico escrito adjunto.
+- Para hechos procedentes de un informe escrito adjunto: usa "según informe adjunto — [hecho]".
+- Para observaciones generadas automáticamente desde adjuntos image/*: no incluirlas en key_findings, alert_notes, red_flags ni recomendaciones.`,
+  CA: `[ATTRIBUTION RULE — CLINICAL IMAGING IN TRANSCRIPT]
+When the transcript includes clinician comments about clinical imaging (X-ray, MRI, CT, ultrasound):
+- Preserve the information, but phrase it as "Commented by the professional during the session: [finding], pending clinical correlation and not a substitute for a radiology report."
+- DO NOT use phrases such as "the X-ray shows..." or "radiological findings..." unless they come from an attached written radiology or medical report.
+- For facts from an attached written report, use "According to the attached report — [fact]."
+- Do not include observations generated automatically from image/* attachments in key_findings, alert_notes, red_flags, or recommendations.`,
+} as const;
 
 export const SHARED_PRECEDENCE_DECLARATION = `
 ORDEN DE PRIORIDAD / PRIORITY ORDER:
@@ -409,8 +425,8 @@ export const buildAnalysisPromptDocument = (
   const transcript = deduplicateTranscript(rawTranscript);
   const transcriptSection = buildTranscriptSection(copy.transcriptLabel, transcript);
   const patientContext = validatedPatientContext.trim();
-  // §1.7: inject global imaging attribution rule when provided by the market copy
-  const globalRulesSection = copy.globalClinicalRules ? `\n${copy.globalClinicalRules}\n` : '';
+  // §1.7: every market must inject its localized global imaging attribution rule.
+  const globalRulesSection = `\n${copy.globalClinicalRules}\n`;
 
   return `
 ${SHARED_PROMPT_VERSION}
