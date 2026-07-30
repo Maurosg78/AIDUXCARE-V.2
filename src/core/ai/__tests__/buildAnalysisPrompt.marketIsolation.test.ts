@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const baseParams = {
+// Intentionally initial: market isolation snapshots the default initial analysis prompt.
+// Follow-up behaviour requires a dedicated fixture instead of changing this shared scenario.
+const baseInitialParams = {
   contextoPaciente: 'Patient undergoing physiotherapy assessment',
   transcript: 'Patient reports wrist pain after surgery.',
-  visitType: 'follow-up' as const,
+  visitType: 'initial' as const,
 };
 
 const loadBuildAnalysisPrompt = async () => {
@@ -26,7 +28,7 @@ describe('buildAnalysisPrompt market isolation', () => {
 
   it('builds an ES prompt without Canadian regulatory wording', async () => {
     const buildAnalysisPrompt = await loadBuildAnalysisPrompt();
-    const prompt = buildAnalysisPrompt(baseParams, { market: 'ES' });
+    const prompt = buildAnalysisPrompt(baseInitialParams, { market: 'ES' });
 
     expect(prompt).toContain('español clínico formal (es-ES)');
     expect(prompt).toContain('Ley 41/2002');
@@ -37,7 +39,7 @@ describe('buildAnalysisPrompt market isolation', () => {
 
   it('builds a CA prompt without Spanish regulatory wording', async () => {
     const buildAnalysisPrompt = await loadBuildAnalysisPrompt();
-    const prompt = buildAnalysisPrompt(baseParams, { market: 'CA' });
+    const prompt = buildAnalysisPrompt(baseInitialParams, { market: 'CA' });
 
     expect(prompt).toContain('Canadian English (en-CA)');
     expect(prompt).toContain('Ontario, Canada');
@@ -48,8 +50,8 @@ describe('buildAnalysisPrompt market isolation', () => {
 
   it('keeps stable snapshots for both markets', async () => {
     const buildAnalysisPrompt = await loadBuildAnalysisPrompt();
-    const spanishPrompt = buildAnalysisPrompt(baseParams, { market: 'ES' });
-    const canadianPrompt = buildAnalysisPrompt(baseParams, { market: 'CA' });
+    const spanishPrompt = buildAnalysisPrompt(baseInitialParams, { market: 'ES' });
+    const canadianPrompt = buildAnalysisPrompt(baseInitialParams, { market: 'CA' });
 
     expect(spanishPrompt).toMatchSnapshot('es-analysis-prompt');
     expect(canadianPrompt).toMatchSnapshot('ca-analysis-prompt');
