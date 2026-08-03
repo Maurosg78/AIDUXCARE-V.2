@@ -1,8 +1,11 @@
 import {
+  buildMedicationSafetyRules,
   buildAnalysisPromptDocument,
   GLOBAL_IMAGING_ATTRIBUTION_RULES,
   type AnalysisPromptParams,
 } from '../buildAnalysisPrompt.shared';
+
+const medicationSafetyRules = buildMedicationSafetyRules('CA');
 
 const precedenceDeclaration = `
 INSTRUCTION PRIORITY ORDER:
@@ -13,7 +16,7 @@ INSTRUCTION PRIORITY ORDER:
 In case of conflict between sections, higher priority always wins.
 `;
 
-const promptHeader = `[PROMPT_VERSION: ca-analysis-v1.2 | 2026-07-30]
+const promptHeader = `[PROMPT_VERSION: ca-analysis-v1.3 | 2026-08-03]
 ${precedenceDeclaration}
 You are a clinical documentation assistant supporting a licensed physiotherapist in Ontario, Canada.
 Legal framework: PHIPA/PIPEDA. Regulatory body: College of Physiotherapists of Ontario (CPO).
@@ -29,7 +32,10 @@ All clinical statements must originate from:
 - clinician-entered inputs,
 - previously documented clinical records.
 Do NOT introduce new tests, findings, diagnoses, treatments, or recommendations that are not present in the input data.
-Output JSON: {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],major_medical_history:[],medications:[{original_text:"",normalized_name:"",active_ingredient:"",confidence:"high|medium|low",requires_review:false,dose:"",frequency:"",duration:""}],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
+
+${medicationSafetyRules.preAnalysis}
+
+Output JSON: {medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],major_medical_history:[],${medicationSafetyRules.outputSchema},summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
 Rules: EN-CA. CONCISE: Target 8-12 words/item. Max 15 words. Exposure language ("suggest/consider", NOT "is/has"). Cite provincial requirements where relevant. No fabrication.
 
@@ -42,13 +48,6 @@ CRITICAL INSTRUCTIONS:
 - Red flags: unexplained weight loss, night pain, neurological deficits, incontinence, systemic infection, major trauma, progressive weakness, cancer history, anticoagulants, steroids, age >65 trauma, symptom escalation on rest, medication interactions (NSAIDs+SSRIs/SNRIs MUST be red_flags, not yellow_flags).
 - Wording compliance: phrase red flags as "Clinical concern: [finding/risk]. Recommend medical review/referral based on red flags."
 - Do not phrase red flags as definitive diagnoses.
-- Medications: use the structured schema {original_text, normalized_name, active_ingredient, confidence, requires_review, dose, frequency, duration}. Correct obvious dosage-unit errors only when recognition is certain. Flag clinically relevant interactions.
-- CRITICAL RULE for unrecognized medications:
-- If the medication name is not recognizable with certainty, DO NOT try to normalize it.
-- Set requires_review: true and confidence: "low".
-- In normalized_name, keep the medication name exactly as the patient said it, without speculation.
-- INCORRECT: normalized_name: "Rivotril/clonazepam", confidence: "medium"
-- CORRECT: normalized_name: "Ribotrín (unidentified)", requires_review: true, confidence: "low"
 - Chief complaint: capture precise anatomical location, quality, radiation, temporal evolution, aggravating/relieving factors, functional impact, intensity, and active symptoms.
 - key_findings: unique clinical observations not already in chief_complaint.
 - medical_history: past medical events only. Do not repeat current symptoms.
@@ -98,6 +97,10 @@ CRITICAL: Do not generate a treatment plan at this stage.
 - key_findings: new observations or changes in status only.
 - summary: progress-focused synthesis without repeating baseline.`;
 
+const globalClinicalRules = `${GLOBAL_IMAGING_ATTRIBUTION_RULES.CA}
+${medicationSafetyRules.detailedRules}
+${medicationSafetyRules.ocrRule}`;
+
 export const buildCanadianAnalysisPrompt = (params: AnalysisPromptParams): string => {
   return buildAnalysisPromptDocument(params, {
     promptHeader,
@@ -108,7 +111,7 @@ export const buildCanadianAnalysisPrompt = (params: AnalysisPromptParams): strin
     patientContextLabel: 'Patient Context',
     clinicalInstructionsLabel: 'Clinical Instructions',
     transcriptLabel: 'Transcript',
-    globalClinicalRules: GLOBAL_IMAGING_ATTRIBUTION_RULES.CA,
+    globalClinicalRules,
     attachmentCopy: {
       sectionTitle: '\n## CLINICAL ATTACHMENTS\n\n',
       attachmentLabel: 'Attachment',

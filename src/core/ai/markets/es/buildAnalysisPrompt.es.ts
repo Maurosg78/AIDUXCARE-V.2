@@ -1,8 +1,11 @@
 import {
+  buildMedicationSafetyRules,
   buildAnalysisPromptDocument,
   GLOBAL_IMAGING_ATTRIBUTION_RULES,
   type AnalysisPromptParams,
 } from '../buildAnalysisPrompt.shared';
+
+const medicationSafetyRules = buildMedicationSafetyRules('ES');
 
 const precedenceDeclaration = `
 ORDEN DE PRIORIDAD DE INSTRUCCIONES:
@@ -36,18 +39,10 @@ Todas las afirmaciones clínicas deben proceder de:
 - los documentos clínicos previos o adjuntos.
 No inventes hallazgos, tratamientos, pruebas ni recomendaciones ajenas a la entrada.
 
-ANÁLISIS PREVIO OBLIGATORIO — MEDICACIÓN:
-Antes de construir el JSON, escanea la transcripción completa
-e identifica TODAS las menciones farmacológicas, incluyendo:
-medicamentos para condiciones no relacionadas con el motivo
-de consulta (diabetes, ansiedad, hipertensión, etc.),
-medicación mencionada de pasada, tratamientos suspendidos
-por intolerancia, inyecciones o infiltraciones previas.
-Un campo medications vacío solo es correcto si el paciente
-dijo explícitamente que no toma ningún medicamento.
+${medicationSafetyRules.preAnalysis}
 
 Salida JSON obligatoria:
-{medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],major_medical_history:[],medications:[{original_text:"",canonical_name:"nombre base sin dosis ni frecuencia. Ejemplos: \"Janumet 50 y 1000\"→\"Janumet\", \"tranquilmacín 25\"→\"Tranquilmazín\". null si incierto.",normalized_name:"",active_ingredient:"",mention_status:"current|previous|stopped_adverse|topical_or_supplement|unclear",confidence:"high|medium|low",requires_review:false,suggested_name:"",dose:"",frequency:"",duration:""}],adverse_drug_reactions:[{drug_name:"nombre del medicamento referido",reaction_description:"descripción textual de lo que el paciente refirió",patient_reported:true,clinician_review_required:true}],summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
+{medicolegal_alerts:{red_flags:[],yellow_flags:[],legal_exposure:"low|moderate|high",alert_notes:[]},conversation_highlights:{chief_complaint:"",key_findings:[],medical_history:[],major_medical_history:[],${medicationSafetyRules.outputSchema},summary:""},recommended_physical_tests:[{name:"",objective:"",region:"",rationale:"",evidence_level:"strong|moderate|emerging",sensitivity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",specificity:"numeric(0-1)|qualitative(high|moderate|low)|unknown",source:"PhysioTutor|literature|clinical_reasoning|unknown"}],biopsychosocial_factors:{psychological:[],social:[],occupational:[],protective_factors:[],functional_limitations:[],legal_or_employment_context:[],patient_strengths:[]}}
 
 REGLAS DE REDACCIÓN:
 - Español clínico formal (es-ES).
@@ -157,70 +152,7 @@ REGLAS DE DISTRIBUCIÓN:
 - key_findings: hallazgos clínicos únicos no repetidos en chief_complaint.
 - medical_history: antecedentes y eventos previos.
 - major_medical_history: recoge explícitamente comorbilidades sistémicas mayores mencionadas de forma secundaria o incidental.
-- medications: lista estructurada de medicación. Para cada medicamento usa el esquema {original_text, normalized_name, active_ingredient, mention_status, confidence, requires_review, suggested_name, dose, frequency, duration}. Reglas:
-  CRÍTICO: original_text es SOLO el nombre del medicamento tal como lo dijo el paciente — máximo 4-5 palabras. NUNCA la frase completa del transcript. Correcto: "Janumet 50 y 1000". Incorrecto: "dos pastillas, una por la mañana y una por la noche de 1000 Janumet se llaman".
-  CRÍTICO: En fisioterapia el paciente menciona medicación
-  habitualmente de forma colateral. Estas menciones SON
-  medicación relevante solo si identifican un fármaco o una categoría
-  farmacológica real. Una descripción funcional como "medicamento para
-  las varices" NO es nombre de medicamento y debe quedar como
-  requires_review: true, confidence: "low", mention_status: "unclear".
-  No la trates como medicación actual confirmada.
-  Ejemplo correcto — transcripción: "tomo pastillas para la
-  diabetes y cuando me pongo nerviosa tomo algo para la
-  ansiedad. Los antiinflamatorios me hicieron daño en el
-  estómago."
-  medications correcto:
-  [{original_text:"pastillas para la diabetes",...},
-   {original_text:"algo para la ansiedad",...},
-   {original_text:"antiinflamatorios",
-    requires_review:true,
-    confidence:"high"}]
-  PRIORIDAD DE NOMBRES:
-  Cuando el paciente menciona tanto el nombre comercial
-  con dosis ("Janumet 50/1000") como una descripción
-  genérica del mismo medicamento ("pastillas para la
-  diabetes"), el original_text SIEMPRE debe ser el nombre
-  más específico: "Janumet 50/1000".
-  La descripción genérica es contexto, no el medicamento.
-  Regla: nombre comercial + dosis > nombre comercial solo
-  > nombre genérico > descripción funcional.
-  Si el paciente dice "Janumet, el de la diabetes, tomo
-  uno por la mañana y uno por la noche", original_text
-  correcto: "Janumet (1 comp mañana, 1 comp noche)".
-  - original_text: exactamente como apareció en la transcripción.
-  - mention_status:
-    - "current" si el paciente lo toma actualmente.
-    - "previous" si se lo dieron o lo tomó en el pasado y ya no lo toma.
-    - "stopped_adverse" si lo suspendió por reacción adversa o intolerancia.
-    - "topical_or_supplement" si es crema, tópico, suplemento o producto no farmacológico sistémico.
-    - "unclear" si no queda claro si lo toma actualmente o si el nombre no es identificable.
-    Ejemplo: "me dieron heparina para un trombo hace tiempo" → mention_status: "previous". NO es medicación actual.
-  - normalized_name: busca primero si el nombre mencionado es un nombre comercial válido en España (vademécum ES). Si lo reconoces como nombre comercial, escribe: "NombreComercial (principioActivo)" — por ejemplo: "Robaxin (metocarbamol)" o "Nolotil (metamizol)". Si es directamente un principio activo, úsalo tal cual. Si el nombre no corresponde a ningún medicamento conocido en España, escribe el original_text seguido de " [nombre por confirmar]". Nunca inventes un medicamento.
-  - confidence: "high" si reconoces el medicamento con certeza, "medium" si es probable, "low" si el nombre es ambiguo o fonéticamente incierto.
-  - REGLA CRÍTICA DE CONFIANZA EN MEDICAMENTOS:
-    - confidence: "high" SOLO si el original_text corresponde exactamente a un nombre comercial o principio activo reconocido en España (vademécum ES), sin ambigüedad fonética ni ortográfica.
-    - Si el nombre en la transcripción es fonéticamente similar pero no idéntico a un medicamento conocido (ej: "ribotrín" → Rivotril, "aspirín" → Aspirina), confidence DEBE ser "low" y requires_review: true. La similitud fonética NO es certeza.
-    - Si hay cualquier duda sobre si el nombre transcrito corresponde al medicamento normalizado, confidence es "medium" como máximo.
-    - EJEMPLO CRÍTICO:
-      original_text: "ribotrín" → NO es Rivotril con certeza.
-      CORRECTO: normalized_name: "ribotrín", confidence: "low", requires_review: true
-      INCORRECTO: normalized_name: "Rivotril (Clonazepam)", confidence: "high", requires_review: false
-  - requires_review: true si confidence es "low" o "medium", false si es "high".
-  - dose, frequency, duration: extraer cuando estén disponibles, vacío si no.
-  - active_ingredient: principio activo en español cuando normalized_name sea un nombre comercial. Vacío si normalized_name ya es principio activo.
-  - Nunca autocorregir en silencio. Si normalized_name difiere semánticamente de original_text, marcar requires_review: true.
-  - La diferencia de capitalización entre original_text y normalized_name NO activa requires_review.
-  - Solo activa requires_review si el nombre difiere semánticamente o es genuinamente incierto.
-  - REGLA CRÍTICA para medicamentos no reconocidos:
-    - Si el nombre del medicamento no es reconocible con certeza, NO intentes normalizarlo.
-    - Establece requires_review: true y confidence: "low".
-    - En normalized_name pon el nombre tal como lo dijo el paciente, sin especular.
-    - Si existe una posible coincidencia fonética, ponla en suggested_name, no en normalized_name.
-    - INCORRECTO: normalized_name: "Rivotril/clonazepam", confidence: "medium"
-    - CORRECTO: normalized_name: "ribotrín", requires_review: true, confidence: "low"
-- adverse_drug_reactions: captura cualquier mención del paciente sobre efectos adversos, intolerancias o problemas con medicamentos previos o actuales, aunque sea colateral o incidental. Documenta textualmente lo que el paciente refirió. No evalúes ni clasifiques la gravedad — eso corresponde al fisioterapeuta. Ejemplo: si el paciente dice "los antiinflamatorios me hicieron daño en el estómago", registrar drug_name: "antiinflamatorios (AINEs)", reaction_description: "el paciente refiere daño gástrico asociado al uso de antiinflamatorios". Este campo debe estar presente aunque esté vacío.
-- yellow_flags: incluir yellow flag automático si se mencionan AINEs (ibuprofeno, naproxeno, diclofenaco, aspirina, ketorolaco) sin dosis especificada por más de 5 días, con texto: "Medicación AINE sin dosis especificada — verificar gramaje con el paciente y monitorizar tolerancia gastrointestinal."
+${medicationSafetyRules.detailedRules}
 - summary: síntesis breve sin repetir todo lo anterior.`;
 
 const defaultFollowUpInstructions = `Analiza esta visita de seguimiento como asistente de razonamiento clínico para un fisioterapeuta en España. Céntrate en evolución clínica, continuidad asistencial y cambios respecto a la línea basal. Expón respuesta al tratamiento, progresión sintomática, cambios funcionales, adherencia, nuevas incidencias y modificaciones biopsicosociales. Recomienda valoraciones de fisioterapia sólo si son necesarias para control evolutivo o por nuevas preocupaciones clínicas.
@@ -235,7 +167,7 @@ REGLAS DE DISTRIBUCIÓN:
 // Supplements attachment-level guards (SCANNED_REPORT_OCR_INSTRUCTIONS, IMAGING_SCOPE_BOUNDARY_INSTRUCTIONS)
 // which only apply to extractedText. This rule applies to transcript content unconditionally.
 const globalClinicalRules = `${GLOBAL_IMAGING_ATTRIBUTION_RULES.ES}
-- Medicación explícita presente en texto OCR o informe adjunto (incluyendo Enantyum, dexketoprofeno, intramuscular, IM): incluirla en medications aunque la confianza sea medium o low; marcar requires_review: true si el nombre OCR es incierto en lugar de omitirla.`;
+${medicationSafetyRules.ocrRule}`;
 
 export const buildSpanishAnalysisPrompt = (params: AnalysisPromptParams): string => {
   return buildAnalysisPromptDocument(params, {
