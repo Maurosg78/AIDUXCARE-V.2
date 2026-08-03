@@ -14,7 +14,7 @@ describe('buildAnalysisPrompt imaging attribution', () => {
       attachments: [],
     });
 
-    expect(prompt).toContain('[PROMPT_VERSION: ca-analysis-v1.2 | 2026-07-30]');
+    expect(prompt).toContain('[PROMPT_VERSION: ca-analysis-v1.3 | 2026-08-03]');
     expect(prompt).toContain('[ATTRIBUTION RULE — CLINICAL IMAGING IN TRANSCRIPT]');
     expect(prompt).toContain(
       'Commented by the professional during the session: [finding], pending clinical correlation and not a substitute for a radiology report.'
