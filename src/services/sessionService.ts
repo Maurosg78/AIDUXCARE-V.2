@@ -1,4 +1,4 @@
-import { collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, serverTimestamp, limit, type Timestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, query, where, orderBy, startAfter, serverTimestamp, limit, type Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { PhysicalExamResult, SOAPNote } from '../types/vertex-ai';
 
@@ -305,6 +305,20 @@ class SessionService {
     return inClinicItemsValid && homeProgramItemsValid;
   }
 
+  private isEligibleFinalizedTreatmentDecisionSession(
+    data: Record<string, unknown>,
+    userId: string,
+    options: { asOfDateKey?: string }
+  ): boolean {
+    const ownerId = this.getSessionOwnerId(data);
+    if (ownerId !== userId) return false;
+    if (data.status !== 'completed') return false;
+    if (data.soapStatus !== 'finalized') return false;
+    if (this.normalizeSessionKind(data.sessionType) !== 'followup') return false;
+    if (!this.isSessionOnOrBeforeDate(data, options.asOfDateKey)) return false;
+    return this.isTreatmentDecision(data.treatmentDecision);
+  }
+
   /**
    * Reuse an open session for the same patient, practitioner, local calendar day, and session kind
    * (initial vs follow-up). Skips sessions that already have finalized SOAP so a second real visit
@@ -542,32 +556,59 @@ class SessionService {
         'createdBy',
       ];
       const sessionDocsById = new Map<string, Record<string, unknown>>();
+      const pageSize = 50;
       for (const ownershipField of ownershipFields) {
+        let foundEligibleDecision = false;
+        let lastDocument: Awaited<ReturnType<typeof getDocs>>['docs'][number] | null = null;
         try {
-          const q = query(
-            sessionsRef,
-            where('patientId', '==', patientId),
-            where(ownershipField, '==', userId),
-            limit(50)
-          );
-          const snapshot = await getDocs(q);
-          for (const sessionDoc of snapshot.docs) {
-            sessionDocsById.set(sessionDoc.id, sessionDoc.data());
+          while (!foundEligibleDecision) {
+            const q = query(
+              sessionsRef,
+              where('patientId', '==', patientId),
+              where(ownershipField, '==', userId),
+              orderBy('updatedAt', 'desc'),
+              ...(lastDocument ? [startAfter(lastDocument)] : []),
+              limit(pageSize)
+            );
+            const snapshot = await getDocs(q);
+            for (const sessionDoc of snapshot.docs) {
+              const sessionData = sessionDoc.data();
+              sessionDocsById.set(sessionDoc.id, sessionData);
+              if (this.isEligibleFinalizedTreatmentDecisionSession(sessionData, userId, options)) {
+                foundEligibleDecision = true;
+              }
+            }
+            if (foundEligibleDecision || snapshot.docs.length < pageSize) {
+              break;
+            }
+            lastDocument = snapshot.docs.at(-1) ?? null;
+            if (!lastDocument) {
+              break;
+            }
           }
         } catch {
-          console.warn('[SessionService] treatmentDecision ownership query failed; continuing with fallback ownership fields.');
+          console.warn('[SessionService] ordered treatmentDecision query failed; using unbounded compatibility fallback.', {
+            ownershipField,
+          });
+          try {
+            const fallbackQuery = query(
+              sessionsRef,
+              where('patientId', '==', patientId),
+              where(ownershipField, '==', userId)
+            );
+            const fallbackSnapshot = await getDocs(fallbackQuery);
+            for (const sessionDoc of fallbackSnapshot.docs) {
+              sessionDocsById.set(sessionDoc.id, sessionDoc.data());
+            }
+          } catch {
+            console.warn('[SessionService] treatmentDecision ownership fallback failed; continuing with available ownership fields.', {
+              ownershipField,
+            });
+          }
         }
       }
       const candidates = Array.from(sessionDocsById.values())
-        .filter((data) => {
-          const ownerId = this.getSessionOwnerId(data);
-          if (ownerId !== userId) return false;
-          if (data.status !== 'completed') return false;
-          if (data.soapStatus !== 'finalized') return false;
-          if (this.normalizeSessionKind(data.sessionType) !== 'followup') return false;
-          if (!this.isSessionOnOrBeforeDate(data, options.asOfDateKey)) return false;
-          return this.isTreatmentDecision(data.treatmentDecision);
-        })
+        .filter((data) => this.isEligibleFinalizedTreatmentDecisionSession(data, userId, options))
         .sort((a, b) => {
           const aTime = Math.max(
             this.timestampToMillis(a.updatedAt),

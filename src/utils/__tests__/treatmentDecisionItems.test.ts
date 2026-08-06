@@ -3,12 +3,13 @@ import { describe, expect, it } from 'vitest';
 import type { TreatmentDecisionItem } from '../../services/sessionService';
 import {
   hydrateTreatmentDecisionItems,
+  isActiveTreatmentDecisionItem,
   markTreatmentDecisionItemRemoved,
   normalizeTreatmentDecisionItem,
 } from '../treatmentDecisionItems';
 
 describe('hydrateTreatmentDecisionItems', () => {
-  it('no hidrata un ítem marcado removedPermanently aunque completed sea false', () => {
+  it('preserva el tombstone internamente pero lo excluye del HEP activo', () => {
     const removedItem: TreatmentDecisionItem = {
       id: 'hep-removed',
       label: 'Ejercicio retirado por el fisioterapeuta',
@@ -18,7 +19,20 @@ describe('hydrateTreatmentDecisionItems', () => {
       removedPermanentlyBy: 'physio-uid',
     };
 
-    expect(hydrateTreatmentDecisionItems([removedItem])).toEqual([]);
+    const hydrated = hydrateTreatmentDecisionItems([removedItem]);
+
+    expect(hydrated).toEqual([
+      {
+        id: 'hep-removed',
+        label: 'Ejercicio retirado por el fisioterapeuta',
+        completed: false,
+        removedPermanently: true,
+        removedPermanentlyAt: '2026-07-29T17:15:00.000Z',
+        removedPermanentlyBy: 'physio-uid',
+        source: 'plan',
+      },
+    ]);
+    expect(hydrated.filter(isActiveTreatmentDecisionItem)).toEqual([]);
   });
 
   it('reconstruye el caso real de Luciana sin rehidratar la función móvil retirada', () => {
@@ -40,11 +54,45 @@ describe('hydrateTreatmentDecisionItems', () => {
     ];
 
     const hydrated = hydrateTreatmentDecisionItems(lucianaItems);
+    const activeItems = hydrated.filter(isActiveTreatmentDecisionItem);
 
-    expect(hydrated.map((item) => item.label)).toEqual([
+    expect(activeItems.map((item) => item.label)).toEqual([
       'Fortalecimiento progresivo de prensión y pinza: Continuar fortalecimiento',
     ]);
-    expect(hydrated.some((item) => item.id === 'hep-4')).toBe(false);
+    expect(activeItems.some((item) => item.id === 'hep-4')).toBe(false);
+    expect(hydrated.find((item) => item.id === 'hep-4')).toMatchObject({
+      removedPermanently: true,
+      removedPermanentlyAt: '2026-07-29T17:15:00.000Z',
+      removedPermanentlyBy: 'ff0w27nBbmMoVe1MnUOKq7gKEd32',
+      removedPermanentlyReason: 'La pinza está recuperada al 100%.',
+    });
+  });
+
+  it('propaga el tombstone más allá de una única generación de hidratación', () => {
+    const removedItem: TreatmentDecisionItem = {
+      id: 'hep-4',
+      label: 'Teclear con pulgar en móvil: Integrar función móvil',
+      completed: false,
+      removedPermanently: true,
+      removedPermanentlyAt: '2026-07-29T17:15:00.000Z',
+      removedPermanentlyBy: 'ff0w27nBbmMoVe1MnUOKq7gKEd32',
+      removedPermanentlyReason: 'La pinza está recuperada al 100%.',
+    };
+
+    const secondSessionState = hydrateTreatmentDecisionItems([removedItem]);
+    const secondSessionDecision = secondSessionState.map(normalizeTreatmentDecisionItem);
+    const thirdSessionState = hydrateTreatmentDecisionItems(secondSessionDecision);
+
+    expect(thirdSessionState.filter(isActiveTreatmentDecisionItem)).toEqual([]);
+    expect(thirdSessionState).toEqual([
+      expect.objectContaining({
+        id: 'hep-4',
+        removedPermanently: true,
+        removedPermanentlyAt: '2026-07-29T17:15:00.000Z',
+        removedPermanentlyBy: 'ff0w27nBbmMoVe1MnUOKq7gKEd32',
+        removedPermanentlyReason: 'La pinza está recuperada al 100%.',
+      }),
+    ]);
   });
 
   it('mantiene un ítem simplemente desmarcado exactamente como hoy', () => {

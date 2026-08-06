@@ -54,12 +54,15 @@ export function hydrateTreatmentDecisionItems(
   items: TreatmentDecisionItem[],
 ): TodayFocusItem[] {
   return items
-    .filter(isActiveTreatmentDecisionItem)
     .map((item) => ({
       id: item.id,
       label: item.label,
       completed: false,
       ...(item.notes ? { notes: item.notes } : {}),
+      ...(item.removedPermanently === true ? { removedPermanently: true } : {}),
+      ...(item.removedPermanentlyAt ? { removedPermanentlyAt: item.removedPermanentlyAt } : {}),
+      ...(item.removedPermanentlyBy ? { removedPermanentlyBy: item.removedPermanentlyBy } : {}),
+      ...(item.removedPermanentlyReason ? { removedPermanentlyReason: item.removedPermanentlyReason } : {}),
       source: 'plan' as const,
     }));
 }
