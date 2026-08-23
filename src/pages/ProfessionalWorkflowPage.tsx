@@ -1026,6 +1026,12 @@ const ProfessionalWorkflowPage = () => {
     () => homeProgramItems.filter(isActiveTreatmentDecisionItem),
     [homeProgramItems],
   );
+  // WO-INCLINIC-TOMBSTONE-FILTER-01: mirrors activeHomeProgramItems above —
+  // strips permanently-removed in-clinic items before they reach prompts, UI or email.
+  const activeInClinicItems = useMemo(
+    () => inClinicItems.filter(isActiveTreatmentDecisionItem),
+    [inClinicItems],
+  );
   const { profile: professionalProfile } = useProfessionalProfileContext();
   const consentSmsJurisdiction = useMemo(() => {
     const practiceCountry = `${professionalProfile?.practiceCountry || professionalProfile?.country || ''}`.trim().toUpperCase();
@@ -5543,7 +5549,7 @@ const ProfessionalWorkflowPage = () => {
       const organized = organizeSOAPData(unifiedData);
 
       // WO-05-FIX / WO-FOLLOWUP-PROMPT: Inyectar todayFocus y homeProgramPrescribed solo en follow-up; initial no se toca
-      const focusToInject = visitType === 'follow-up' ? inClinicItems : todayFocus;
+      const focusToInject = visitType === 'follow-up' ? activeInClinicItems : todayFocus;
       if (focusToInject.length > 0) {
         organized.context.todayFocus = focusToInject.map(item => ({
           id: item.id,
@@ -5883,12 +5889,12 @@ const ProfessionalWorkflowPage = () => {
         ? activeHomeProgramItems.map((item) => item.label)
         : [];
       const inClinicDecisionWasProvided = Boolean(treatmentDecisionConfirmationRef.current);
-      const inClinicItemsConfirmedPerformedToday = inClinicItems.filter((item) => item.completed === true);
+      const inClinicItemsConfirmedPerformedToday = activeInClinicItems.filter((item) => item.completed === true);
       const inClinicItemsForPrompt = inClinicDecisionWasProvided
         ? inClinicItemsConfirmedPerformedToday.map((item) => item.label)
         : [];
       const inClinicContextOnly = !inClinicDecisionWasProvided
-        ? inClinicItems.map((item) => item.label)
+        ? activeInClinicItems.map((item) => item.label)
         : [];
       console.info('[HEP-PROVENANCE-GATE]', {
         homeProgramItemsCount: activeHomeProgramItems.length,
@@ -6077,7 +6083,7 @@ const ProfessionalWorkflowPage = () => {
     } finally {
       setIsGeneratingSOAP(false);
     }
-  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, isTranscribing, sessionId, inClinicItems, homeProgramItems, activeHomeProgramItems, currentPainEva, previousTreatmentDecision, previousTreatmentPlan, patientIdFromUrl]);
+  }, [attachments, buildVertexClinicalInput, followUpClinicalState, transcript, physioNotes, isTranscribing, sessionId, inClinicItems, activeInClinicItems, homeProgramItems, activeHomeProgramItems, currentPainEva, previousTreatmentDecision, previousTreatmentPlan, patientIdFromUrl]);
 
   // Helper function to clean undefined values from objects
   const cleanUndefined = (obj: any): any => {
@@ -7644,7 +7650,7 @@ const ProfessionalWorkflowPage = () => {
                   const todayFocusTrimmed = todayFocusRaw.trim();
                   const shouldShowTodayFocusRow = showClinicalBriefing && todayFocusTrimmed.length > 0;
                   const shouldShowProposedInClinicReadOnlyRow =
-                    showClinicalBriefing && inClinicItems.length > 0;
+                    showClinicalBriefing && activeInClinicItems.length > 0;
                   return (
                     <>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 pt-4 pb-3 border-b border-slate-100">
@@ -7824,7 +7830,7 @@ const ProfessionalWorkflowPage = () => {
                           ) : null}
                           {shouldShowProposedInClinicReadOnlyRow ? (
                             <ul className="space-y-1">
-                              {inClinicItems.map((proposedInClinicItem) => (
+                              {activeInClinicItems.map((proposedInClinicItem) => (
                                 <li
                                   key={proposedInClinicItem.id}
                                   className="text-sm text-slate-700 font-apple font-light"
@@ -8225,7 +8231,7 @@ const ProfessionalWorkflowPage = () => {
                     professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
                     professionalLicense={professionalProfile?.licenseNumber}
                     sessionDateKey={clinicalSessionDateKey}
-                    inClinicItemsOverride={inClinicItems.map((item) => item.label)}
+                    inClinicItemsOverride={activeInClinicItems.map((item) => item.label)}
                     hepItemsOverride={localSoapNote?.plan ? derivePlanFromText(localSoapNote.plan).homeProgram : activeHomeProgramItems.map((item) => item.label)}
                     patientName={currentPatient?.fullName ?? `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
                     redFlagDecisions={redFlagDecisions}
@@ -8516,7 +8522,7 @@ const ProfessionalWorkflowPage = () => {
                     professionalTitle={professionalProfile?.profession || 'Fisioterapeuta'}
                     professionalLicense={professionalProfile?.licenseNumber}
                     sessionDateKey={clinicalSessionDateKey}
-                    inClinicItemsOverride={inClinicItems.map((item) => item.label)}
+                    inClinicItemsOverride={activeInClinicItems.map((item) => item.label)}
                     hepItemsOverride={localSoapNote?.plan ? derivePlanFromText(localSoapNote.plan).homeProgram : activeHomeProgramItems.map((item) => item.label)}
                     patientName={currentPatient?.fullName ?? `${currentPatient?.firstName || ''} ${currentPatient?.lastName || ''}`.trim()}
                     redFlagDecisions={redFlagDecisions}
