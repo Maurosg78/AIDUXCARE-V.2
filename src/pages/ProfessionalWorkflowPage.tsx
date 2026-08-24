@@ -923,7 +923,6 @@ const ProfessionalWorkflowPage = () => {
     reductionPercent: number;
   } | undefined>();
   const [isGeneratingSOAP, setIsGeneratingSOAP] = useState(false);
-  const [savingSession, setSavingSession] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   /** When resume=true fails (session not found), show recovery links (View note / Back to history view). */
