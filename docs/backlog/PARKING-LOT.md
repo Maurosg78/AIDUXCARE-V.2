@@ -27,6 +27,19 @@
 
 ---
 
+### `e2e.yml` lleva 9 meses sin ejecutar Playwright de verdad — los 42 tests que fallan no son regresiones
+
+- **Qué es:** `e2e.yml` no tiene registro de haber ejecutado Playwright de verdad en ningún momento dentro de la ventana de retención de GitHub (mínimo 90 días). La corrida del PR #288 (25 agosto 2026) es la primera ejecución real confirmada.
+- **Por qué los 42 tests fallan:** no son regresiones. Los tres archivos de spec (`hospital-portal.spec.ts`, `mobile-viewports.spec.ts`, `mvp-launch-readiness.spec.ts`) se crearon en un único commit el 2025-11-28 y nunca se modificaron desde entonces — 9 meses de desfase acumulado contra una aplicación que cambió debajo de ellos sin que nadie lo supiera:
+  - `hospital-portal.spec.ts` prueba una pantalla que se movió de `/hospital` a `/hospital/note` (marcada "legacy" en el router actual).
+  - `mobile-viewports.spec.ts` espera una política de bloqueo de zoom (`maximum-scale=1.0`, `user-scalable=no`) que ya no está en `index.html`, probablemente removida a propósito por accesibilidad.
+  - `mvp-launch-readiness.spec.ts` referencia clases CSS que no existen en ningún archivo de `src/` hoy (`.soap-report-container`, `.region-tab`, `.test-card`) y un botón `"Send Consent SMS"` que no existe en el código actual.
+- **Por qué importa:** no bloquea merges (`continue-on-error: true`), pero significa que el equipo lleva 9 meses sin ninguna verificación E2E real, con un archivo de configuración que aparentaba dar cobertura. Antes de arreglar los tests uno por uno, hay que decidir si siguen describiendo funcionalidad vigente o si corresponde reescribirlos contra la UI actual.
+- **No tocado:** solo documentación, por instrucción explícita.
+- **Encontrado:** 2026-08-25, verificación de la corrida real de `e2e.yml` en el PR #288, tras el fix del conflicto `pnpm/action-setup`.
+
+---
+
 ## i18n / UX por país
 
 ### Mensaje en español para profesionales registrados en países hispanohablantes
