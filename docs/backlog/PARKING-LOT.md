@@ -4,6 +4,18 @@
 
 ---
 
+## Máxima prioridad
+
+### CI sin protección real desde 2026-02-21: typecheck.yml y size.yml fallan en todo push a main/stable
+
+- **Qué es:** los workflows de CI `typecheck.yml` y `size.yml` fallan en todo push a `main`/`stable` desde 2026-02-21, por un cambio de comportamiento en `pnpm/action-setup@v4` (tag flotante): la acción ahora rechaza que `version` en el YAML y `packageManager` en `package.json` coexistan, aunque apunten a la misma versión (10.29.2 en ambos). `e2e.yml` tiene el mismo fallo pero no bloquea por `continue-on-error: true` preexistente.
+- **Impacto real:** ningún PR mergeado a este repo desde el 21 de febrero ha tenido verificación automática de tipos ni de tamaño de bundle en CI. La única red de seguridad de tipos ha sido `tsc` local, corrido manualmente por quien hace el cambio.
+- **Arreglo probable, no verificado:** fijar la versión de la acción a un tag exacto en vez de `@v4` flotante, o remover la duplicación entre `version` del workflow y `packageManager` de `package.json`, dejando una sola fuente de verdad.
+- **Por qué importa:** no es un bug de funcionalidad, es la ausencia de un gate de protección que el equipo asume que existe cada vez que ve un check en rojo o verde en un PR.
+- **Encontrado:** 2026-08-25, diagnóstico de los checks fallidos en el PR #287, confirmado preexistente comparando `stable` y el historial de corridas de ambos workflows (última corrida exitosa de `typecheck.yml`: 2026-02-07).
+
+---
+
 ## i18n / UX por país
 
 ### Mensaje en español para profesionales registrados en países hispanohablantes
@@ -26,4 +38,4 @@
 
 ---
 
-*Última actualización: 2026-08-24*
+*Última actualización: 2026-08-25*
