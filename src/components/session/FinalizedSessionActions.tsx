@@ -109,7 +109,7 @@ export const FinalizedSessionActions: React.FC<FinalizedSessionActionsProps> = (
       aria-label={`Acciones de sesion finalizada para ${actionContextLabel}`}
       className="flex flex-wrap items-center gap-3"
       data-professional-context={
-        process.env.NODE_ENV === 'development'
+        typeof process !== 'undefined' && process.env.NODE_ENV === 'development'
           ? professionalContextLabel
           : undefined
       }

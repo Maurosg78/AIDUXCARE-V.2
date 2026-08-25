@@ -298,7 +298,7 @@ export async function generateSOAPNote(
         (typeof import.meta !== "undefined" &&
           (import.meta as unknown as { env?: { VITE_PROMPT_BRAIN_VERSION?: string } }).env
             ?.VITE_PROMPT_BRAIN_VERSION) ||
-        process.env.VITE_PROMPT_BRAIN_VERSION,
+        (typeof process !== "undefined" ? process.env.VITE_PROMPT_BRAIN_VERSION : undefined),
     });
 
     // ✅ WO-03: Determine if v3 path should be used
