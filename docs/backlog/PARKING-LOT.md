@@ -14,4 +14,16 @@
 
 ---
 
-*Última actualización: 2026-02-28*
+## Errores puntuales / a investigar
+
+### Error de permisos de Firestore en SessionService.createSessionWithId durante generación de SOAP
+
+- **Qué es:** `SessionService.createSessionWithId` lanzó `FirebaseError: Missing or insufficient permissions` en `sessionService.ts:291`, disparado desde `handleGenerateSoap` en `ProfessionalWorkflowPage.tsx:4419`.
+- **Cuándo ocurrió:** una sola vez, durante prueba manual en dev, en un intento de generar SOAP mientras el botón aún estaba deshabilitado (evaluación física incompleta). No se repitió en el flujo completo.
+- **No investigado:** no se determinó si es un problema real de reglas de Firestore, una condición de carrera entre el estado del botón deshabilitado y una llamada que igual se disparó, o algo específico del entorno de prueba. No bloqueó el flujo real.
+- **Por qué queda anotado igual:** un error de permisos de Firestore, aunque parezca inofensivo por no haber bloqueado nada, vale la pena que alguien lo mire con calma antes de asumir que es ruido.
+- **Encontrado:** 2026-08-24, prueba end-to-end del guard de `process.env` en `npm run dev` (rama `fix/process-env-dev-guard`).
+
+---
+
+*Última actualización: 2026-08-24*
