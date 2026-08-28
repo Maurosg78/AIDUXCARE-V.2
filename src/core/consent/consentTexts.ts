@@ -7,8 +7,13 @@
  * All references use textVersion.
  *
  * v2-en-CA: CPO TRUST + IPC Ontario (Jan 28, 2026) compliant.
- * Covers: what AI scribe does, third-party processing, Canadian storage,
- * physiotherapist review, voluntary participation without care impact.
+ * Covers: what AI scribe does, named cross-border processors (OpenAI Whisper — US,
+ * Google Vertex AI), PIPEDA Schedule 1 Principle 4.1.3 safeguards, physiotherapist
+ * review, complaint right to IPC Ontario, voluntary participation without care impact.
+ *
+ * ⚠️ 2026-08-28: Corrected factual error — audio is NOT stored on Canadian servers.
+ * It is transcribed by OpenAI Whisper (United States) and analyzed by Google Vertex AI.
+ * See memory: project_canada_consent_debt.
  */
 
 import type { ConsentTextVersion } from './consentLanguagePolicy';
@@ -37,7 +42,11 @@ export const CONSENT_TEXTS: Record<ConsentTextVersion, ConsentText> = {
     version: 'v1-en-CA',
     jurisdiction: 'CA-ON',
     type: 'verbal',
-    text: `We will record our physiotherapy session to automatically generate medical notes using artificial intelligence. The recording is securely stored on nadian servers. Do you authorize this recording and processing of your data?`,
+    // ⚠️ Deprecated — no active callers as of 2026-08-28 (superseded by v2-en-CA).
+    // Kept in the registry for backward compatibility with any already-recorded
+    // consent referencing this version; corrected to remove the false "Canadian
+    // servers" claim rather than leaving factually incorrect text on file.
+    text: `We will record our physiotherapy session to automatically generate medical notes using artificial intelligence. The audio is transcribed by a secure third-party service (OpenAI Whisper, United States) under contractual data protection safeguards. Do you authorize this recording and processing of your data?`,
   },
   'v1-en-US': {
     language: 'en-US',
@@ -53,7 +62,7 @@ export const CONSENT_TEXTS: Record<ConsentTextVersion, ConsentText> = {
     type: 'verbal',
     text: `I use an AI tool to help me take notes during our session so I can focus on you instead of typing.
 
-The session audio is processed by a secure third-party AI service and stored on Canadian servers. I always review and approve all notes before they become part of your record.
+I want to let you know that the session audio is transcribed by a secure third-party service called OpenAI Whisper, located in the United States, under contractual data protection safeguards consistent with PIPEDA Schedule 1, Principle 4.1.3. The clinical analysis is performed by Google Vertex AI. Neither provider uses your data to train their systems. I always review and approve all notes before they become part of your record. You have the right to file a complaint with the Information and Privacy Commissioner of Ontario (ipc.on.ca) if you believe your data is not being handled properly.
 
 Your participation is completely voluntary. You can say no or change your mind at any time — this will not affect the quality of care you receive.
 
