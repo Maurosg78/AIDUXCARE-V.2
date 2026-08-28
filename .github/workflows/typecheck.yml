@@ -14,10 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Must match package.json "packageManager" (pnpm@…); otherwise action defaults to pnpm 9 and fails.
+      # Version resolved from package.json "packageManager" — do not also set `version:` here.
+      # pnpm/action-setup rejects version + packageManager coexisting even when they agree,
+      # because it compares the bare version against the full packageManager string
+      # (including the +sha512 integrity hash), which can never match. See PARKING-LOT.md.
       - uses: pnpm/action-setup@v4
         with:
-          version: 10.29.2
           run_install: false
 
       - uses: actions/setup-node@v4

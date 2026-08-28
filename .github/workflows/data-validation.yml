@@ -32,9 +32,10 @@ jobs:
           fetch-depth: 0
 
       # pnpm debe instalarse ANTES de usar cache pnpm
+      # Version resolved from package.json "packageManager" — see PARKING-LOT.md for why
+      # a `version:` here conflicts even when it matches packageManager.
       - uses: pnpm/action-setup@v4
         with:
-          version: 10.29.2
           run_install: false
 
       - uses: actions/setup-node@v4

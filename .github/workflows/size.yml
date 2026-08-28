@@ -6,9 +6,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Version resolved from package.json "packageManager" — see PARKING-LOT.md for why
+      # a `version:` here conflicts even when it matches packageManager.
       - uses: pnpm/action-setup@v4
         with:
-          version: 10.29.2
           run_install: false
       - uses: actions/setup-node@v4
         with:
