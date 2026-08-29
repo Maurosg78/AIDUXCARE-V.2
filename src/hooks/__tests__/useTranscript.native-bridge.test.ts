@@ -36,11 +36,11 @@ describe('useTranscript — Hito 2c native/web branch selection', () => {
     isNativeAudioAvailableMock.mockReset().mockReturnValue(false);
     startNativeRecordingMock.mockReset().mockResolvedValue(undefined);
     stopNativeRecordingMock.mockReset().mockResolvedValue({
-      filePath: '/tmp/aidux_air_test.wav',
+      filePath: '/tmp/aidux_air_test.m4a',
       base64Audio: 'AAAA',
-      mimeType: 'audio/wav',
+      mimeType: 'audio/mp4',
     });
-    base64ToBlobMock.mockReset().mockReturnValue(new Blob(['x'], { type: 'audio/wav' }));
+    base64ToBlobMock.mockReset().mockReturnValue(new Blob(['x'], { type: 'audio/mp4' }));
 
     getUserMediaMock = vi.fn().mockResolvedValue({
       active: true,

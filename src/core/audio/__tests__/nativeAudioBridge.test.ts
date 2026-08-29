@@ -49,9 +49,9 @@ describe('nativeAudioBridge', () => {
     it('delegates to the registered plugin methods', async () => {
       const startRecording = vi.fn().mockResolvedValue(undefined);
       const stopRecording = vi.fn().mockResolvedValue({
-        filePath: '/tmp/aidux_air_123.wav',
+        filePath: '/tmp/aidux_air_123.m4a',
         base64Audio: 'AAAA',
-        mimeType: 'audio/wav',
+        mimeType: 'audio/mp4',
       });
       window.Capacitor = {
         isNativePlatform: () => true,
@@ -63,15 +63,15 @@ describe('nativeAudioBridge', () => {
 
       const result = await stopNativeRecording();
       expect(stopRecording).toHaveBeenCalledTimes(1);
-      expect(result.mimeType).toBe('audio/wav');
+      expect(result.mimeType).toBe('audio/mp4');
     });
   });
 
   describe('base64ToBlob', () => {
     it('decodes base64 into a Blob with the given mimeType and matching byte length', async () => {
       // "hola" en base64
-      const blob = base64ToBlob('aG9sYQ==', 'audio/wav');
-      expect(blob.type).toBe('audio/wav');
+      const blob = base64ToBlob('aG9sYQ==', 'audio/mp4');
+      expect(blob.type).toBe('audio/mp4');
       expect(blob.size).toBe(4);
 
       const text = await new Promise<string>((resolve, reject) => {
