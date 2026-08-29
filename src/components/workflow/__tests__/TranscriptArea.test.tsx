@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ClinicalAttachment } from '../../../services/clinicalAttachmentService';
 import { TranscriptArea } from '../TranscriptArea';
@@ -73,5 +73,69 @@ describe('TranscriptArea attachment patient identity rendering', () => {
     );
 
     expect(screen.queryByText(mismatchWarning)).not.toBeInTheDocument();
+  });
+});
+
+describe('TranscriptArea — Hito 2b patient-session cutoff', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('does not render the cutoff button when not recording', () => {
+    render(
+      <TranscriptArea
+        {...stableProps}
+        isRecording={false}
+        onFinishAndStartNext={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByText(/Finalizar y comenzar siguiente paciente/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not render the cutoff button when no handler is provided, even while recording', () => {
+    render(<TranscriptArea {...stableProps} isRecording={true} />);
+
+    expect(
+      screen.queryByText(/Finalizar y comenzar siguiente paciente/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('confirms, then calls onFinishAndStartNext when the clinician accepts the dialog', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const onFinishAndStartNext = vi.fn();
+
+    render(
+      <TranscriptArea
+        {...stableProps}
+        isRecording={true}
+        onFinishAndStartNext={onFinishAndStartNext}
+      />,
+    );
+
+    fireEvent.click(screen.getByText(/Finalizar y comenzar siguiente paciente/i));
+
+    expect(window.confirm).toHaveBeenCalledTimes(1);
+    expect(onFinishAndStartNext).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT call onFinishAndStartNext when the clinician cancels the confirm dialog', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const onFinishAndStartNext = vi.fn();
+
+    render(
+      <TranscriptArea
+        {...stableProps}
+        isRecording={true}
+        onFinishAndStartNext={onFinishAndStartNext}
+      />,
+    );
+
+    fireEvent.click(screen.getByText(/Finalizar y comenzar siguiente paciente/i));
+
+    expect(window.confirm).toHaveBeenCalledTimes(1);
+    expect(onFinishAndStartNext).not.toHaveBeenCalled();
   });
 });
