@@ -10,7 +10,10 @@ import { hasMediaRecorderSupport } from '../utils/mobileDetection';
 import { micController } from '@/core/audio/micController';
 import {
   base64ToBlob,
+  dismissRecordingLockScreenNotification,
   isNativeAudioAvailable,
+  onRecordingStopRequestedFromNotification,
+  showRecordingLockScreenNotification,
   startNativeRecording,
   stopNativeRecording,
 } from '@/core/audio/nativeAudioBridge';
@@ -156,6 +159,9 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
         await startNativeRecording();
         nativeRecordingActiveRef.current = true;
         setIsRecording(true);
+        // Hito 2e: no-throw hacia este flujo — si la notificación falla, la
+        // grabación en sí no debe interrumpirse, solo se pierde ese control.
+        void showRecordingLockScreenNotification();
         return;
       }
 
@@ -779,6 +785,10 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
     } finally {
       nativeRecordingActiveRef.current = false;
       setIsTranscribing(false);
+      // Hito 2e: se detuvo por cualquier vía (botón in-app o acción de la
+      // notificación) — este finally corre siempre, así que un solo lugar
+      // cubre ambos casos.
+      void dismissRecordingLockScreenNotification();
     }
   }, [appendTranscript, languagePreference, mode]);
 
@@ -856,6 +866,21 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
       stopRecording();
     };
   }, [stopRecording]);
+
+  // Hito 2e: "Detener grabación" desde la notificación de la pantalla de
+  // bloqueo llama exactamente a este stopRecording — no hay una segunda
+  // implementación de "detener" en ningún lado. Se suscribe una sola vez
+  // (no en cada cambio de identidad de stopRecording) leyendo la versión
+  // más reciente vía ref, mismo patrón que onTranscriptionCompleteRef.
+  const stopRecordingRef = useRef(stopRecording);
+  stopRecordingRef.current = stopRecording;
+
+  useEffect(() => {
+    const unsubscribe = onRecordingStopRequestedFromNotification(() => {
+      stopRecordingRef.current();
+    });
+    return unsubscribe;
+  }, []);
 
   const reset = useCallback(() => {
     setTranscriptState('');

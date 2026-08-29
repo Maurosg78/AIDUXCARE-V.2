@@ -19,12 +19,18 @@ const isNativeAudioAvailableMock = vi.fn();
 const startNativeRecordingMock = vi.fn();
 const stopNativeRecordingMock = vi.fn();
 const base64ToBlobMock = vi.fn();
+const showRecordingLockScreenNotificationMock = vi.fn();
+const dismissRecordingLockScreenNotificationMock = vi.fn();
+const onRecordingStopRequestedFromNotificationMock = vi.fn();
 
 vi.mock('@/core/audio/nativeAudioBridge', () => ({
   isNativeAudioAvailable: () => isNativeAudioAvailableMock(),
   startNativeRecording: () => startNativeRecordingMock(),
   stopNativeRecording: () => stopNativeRecordingMock(),
   base64ToBlob: (...args: unknown[]) => base64ToBlobMock(...args),
+  showRecordingLockScreenNotification: () => showRecordingLockScreenNotificationMock(),
+  dismissRecordingLockScreenNotification: () => dismissRecordingLockScreenNotificationMock(),
+  onRecordingStopRequestedFromNotification: (cb: () => void) => onRecordingStopRequestedFromNotificationMock(cb),
 }));
 
 import { useTranscript } from '../useTranscript';
@@ -41,6 +47,9 @@ describe('useTranscript — Hito 2c native/web branch selection', () => {
       mimeType: 'audio/mp4',
     });
     base64ToBlobMock.mockReset().mockReturnValue(new Blob(['x'], { type: 'audio/mp4' }));
+    showRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
+    dismissRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
+    onRecordingStopRequestedFromNotificationMock.mockReset().mockReturnValue(() => {});
 
     getUserMediaMock = vi.fn().mockResolvedValue({
       active: true,
@@ -141,5 +150,106 @@ describe('useTranscript — Hito 2c native/web branch selection', () => {
     });
 
     expect(stopNativeRecordingMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('useTranscript — Hito 2e lock screen stop control', () => {
+  let getUserMediaMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    isNativeAudioAvailableMock.mockReset().mockReturnValue(true);
+    startNativeRecordingMock.mockReset().mockResolvedValue(undefined);
+    stopNativeRecordingMock.mockReset().mockResolvedValue({
+      filePath: '/tmp/aidux_air_test.m4a',
+      base64Audio: 'AAAA',
+      mimeType: 'audio/mp4',
+    });
+    base64ToBlobMock.mockReset().mockReturnValue(new Blob(['x'], { type: 'audio/mp4' }));
+    showRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
+    dismissRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
+    onRecordingStopRequestedFromNotificationMock.mockReset().mockReturnValue(() => {});
+
+    getUserMediaMock = vi.fn().mockResolvedValue({ active: true, getTracks: () => [] });
+    Object.defineProperty(global.navigator, 'mediaDevices', {
+      value: { getUserMedia: getUserMediaMock },
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('muestra la notificación al arrancar una grabación nativa', async () => {
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    expect(showRecordingLockScreenNotificationMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      result.current.stopRecording();
+      await Promise.resolve();
+    });
+    unmount();
+  });
+
+  it('NO muestra la notificación cuando la grabación es la del navegador (no nativa)', async () => {
+    isNativeAudioAvailableMock.mockReturnValue(false);
+    const { result } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    expect(showRecordingLockScreenNotificationMock).not.toHaveBeenCalled();
+  });
+
+  it('cancela la notificación al detener desde el botón in-app', async () => {
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    await act(async () => {
+      result.current.stopRecording();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(dismissRecordingLockScreenNotificationMock).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it('se suscribe UNA sola vez a la acción de la notificación, sin reimplementar "detener": el callback suscripto termina llamando al mismo stopNativeRecording que usa el botón in-app', async () => {
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    // Esperar a que el useEffect de suscripción corra.
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(onRecordingStopRequestedFromNotificationMock).toHaveBeenCalledTimes(1);
+    const registeredCallback = onRecordingStopRequestedFromNotificationMock.mock.calls[0][0] as () => void;
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    // Simula: el usuario tocó "Detener grabación" en la notificación de la
+    // pantalla de bloqueo — esto invoca exactamente el mismo stopRecording
+    // que usa el botón dentro de la app, no una segunda implementación.
+    await act(async () => {
+      registeredCallback();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(stopNativeRecordingMock).toHaveBeenCalledTimes(1);
+    expect(dismissRecordingLockScreenNotificationMock).toHaveBeenCalledTimes(1);
+    unmount();
   });
 });
