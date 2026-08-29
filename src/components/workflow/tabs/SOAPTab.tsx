@@ -83,6 +83,8 @@ export interface SOAPTabProps {
   isRecording?: boolean;
   startRecording?: () => void;
   stopRecording?: () => void;
+  /** Hito 2b (AiDux Air): corte explícito entre pacientes — ver TranscriptArea. */
+  onFinishAndStartNext?: () => void;
   setTranscript?: (value: string) => void;
   transcriptError?: string | null;
   transcriptMeta?: {
@@ -159,6 +161,7 @@ export const SOAPTab: React.FC<SOAPTabProps> = ({
   isRecording,
   startRecording,
   stopRecording,
+  onFinishAndStartNext,
   setTranscript,
   transcriptError,
   transcriptMeta,
