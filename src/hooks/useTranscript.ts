@@ -8,6 +8,12 @@ import {
 import type { WhisperMode, WhisperSupportedLanguage } from '../services/OpenAIWhisperService';
 import { hasMediaRecorderSupport } from '../utils/mobileDetection';
 import { micController } from '@/core/audio/micController';
+import {
+  base64ToBlob,
+  isNativeAudioAvailable,
+  startNativeRecording,
+  stopNativeRecording,
+} from '@/core/audio/nativeAudioBridge';
 
 export type TranscriptMeta = {
   detectedLanguage: string | null;
@@ -49,6 +55,8 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
   const [meta, setMeta] = useState<TranscriptMeta | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  /** Hito 2c: true mientras el plugin nativo (no MediaRecorder) está capturando. */
+  const nativeRecordingActiveRef = useRef<boolean>(false);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
@@ -124,8 +132,8 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
 
   const startRecording = useCallback(async () => {
     try {
-      // Guard against double-start if a recorder/stream is still alive
-      if (mediaRecorderRef.current || streamRef.current) {
+      // Guard against double-start if a recorder/stream/native capture is still alive
+      if (mediaRecorderRef.current || streamRef.current || nativeRecordingActiveRef.current) {
         console.log('[useTranscript] startRecording called but recorder/stream already exists, ignoring.');
         return;
       }
@@ -138,6 +146,18 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
       hasCurrentAudioBackupBeenPersistedRef.current = false;
       transcriptionHadFailureRef.current = false;
       lastTranscriptionErrorRef.current = null;
+
+      // ✅ Hito 2c (AiDux Air): corriendo como app nativa (Capacitor iOS/Android),
+      // usar el plugin de background audio en vez de getUserMedia+MediaRecorder —
+      // es lo único que sobrevive con la pantalla apagada. En cualquier navegador
+      // normal (incluida la producción web actual) isNativeAudioAvailable() es
+      // false y esta rama nunca se toma; todo lo de abajo sigue exactamente igual.
+      if (isNativeAudioAvailable()) {
+        await startNativeRecording();
+        nativeRecordingActiveRef.current = true;
+        setIsRecording(true);
+        return;
+      }
 
       // ✅ SPRINT 2 P3: Get microphone stream FIRST (single permission request)
       // PRIMARY: Use Whisper for accurate medical transcription
@@ -669,8 +689,111 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
     }
   }, [appendTranscript, languagePreference, mode, isWebSpeechAvailable, getSpeechRecognitionLang, isRecording]);
 
+  // ✅ Hito 2c (AiDux Air): finaliza una grabación nativa — detiene el
+  // plugin, arma el Blob desde el base64 devuelto, y sigue el MISMO
+  // contrato hacia whisperProxy que el path web (FirebaseWhisperService.
+  // transcribe recibe un Blob, no le importa de dónde salió).
+  //
+  // Deliberadamente NO reutiliza processChunksSequentially/transcribeChunk
+  // del path MediaRecorder: ese código trocea el audio en segmentos de
+  // ≤6.5MB reusando chunks[0] como header WebM — un truco específico del
+  // contenedor WebM que no aplica a un WAV completo de una sola pieza. Acá
+  // se transcribe entero, con la misma estrategia de "intento completo con
+  // timeout" que ya existe en handleLargeAudio para audio web grande.
+  // Duplicar esta lógica en vez de compartirla es intencional: el path web
+  // (MediaRecorder) no se toca ni un carácter — es el que corre hoy en
+  // producción en pilot.aiduxcare.com.
+  const finalizeNativeRecording = useCallback(async () => {
+    setIsTranscribing(true);
+    let activeAudioBackupId: string | null = null;
+
+    try {
+      const { base64Audio, mimeType } = await stopNativeRecording();
+      const audioBlob = base64ToBlob(base64Audio, mimeType);
+
+      if (audioBlob.size < MIN_AUDIO_SIZE_BYTES) {
+        console.log(`[useTranscript] Native recording too short to transcribe: ${audioBlob.size} bytes`);
+        setError('No clear speech detected. Please record at least a few seconds of clear speech, then stop.');
+        return;
+      }
+
+      const recordingStoppedAt = new Date().toISOString();
+      const recordingStartedAt = recordingStartedAtRef.current ?? recordingStoppedAt;
+      const audioBackupClinicalContext = getAudioBackupContextRef.current?.() ?? {};
+      const persistedAudioBackup = await persistAudioBackup({
+        audioBlob,
+        recordingStartedAt,
+        recordingStoppedAt,
+        ...audioBackupClinicalContext,
+      });
+      activeAudioBackupId = persistedAudioBackup.id;
+
+      console.info('[useTranscript] Native clinical audio backup persisted before transcription', {
+        audioBackupId: persistedAudioBackup.id,
+        storagePath: persistedAudioBackup.storagePath,
+        sizeBytes: audioBlob.size,
+      });
+
+      try {
+        const result = await FirebaseWhisperService.transcribe(audioBlob, {
+          languageHint: languagePreference,
+          mode,
+        });
+
+        const trimmed = result.text?.trim() ?? '';
+        const isHallucination = trimmed && trimmed.startsWith(HALLUCINATION_PREFIX);
+
+        if (isHallucination) {
+          console.warn('[useTranscript] Discarding hallucinated transcript (short/silent native audio)');
+          setError('No clear speech detected. Please record at least a few seconds of clear speech, then stop.');
+        } else if (trimmed) {
+          appendTranscript(trimmed);
+          setMeta({
+            detectedLanguage: result.detectedLanguage ?? null,
+            averageLogProb: result.averageLogProb ?? null,
+            durationSeconds: result.durationSeconds,
+          });
+          setError(null);
+          setTimeout(() => onTranscriptionCompleteRef.current?.(trimmed), 0);
+        }
+
+        if (activeAudioBackupId) {
+          await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'success', null);
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('[useTranscript] Error transcribing native recording:', errorMessage);
+        setError(`Transcription error: ${errorMessage}. La grabación quedó respaldada.`);
+        if (activeAudioBackupId) {
+          try {
+            await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'failed_retryable', errorMessage);
+          } catch (statusError) {
+            console.error('[useTranscript] Failed to mark native audio backup as retryable failure', statusError);
+          }
+        }
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error('[useTranscript] Error stopping/persisting native recording:', errorMessage);
+      setError(`No se pudo cerrar la grabación nativa: ${errorMessage}`);
+    } finally {
+      nativeRecordingActiveRef.current = false;
+      setIsTranscribing(false);
+    }
+  }, [appendTranscript, languagePreference, mode]);
+
   const stopRecording = useCallback(() => {
     console.log('[MIC] stopRecording called');
+
+    // ✅ Hito 2c: si la grabación activa es nativa, el flujo es completamente
+    // distinto (no hay MediaRecorder ni streamRef que detener) — delega en
+    // finalizeNativeRecording y sale. El resto de esta función (todo lo de
+    // abajo) es exactamente el código del path web, sin tocar.
+    if (nativeRecordingActiveRef.current) {
+      setIsRecording(false);
+      void finalizeNativeRecording();
+      return;
+    }
 
     // Stop MediaRecorder if active
     try {
@@ -724,7 +847,7 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
 
     setIsRecording(false);
     setIsTranscribing(false);
-  }, []);
+  }, [finalizeNativeRecording]);
 
   // WO-MIC-LIFECYCLE-001: ensure mic is stopped when hook unmounts
   useEffect(() => {
