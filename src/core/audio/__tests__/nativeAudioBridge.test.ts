@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   base64ToBlob,
+  dismissRecordingLockScreenNotification,
   isNativeAudioAvailable,
+  onRecordingStopRequestedFromNotification,
+  showRecordingLockScreenNotification,
   startNativeRecording,
   stopNativeRecording,
 } from '../nativeAudioBridge';
@@ -81,6 +84,108 @@ describe('nativeAudioBridge', () => {
         reader.readAsText(blob);
       });
       expect(text).toBe('hola');
+    });
+  });
+
+  describe('onRecordingStopRequestedFromNotification — regresión del crash real en dispositivo (2026-08-30)', () => {
+    it('no revienta cuando addListener() devuelve un objeto plano SIN .then (el bug real: TypeError ...addListener(...).then is not a function, capturado por el ErrorBoundary de /workflow)', async () => {
+      const removeMock = vi.fn().mockResolvedValue(undefined);
+      // Reproduce exactamente la forma que devuelve el bridge nativo real de
+      // Capacitor para addListener en el path nativo (pluginHeader truthy):
+      // un objeto { remove } sincrónico, NO una Promise/thenable.
+      const addListenerNonThenable = vi.fn(() => ({ remove: removeMock }));
+
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          LocalNotifications: {
+            requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+            registerActionTypes: vi.fn().mockResolvedValue(undefined),
+            schedule: vi.fn().mockResolvedValue({ notifications: [] }),
+            cancel: vi.fn().mockResolvedValue(undefined),
+            // @ts-expect-error — deliberadamente no-Promise, para probar el caso real
+            addListener: addListenerNonThenable,
+          },
+        },
+      };
+
+      const callback = vi.fn();
+      // Esto NO debe lanzar — antes del fix, tirar .then() sobre el valor de
+      // addListenerNonThenable() era exactamente lo que crasheaba en el
+      // dispositivo real.
+      expect(() => onRecordingStopRequestedFromNotification(callback)).not.toThrow();
+
+      // Darle un tick al IIFE async interno para que corra.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(addListenerNonThenable).toHaveBeenCalledTimes(1);
+    });
+
+    it('sigue funcionando normal cuando addListener() SÍ devuelve una Promise (comportamiento esperado documentado por Capacitor)', async () => {
+      const removeMock = vi.fn().mockResolvedValue(undefined);
+      let capturedCallback: ((action: { actionId: string }) => void) | null = null;
+      const addListenerThenable = vi.fn((_eventName: string, cb: (action: { actionId: string }) => void) => {
+        capturedCallback = cb;
+        return Promise.resolve({ remove: removeMock });
+      });
+
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          LocalNotifications: {
+            requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+            registerActionTypes: vi.fn().mockResolvedValue(undefined),
+            schedule: vi.fn().mockResolvedValue({ notifications: [] }),
+            cancel: vi.fn().mockResolvedValue(undefined),
+            addListener: addListenerThenable,
+          },
+        },
+      };
+
+      const callback = vi.fn();
+      const unsubscribe = onRecordingStopRequestedFromNotification(callback);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(capturedCallback).not.toBeNull();
+      capturedCallback!({ actionId: 'stop_recording' });
+      expect(callback).toHaveBeenCalledTimes(1);
+
+      unsubscribe();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(removeMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('no hace nada (no throw) cuando LocalNotifications no está disponible', () => {
+      expect(() => onRecordingStopRequestedFromNotification(vi.fn())()).not.toThrow();
+    });
+  });
+
+  describe('showRecordingLockScreenNotification / dismissRecordingLockScreenNotification', () => {
+    it('no revienta hacia el llamador si el plugin no está disponible', async () => {
+      await expect(showRecordingLockScreenNotification()).resolves.toBeUndefined();
+      await expect(dismissRecordingLockScreenNotification()).resolves.toBeUndefined();
+    });
+
+    it('registra el tipo de acción y agenda la notificación con el plugin real', async () => {
+      const requestPermissions = vi.fn().mockResolvedValue({ display: 'granted' });
+      const registerActionTypes = vi.fn().mockResolvedValue(undefined);
+      const schedule = vi.fn().mockResolvedValue({ notifications: [{ id: 778821 }] });
+      const cancel = vi.fn().mockResolvedValue(undefined);
+
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          LocalNotifications: { requestPermissions, registerActionTypes, schedule, cancel, addListener: vi.fn() },
+        },
+      };
+
+      await showRecordingLockScreenNotification();
+      expect(requestPermissions).toHaveBeenCalledTimes(1);
+      expect(registerActionTypes).toHaveBeenCalledTimes(1);
+      expect(schedule).toHaveBeenCalledTimes(1);
+
+      await dismissRecordingLockScreenNotification();
+      expect(cancel).toHaveBeenCalledTimes(1);
     });
   });
 });

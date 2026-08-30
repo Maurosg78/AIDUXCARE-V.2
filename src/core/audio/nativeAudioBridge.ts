@@ -221,6 +221,20 @@ export async function dismissRecordingLockScreenNotification(): Promise<void> {
  * notificación. Devuelve una función de limpieza. El llamador (useTranscript)
  * pasa acá exactamente su propio stopRecording — no hay una segunda
  * implementación de "detener" en este archivo.
+ *
+ * BUG REAL encontrado en dispositivo (2026-08-30): esto originalmente
+ * encadenaba `.then()/.catch()` directo sobre `plugin.addListener(...)`, y
+ * crasheaba con `TypeError: ...addListener(...).then is not a function` —
+ * capturado por el ErrorBoundary de nivel de ruta, dejando al usuario sin
+ * poder ni volver a la lista de pacientes. Causa: el propio bridge de
+ * Capacitor (`@capacitor/core`) advierte explícitamente "Using addListener()
+ * without 'await' is deprecated" — en el path nativo real (`pluginHeader`
+ * truthy, que es el caso en el dispositivo, a diferencia de cualquier mock
+ * de test) el valor que devuelve `addListener` no es un `.then()` encadenable
+ * de forma segura. Usar `await` dentro de una función async es la forma
+ * oficial y además es inmune al problema de raíz: `await` sobre cualquier
+ * valor (sea o no thenable) simplemente lo resuelve, nunca revienta con
+ * "X.then is not a function".
  */
 export function onRecordingStopRequestedFromNotification(callback: () => void): () => void {
   const plugin = getLocalNotificationsPlugin();
@@ -229,22 +243,22 @@ export function onRecordingStopRequestedFromNotification(callback: () => void): 
   let handle: LocalNotificationsListenerHandle | null = null;
   let cancelled = false;
 
-  plugin
-    .addListener('localNotificationActionPerformed', (action) => {
-      if (action.actionId === STOP_RECORDING_ACTION_ID) {
-        callback();
-      }
-    })
-    .then((h) => {
+  (async () => {
+    try {
+      const h = await plugin.addListener('localNotificationActionPerformed', (action) => {
+        if (action.actionId === STOP_RECORDING_ACTION_ID) {
+          callback();
+        }
+      });
       if (cancelled) {
         h.remove();
       } else {
         handle = h;
       }
-    })
-    .catch((err) => {
+    } catch (err) {
       console.warn('[nativeAudioBridge] No se pudo suscribir al listener de acciones de notificación:', err);
-    });
+    }
+  })();
 
   return () => {
     cancelled = true;
