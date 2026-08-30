@@ -1,8 +1,8 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.13
-**Fecha:** Junio 2026
+**Versión:** 1.14
+**Fecha:** Agosto 2026
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
@@ -1171,6 +1171,7 @@ La deuda técnica no documentada es el mayor riesgo de mantenibilidad en softwar
 | **TD-009** | `ClinicalAnalysisResults.tsx` mantiene `any` sin comentario justificativo | Media | Histórico | Tipar `ClinicalAnalysisResults` y entidades derivadas o añadir justificación explícita por campo |
 | **TD-010** | `ClinicalAnalysisResults.tsx` tiene `useEffect` sin cleanup explícito | Baja | Histórico | Confirmar que no registra listeners/timers o documentar cleanup/no-op explícito |
 | **TD-011** | Gates `!isSpainPilot()` en `VisitIndicators`, `VisitRecordCard`, `AnalyticsDashboard` deben reemplazarse por `isSocratesEnabled()` cuando exista el módulo Sócrates V2 | Media | MVO Spain mode | Implementar `isSocratesEnabled()` con lógica de mercado + feature flag; migrar todos los `!isSpainPilot()` añadidos en commit MVO-Spain-mode |
+| **TD-012** | `finalizeNativeRecording` en `useTranscript.ts` (AiDux Air, path nativo Capacitor) sube el audio completo en una sola llamada a `whisperProxy`, sin trocear como sí hace el path web (MediaRecorder/WebM, segmentos ≤6.5MB). A 48 kbps AAC mono, una sesión entra cómoda hasta ~70min (~25MB), pero no hay guard duro ni fallback si se supera | Media | Spike AiDux Air (Hito 2c/2d) | Trocear el audio nativo en segmentos antes de subir (mismo patrón MAX_SEGMENT_BYTES del path web, adaptado a un contenedor AAC/MP4 en vez de WebM), o al menos un guard explícito que rechace/avise antes de intentar subir un archivo que supere el límite de Whisper (25MB) |
 
 ### 7.2 Deuda de producto (no código)
 
@@ -1363,6 +1364,7 @@ AiduxCare amplifica. Evidencia. Acompaña.
 | 1.12 | 2026-05-25 | ADR-010: arquitectura de interoperabilidad — AiduxCare FHIR-aware / Sócrates source-agnostic. ClinicalProvenance, confidenceOfMapping y schemaVersion definidos como canónicos. Referencia: docs/governance/INTEROPERABILITY_ARCHITECTURE.md v1.0. |
 | 1.12.1 | 2026-06-07 | Refuerza §8.4: limpieza remota obligatoria de `/var/www/pilot/dist/*` antes de cada deploy por `gcloud compute scp`, con verificación de un solo bundle principal `index-[hash].js`. |
 | 1.13 | 2026-06-08 | MVO Spain mode: TD-011 registrado. Gates `!isSpainPilot()` en componentes de sugerencias IA (`VisitIndicators`, `VisitRecordCard`, `AnalyticsDashboard`). Audit copy SaMD: reemplazo de lenguaje de recomendación clínica por lenguaje documental en 8 archivos. |
+| 1.14 | 2026-08-30 | TD-012 registrado: sin troceo de audio en el path nativo de AiDux Air (`finalizeNativeRecording`, `useTranscript.ts`) — sube completo en una llamada, sin guard duro sobre el límite de Whisper. Revisión de §3.1 (una operación por línea) sobre `nativeAudioBridge.ts`: refactorizados `getNativePlugin`, `getLocalNotificationsPlugin`, `isNativeAudioAvailable` y el listener de `onRecordingStopRequestedFromNotification` a variables intermedias explícitas. |
 
 ---
 

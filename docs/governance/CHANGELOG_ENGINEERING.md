@@ -1,5 +1,15 @@
 # ENGINEERING.md Changelog
 
+## 2026-08-30 — v1.14 (Auditoría de mejores prácticas — puente de audio nativo AiDux Air)
+
+Revisión solicitada explícitamente antes de presentación al CTO: cotejar el trabajo de Hito 2b–2e (AiDux Air — corte de sesión, puente al plugin nativo, compresión AAC, control desde pantalla de bloqueo) contra §3 (Convenciones de Código) y §7 (Deuda Técnica) de este documento.
+
+- **TD-012 registrado:** `finalizeNativeRecording` (`src/hooks/useTranscript.ts`, path nativo Capacitor) sube el audio completo en una sola llamada a `whisperProxy`, sin trocear como sí hace el path web (MediaRecorder/WebM). A 48 kbps AAC mono entra cómodo hasta ~70min, pero no hay guard duro si se supera el límite de Whisper (25MB).
+- **§3.1 (una operación por línea) — corregido en `src/core/audio/nativeAudioBridge.ts`:** `getNativePlugin`, `getLocalNotificationsPlugin` e `isNativeAudioAvailable` encadenaban optional-chaining + `??`/`&&` en una sola línea; refactorizados a variables intermedias explícitas. El listener inline de `onRecordingStopRequestedFromNotification` se extrajo a una función nombrada (`handleNotificationAction`).
+- **§3.2 (TypeScript estricto), §3.4 (cleanup de efectos), §3.5 (sin PHI en logs):** verificado cumplimiento en todo el código nuevo de Hito 2b–2e — sin `any` sin justificar, listener de notificación con cleanup explícito, sin datos de paciente en `console.warn`/`console.error`.
+- **§3.3 (no crear componentes sin autorización):** no se crearon componentes React nuevos — el botón de corte de Hito 2b se agregó dentro de `TranscriptArea.tsx` existente.
+- Verificado post-fix: `npm run typecheck` limpio, 20/20 tests de `nativeAudioBridge`/`useTranscript` en verde tras el refactor de estilo (comportamiento sin cambios, confirmado por test).
+
 ## 2026-06-09 — v1.13.1 (UX clínica — aceptación de sugerencia de medicamento)
 
 Cambio observable en UX clínica: el fisioterapeuta puede aceptar una coincidencia de medicamento sugerida sin perder trazabilidad clínica.

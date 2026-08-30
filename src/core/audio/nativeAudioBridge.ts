@@ -80,19 +80,28 @@ declare global {
 
 function getNativePlugin(): BackgroundAudioNativePlugin | null {
   if (typeof window === 'undefined') return null;
-  return window.Capacitor?.Plugins?.BackgroundAudio ?? null;
+  const capacitor = window.Capacitor;
+  const plugins = capacitor?.Plugins;
+  const plugin = plugins?.BackgroundAudio ?? null;
+  return plugin;
 }
 
 function getLocalNotificationsPlugin(): LocalNotificationsNativePlugin | null {
   if (typeof window === 'undefined') return null;
-  return window.Capacitor?.Plugins?.LocalNotifications ?? null;
+  const capacitor = window.Capacitor;
+  const plugins = capacitor?.Plugins;
+  const plugin = plugins?.LocalNotifications ?? null;
+  return plugin;
 }
 
 /** True solo cuando corre como app nativa (Capacitor iOS/Android) y el plugin está registrado. */
 export function isNativeAudioAvailable(): boolean {
   if (typeof window === 'undefined') return false;
   const capacitor = window.Capacitor;
-  return Boolean(capacitor?.isNativePlatform?.() && getNativePlugin());
+  const isNativePlatform = capacitor?.isNativePlatform?.() ?? false;
+  const plugin = getNativePlugin();
+  const pluginIsRegistered = plugin !== null;
+  return isNativePlatform && pluginIsRegistered;
 }
 
 export async function startNativeRecording(): Promise<void> {
@@ -243,13 +252,16 @@ export function onRecordingStopRequestedFromNotification(callback: () => void): 
   let handle: LocalNotificationsListenerHandle | null = null;
   let cancelled = false;
 
+  const handleNotificationAction = (action: LocalNotificationsActionPerformed) => {
+    const isStopAction = action.actionId === STOP_RECORDING_ACTION_ID;
+    if (isStopAction) {
+      callback();
+    }
+  };
+
   (async () => {
     try {
-      const h = await plugin.addListener('localNotificationActionPerformed', (action) => {
-        if (action.actionId === STOP_RECORDING_ACTION_ID) {
-          callback();
-        }
-      });
+      const h = await plugin.addListener('localNotificationActionPerformed', handleNotificationAction);
       if (cancelled) {
         h.remove();
       } else {
