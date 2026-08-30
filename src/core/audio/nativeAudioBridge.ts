@@ -57,6 +57,7 @@ interface LocalNotificationsNativePlugin {
       title: string;
       body: string;
       actionTypeId?: string;
+      schedule?: { at: Date };
     }>;
   }): Promise<{ notifications: Array<{ id: number }> }>;
   cancel(options: { notifications: Array<{ id: number }> }): Promise<void>;
@@ -193,12 +194,21 @@ async function ensureRecordingActionTypeRegistered(plugin: LocalNotificationsNat
  * de un entorno nativo. Deliberadamente no-throw hacia el llamador — si la
  * notificación falla (permiso denegado, etc.) la grabación en sí no debe
  * verse afectada, solo se pierde ese control visual adicional.
+ *
+ * `delaySeconds` (default 0 = comportamiento normal, inmediato): existe para
+ * la investigación de por qué la notificación no aparece en pantalla
+ * bloqueada (ver docs/investigations/lock-screen-notification-not-showing.md,
+ * hipótesis 1). Hoy la notificación siempre se agenda con la app en
+ * foreground (el usuario recién tocó "Iniciar grabación"), así que
+ * `willPresent` siempre corre en foreground. Con un delay, la entrega real
+ * puede caer con el teléfono ya bloqueado — un escenario que nunca se probó.
  */
-export async function showRecordingLockScreenNotification(): Promise<void> {
+export async function showRecordingLockScreenNotification(delaySeconds = 0): Promise<void> {
   const plugin = getLocalNotificationsPlugin();
   if (!plugin) return;
   try {
     await ensureRecordingActionTypeRegistered(plugin);
+    const schedule = delaySeconds > 0 ? { at: new Date(Date.now() + delaySeconds * 1000) } : undefined;
     await plugin.schedule({
       notifications: [
         {
@@ -206,6 +216,7 @@ export async function showRecordingLockScreenNotification(): Promise<void> {
           title: 'AiDux Air — grabando',
           body: 'Sesión clínica en curso. Tocá "Detener grabación" para finalizarla sin desbloquear el teléfono.',
           actionTypeId: RECORDING_ACTION_TYPE_ID,
+          schedule,
         },
       ],
     });

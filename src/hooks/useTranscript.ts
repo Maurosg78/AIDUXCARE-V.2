@@ -161,7 +161,15 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
         setIsRecording(true);
         // Hito 2e: no-throw hacia este flujo — si la notificación falla, la
         // grabación en sí no debe interrumpirse, solo se pierde ese control.
-        void showRecordingLockScreenNotification();
+        //
+        // TEMPORAL — investigación "no aparece en pantalla bloqueada"
+        // (docs/investigations/lock-screen-notification-not-showing.md,
+        // hipótesis 1): delay de 8s para que la entrega real caiga con el
+        // teléfono ya bloqueado, no en foreground como siempre pasaba antes.
+        // Revertir a showRecordingLockScreenNotification() sin argumento
+        // (o dejar el delay si termina siendo la solución real) una vez
+        // resuelta la investigación.
+        void showRecordingLockScreenNotification(8);
         return;
       }
 

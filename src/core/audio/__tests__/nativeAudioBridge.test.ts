@@ -187,5 +187,51 @@ describe('nativeAudioBridge', () => {
       await dismissRecordingLockScreenNotification();
       expect(cancel).toHaveBeenCalledTimes(1);
     });
+
+    it('sin delaySeconds no manda schedule.at (comportamiento normal, inmediato)', async () => {
+      const schedule = vi.fn().mockResolvedValue({ notifications: [{ id: 778821 }] });
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          LocalNotifications: {
+            requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+            registerActionTypes: vi.fn().mockResolvedValue(undefined),
+            schedule,
+            cancel: vi.fn(),
+            addListener: vi.fn(),
+          },
+        },
+      };
+
+      await showRecordingLockScreenNotification();
+
+      const scheduledNotification = schedule.mock.calls[0][0].notifications[0];
+      expect(scheduledNotification.schedule).toBeUndefined();
+    });
+
+    it('con delaySeconds agenda schedule.at en el futuro (hipótesis 1 de la investigación)', async () => {
+      const schedule = vi.fn().mockResolvedValue({ notifications: [{ id: 778821 }] });
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          LocalNotifications: {
+            requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+            registerActionTypes: vi.fn().mockResolvedValue(undefined),
+            schedule,
+            cancel: vi.fn(),
+            addListener: vi.fn(),
+          },
+        },
+      };
+
+      const before = Date.now();
+      await showRecordingLockScreenNotification(8);
+      const after = Date.now();
+
+      const scheduledNotification = schedule.mock.calls[0][0].notifications[0];
+      const scheduledAt = scheduledNotification.schedule.at as Date;
+      expect(scheduledAt.getTime()).toBeGreaterThanOrEqual(before + 8000);
+      expect(scheduledAt.getTime()).toBeLessThanOrEqual(after + 8000);
+    });
   });
 });
