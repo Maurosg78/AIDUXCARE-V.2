@@ -67,6 +67,17 @@ interface LocalNotificationsNativePlugin {
   ): Promise<LocalNotificationsListenerHandle>;
 }
 
+interface AppStateChange {
+  isActive: boolean;
+}
+
+interface AppNativePlugin {
+  addListener(
+    eventName: 'appStateChange',
+    listenerFunc: (state: AppStateChange) => void
+  ): Promise<LocalNotificationsListenerHandle>;
+}
+
 declare global {
   interface Window {
     Capacitor?: {
@@ -74,6 +85,7 @@ declare global {
       Plugins?: {
         BackgroundAudio?: BackgroundAudioNativePlugin;
         LocalNotifications?: LocalNotificationsNativePlugin;
+        App?: AppNativePlugin;
       };
     };
   }
@@ -92,6 +104,14 @@ function getLocalNotificationsPlugin(): LocalNotificationsNativePlugin | null {
   const capacitor = window.Capacitor;
   const plugins = capacitor?.Plugins;
   const plugin = plugins?.LocalNotifications ?? null;
+  return plugin;
+}
+
+function getAppPlugin(): AppNativePlugin | null {
+  if (typeof window === 'undefined') return null;
+  const capacitor = window.Capacitor;
+  const plugins = capacitor?.Plugins;
+  const plugin = plugins?.App ?? null;
   return plugin;
 }
 
@@ -280,6 +300,56 @@ export function onRecordingStopRequestedFromNotification(callback: () => void): 
       }
     } catch (err) {
       console.warn('[nativeAudioBridge] No se pudo suscribir al listener de acciones de notificación:', err);
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+    handle?.remove();
+  };
+}
+
+/**
+ * Muestra la notificación de "grabando" específicamente cuando la app pasa
+ * a background (pantalla bloqueada, cambio de app, etc.) — no en un timer
+ * fijo desde que arrancó la grabación.
+ *
+ * Reemplaza la hipótesis del delay fijo (ver
+ * docs/investigations/lock-screen-notification-not-showing.md, hipótesis
+ * 1): confirmado en dispositivo real que un delay arbitrario SÍ hace que la
+ * notificación aparezca en pantalla bloqueada (antes nunca se entregaba con
+ * el teléfono ya bloqueado, siempre en foreground) — pero un timer fijo no
+ * es robusto: el usuario puede bloquear la pantalla en cualquier momento de
+ * la grabación, no dentro de una ventana arbitraria de N segundos. La causa
+ * raíz real era "la notificación nunca se entregaba con el teléfono
+ * bloqueado"; la solución real es entregarla exactamente en ese momento,
+ * usando `@capacitor/app`'s `appStateChange` (isActive: false = la app dejó
+ * de estar activa — pantalla bloqueada o cambio de app).
+ */
+export function watchAppBackgroundToShowRecordingNotification(): () => void {
+  const appPlugin = getAppPlugin();
+  if (!appPlugin) return () => {};
+
+  let handle: LocalNotificationsListenerHandle | null = null;
+  let cancelled = false;
+
+  const handleAppStateChange = (state: AppStateChange) => {
+    const wentToBackground = !state.isActive;
+    if (wentToBackground) {
+      void showRecordingLockScreenNotification();
+    }
+  };
+
+  (async () => {
+    try {
+      const h = await appPlugin.addListener('appStateChange', handleAppStateChange);
+      if (cancelled) {
+        h.remove();
+      } else {
+        handle = h;
+      }
+    } catch (err) {
+      console.warn('[nativeAudioBridge] No se pudo suscribir a appStateChange:', err);
     }
   })();
 

@@ -8,6 +8,7 @@ import {
   showRecordingLockScreenNotification,
   startNativeRecording,
   stopNativeRecording,
+  watchAppBackgroundToShowRecordingNotification,
 } from '../nativeAudioBridge';
 
 describe('nativeAudioBridge', () => {
@@ -232,6 +233,93 @@ describe('nativeAudioBridge', () => {
       const scheduledAt = scheduledNotification.schedule.at as Date;
       expect(scheduledAt.getTime()).toBeGreaterThanOrEqual(before + 8000);
       expect(scheduledAt.getTime()).toBeLessThanOrEqual(after + 8000);
+    });
+  });
+
+  describe('watchAppBackgroundToShowRecordingNotification — fix real (reemplaza la hipótesis del delay fijo)', () => {
+    it('no revienta cuando el plugin App no está disponible', () => {
+      expect(() => watchAppBackgroundToShowRecordingNotification()()).not.toThrow();
+    });
+
+    it('muestra la notificación cuando appStateChange reporta isActive: false (la app pasó a background)', async () => {
+      let capturedCallback: ((state: { isActive: boolean }) => void) | null = null;
+      const appAddListener = vi.fn((_eventName: string, cb: (state: { isActive: boolean }) => void) => {
+        capturedCallback = cb;
+        return Promise.resolve({ remove: vi.fn() });
+      });
+      const schedule = vi.fn().mockResolvedValue({ notifications: [{ id: 778821 }] });
+
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          App: { addListener: appAddListener },
+          LocalNotifications: {
+            requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+            registerActionTypes: vi.fn().mockResolvedValue(undefined),
+            schedule,
+            cancel: vi.fn(),
+            addListener: vi.fn(),
+          },
+        },
+      };
+
+      watchAppBackgroundToShowRecordingNotification();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(capturedCallback).not.toBeNull();
+      capturedCallback!({ isActive: false });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(schedule).toHaveBeenCalledTimes(1);
+    });
+
+    it('NO muestra la notificación cuando appStateChange reporta isActive: true (la app volvió a foreground)', async () => {
+      let capturedCallback: ((state: { isActive: boolean }) => void) | null = null;
+      const appAddListener = vi.fn((_eventName: string, cb: (state: { isActive: boolean }) => void) => {
+        capturedCallback = cb;
+        return Promise.resolve({ remove: vi.fn() });
+      });
+      const schedule = vi.fn().mockResolvedValue({ notifications: [{ id: 778821 }] });
+
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          App: { addListener: appAddListener },
+          LocalNotifications: {
+            requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+            registerActionTypes: vi.fn().mockResolvedValue(undefined),
+            schedule,
+            cancel: vi.fn(),
+            addListener: vi.fn(),
+          },
+        },
+      };
+
+      watchAppBackgroundToShowRecordingNotification();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      capturedCallback!({ isActive: true });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(schedule).not.toHaveBeenCalled();
+    });
+
+    it('la función de limpieza remueve el listener de appStateChange', async () => {
+      const removeMock = vi.fn();
+      const appAddListener = vi.fn().mockResolvedValue({ remove: removeMock });
+
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          App: { addListener: appAddListener },
+        },
+      };
+
+      const unsubscribe = watchAppBackgroundToShowRecordingNotification();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      unsubscribe();
+      expect(removeMock).toHaveBeenCalledTimes(1);
     });
   });
 });

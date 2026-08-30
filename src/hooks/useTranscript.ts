@@ -16,6 +16,7 @@ import {
   showRecordingLockScreenNotification,
   startNativeRecording,
   stopNativeRecording,
+  watchAppBackgroundToShowRecordingNotification,
 } from '@/core/audio/nativeAudioBridge';
 
 export type TranscriptMeta = {
@@ -60,6 +61,8 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   /** Hito 2c: true mientras el plugin nativo (no MediaRecorder) está capturando. */
   const nativeRecordingActiveRef = useRef<boolean>(false);
+  /** Hito 2e: limpieza del listener de appStateChange, activo solo durante una grabación nativa. */
+  const appBackgroundWatchUnsubscribeRef = useRef<(() => void) | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
@@ -161,15 +164,14 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
         setIsRecording(true);
         // Hito 2e: no-throw hacia este flujo — si la notificación falla, la
         // grabación en sí no debe interrumpirse, solo se pierde ese control.
-        //
-        // TEMPORAL — investigación "no aparece en pantalla bloqueada"
-        // (docs/investigations/lock-screen-notification-not-showing.md,
-        // hipótesis 1): delay de 8s para que la entrega real caiga con el
-        // teléfono ya bloqueado, no en foreground como siempre pasaba antes.
-        // Revertir a showRecordingLockScreenNotification() sin argumento
-        // (o dejar el delay si termina siendo la solución real) una vez
-        // resuelta la investigación.
-        void showRecordingLockScreenNotification(8);
+        // Muestra inmediata (confirmación visual mientras se está mirando
+        // la app) + suscripción a appStateChange para volver a mostrarla
+        // exactamente cuando la app pase a background de verdad (pantalla
+        // bloqueada, cambio de app) — ver nativeAudioBridge.ts para el
+        // porqué (un delay fijo, probado en dispositivo real, funciona pero
+        // no es robusto: el usuario bloquea en cualquier momento).
+        void showRecordingLockScreenNotification();
+        appBackgroundWatchUnsubscribeRef.current = watchAppBackgroundToShowRecordingNotification();
         return;
       }
 
@@ -797,6 +799,8 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
       // notificación) — este finally corre siempre, así que un solo lugar
       // cubre ambos casos.
       void dismissRecordingLockScreenNotification();
+      appBackgroundWatchUnsubscribeRef.current?.();
+      appBackgroundWatchUnsubscribeRef.current = null;
     }
   }, [appendTranscript, languagePreference, mode]);
 

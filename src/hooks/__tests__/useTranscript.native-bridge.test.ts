@@ -22,15 +22,17 @@ const base64ToBlobMock = vi.fn();
 const showRecordingLockScreenNotificationMock = vi.fn();
 const dismissRecordingLockScreenNotificationMock = vi.fn();
 const onRecordingStopRequestedFromNotificationMock = vi.fn();
+const watchAppBackgroundToShowRecordingNotificationMock = vi.fn();
 
 vi.mock('@/core/audio/nativeAudioBridge', () => ({
   isNativeAudioAvailable: () => isNativeAudioAvailableMock(),
   startNativeRecording: () => startNativeRecordingMock(),
   stopNativeRecording: () => stopNativeRecordingMock(),
   base64ToBlob: (...args: unknown[]) => base64ToBlobMock(...args),
-  showRecordingLockScreenNotification: () => showRecordingLockScreenNotificationMock(),
+  showRecordingLockScreenNotification: (...args: unknown[]) => showRecordingLockScreenNotificationMock(...args),
   dismissRecordingLockScreenNotification: () => dismissRecordingLockScreenNotificationMock(),
   onRecordingStopRequestedFromNotification: (cb: () => void) => onRecordingStopRequestedFromNotificationMock(cb),
+  watchAppBackgroundToShowRecordingNotification: () => watchAppBackgroundToShowRecordingNotificationMock(),
 }));
 
 import { useTranscript } from '../useTranscript';
@@ -50,6 +52,7 @@ describe('useTranscript — Hito 2c native/web branch selection', () => {
     showRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
     dismissRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
     onRecordingStopRequestedFromNotificationMock.mockReset().mockReturnValue(() => {});
+    watchAppBackgroundToShowRecordingNotificationMock.mockReset().mockReturnValue(() => {});
 
     getUserMediaMock = vi.fn().mockResolvedValue({
       active: true,
@@ -168,6 +171,7 @@ describe('useTranscript — Hito 2e lock screen stop control', () => {
     showRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
     dismissRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
     onRecordingStopRequestedFromNotificationMock.mockReset().mockReturnValue(() => {});
+    watchAppBackgroundToShowRecordingNotificationMock.mockReset().mockReturnValue(() => {});
 
     getUserMediaMock = vi.fn().mockResolvedValue({ active: true, getTracks: () => [] });
     Object.defineProperty(global.navigator, 'mediaDevices', {
@@ -250,6 +254,44 @@ describe('useTranscript — Hito 2e lock screen stop control', () => {
 
     expect(stopNativeRecordingMock).toHaveBeenCalledTimes(1);
     expect(dismissRecordingLockScreenNotificationMock).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it('se suscribe a appStateChange al arrancar una grabación nativa (fix real: mostrar la notificación cuando la app pasa a background de verdad, no en un timer fijo)', async () => {
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    expect(watchAppBackgroundToShowRecordingNotificationMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      result.current.stopRecording();
+      await Promise.resolve();
+    });
+    unmount();
+  });
+
+  it('se desuscribe de appStateChange al detener la grabación nativa', async () => {
+    const unsubscribeMock = vi.fn();
+    watchAppBackgroundToShowRecordingNotificationMock.mockReturnValue(unsubscribeMock);
+
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    expect(unsubscribeMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      result.current.stopRecording();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(unsubscribeMock).toHaveBeenCalledTimes(1);
     unmount();
   });
 });
