@@ -7,6 +7,7 @@ import {
   onRecordingStopRequestedFromNotification,
   showRecordingLockScreenNotification,
   startNativeRecording,
+  startRecordingNotificationUpdates,
   stopNativeRecording,
   watchAppBackgroundToShowRecordingNotification,
 } from '../nativeAudioBridge';
@@ -226,13 +227,35 @@ describe('nativeAudioBridge', () => {
       };
 
       const before = Date.now();
-      await showRecordingLockScreenNotification(8);
+      await showRecordingLockScreenNotification(0, 8);
       const after = Date.now();
 
       const scheduledNotification = schedule.mock.calls[0][0].notifications[0];
       const scheduledAt = scheduledNotification.schedule.at as Date;
       expect(scheduledAt.getTime()).toBeGreaterThanOrEqual(before + 8000);
       expect(scheduledAt.getTime()).toBeLessThanOrEqual(after + 8000);
+    });
+
+    it('con elapsedSeconds incluye el tiempo transcurrido formateado mm:ss en el cuerpo (Opción B, decisión CTO 2026-08-30)', async () => {
+      const schedule = vi.fn().mockResolvedValue({ notifications: [{ id: 778821 }] });
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          LocalNotifications: {
+            requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+            registerActionTypes: vi.fn().mockResolvedValue(undefined),
+            schedule,
+            cancel: vi.fn(),
+            addListener: vi.fn(),
+          },
+        },
+      };
+
+      // 5 minutos y 32 segundos
+      await showRecordingLockScreenNotification(332);
+
+      const scheduledNotification = schedule.mock.calls[0][0].notifications[0];
+      expect(scheduledNotification.body).toContain('05:32');
     });
   });
 
@@ -320,6 +343,48 @@ describe('nativeAudioBridge', () => {
 
       unsubscribe();
       expect(removeMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('startRecordingNotificationUpdates — Opción B (decisión CTO 2026-08-30)', () => {
+    it('reagenda la notificación cada 30s con el tiempo transcurrido, y se detiene al llamar la limpieza', async () => {
+      vi.useFakeTimers();
+      try {
+        const schedule = vi.fn().mockResolvedValue({ notifications: [{ id: 778821 }] });
+        window.Capacitor = {
+          isNativePlatform: () => true,
+          Plugins: {
+            LocalNotifications: {
+              requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+              registerActionTypes: vi.fn().mockResolvedValue(undefined),
+              schedule,
+              cancel: vi.fn(),
+              addListener: vi.fn(),
+            },
+          },
+        };
+
+        const recordingStartedAtMs = Date.now();
+        const stopUpdates = startRecordingNotificationUpdates(recordingStartedAtMs);
+
+        expect(schedule).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(30000);
+        expect(schedule).toHaveBeenCalledTimes(1);
+        const firstBody = schedule.mock.calls[0][0].notifications[0].body as string;
+        expect(firstBody).toContain('00:30');
+
+        await vi.advanceTimersByTimeAsync(30000);
+        expect(schedule).toHaveBeenCalledTimes(2);
+        const secondBody = schedule.mock.calls[1][0].notifications[0].body as string;
+        expect(secondBody).toContain('01:00');
+
+        stopUpdates();
+        await vi.advanceTimersByTimeAsync(60000);
+        expect(schedule).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

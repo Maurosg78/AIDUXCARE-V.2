@@ -14,6 +14,7 @@ import {
   isNativeAudioAvailable,
   onRecordingStopRequestedFromNotification,
   showRecordingLockScreenNotification,
+  startRecordingNotificationUpdates,
   startNativeRecording,
   stopNativeRecording,
   watchAppBackgroundToShowRecordingNotification,
@@ -63,6 +64,8 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
   const nativeRecordingActiveRef = useRef<boolean>(false);
   /** Hito 2e: limpieza del listener de appStateChange, activo solo durante una grabación nativa. */
   const appBackgroundWatchUnsubscribeRef = useRef<(() => void) | null>(null);
+  /** Hito 2e (Opción B, decisión CTO 2026-08-30): limpieza de las actualizaciones periódicas de tiempo transcurrido en la notificación. */
+  const recordingNotificationUpdatesUnsubscribeRef = useRef<(() => void) | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
@@ -172,6 +175,13 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
         // no es robusto: el usuario bloquea en cualquier momento).
         void showRecordingLockScreenNotification();
         appBackgroundWatchUnsubscribeRef.current = watchAppBackgroundToShowRecordingNotification();
+        // Hito 2e (Opción B, decisión CTO 2026-08-30): reagenda la
+        // notificación cada 30s con el tiempo transcurrido — feedback
+        // visual real en pantalla bloqueada sin invertir en Live Activity
+        // todavía (eso queda para Fase 2, ver docs/proposals/lock-screen-
+        // feedback-and-interruption-handling.md).
+        const recordingStartedAtMs = Date.now();
+        recordingNotificationUpdatesUnsubscribeRef.current = startRecordingNotificationUpdates(recordingStartedAtMs);
         return;
       }
 
@@ -801,6 +811,8 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
       void dismissRecordingLockScreenNotification();
       appBackgroundWatchUnsubscribeRef.current?.();
       appBackgroundWatchUnsubscribeRef.current = null;
+      recordingNotificationUpdatesUnsubscribeRef.current?.();
+      recordingNotificationUpdatesUnsubscribeRef.current = null;
     }
   }, [appendTranscript, languagePreference, mode]);
 

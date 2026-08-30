@@ -209,11 +209,33 @@ async function ensureRecordingActionTypeRegistered(plugin: LocalNotificationsNat
   recordingActionTypeRegistered = true;
 }
 
+/** Formatea segundos como mm:ss para el cuerpo de la notificación. */
+function formatElapsedTime(elapsedSeconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(elapsedSeconds));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const minutesPadded = minutes.toString().padStart(2, '0');
+  const secondsPadded = seconds.toString().padStart(2, '0');
+  return `${minutesPadded}:${secondsPadded}`;
+}
+
+function buildRecordingNotificationBody(elapsedSeconds: number): string {
+  const elapsedLabel = formatElapsedTime(elapsedSeconds);
+  return `Grabando... ${elapsedLabel}. Toca "Detener grabación" para finalizarla sin desbloquear el teléfono.`;
+}
+
 /**
- * Muestra la notificación de "grabando" con el botón de acción. No-op fuera
- * de un entorno nativo. Deliberadamente no-throw hacia el llamador — si la
- * notificación falla (permiso denegado, etc.) la grabación en sí no debe
- * verse afectada, solo se pierde ese control visual adicional.
+ * Muestra (o actualiza) la notificación de "grabando" con el botón de
+ * acción. No-op fuera de un entorno nativo. Deliberadamente no-throw hacia
+ * el llamador — si la notificación falla (permiso denegado, etc.) la
+ * grabación en sí no debe verse afectada, solo se pierde ese control visual
+ * adicional.
+ *
+ * `elapsedSeconds` (default 0): decisión CTO 2026-08-30 (Opción B del
+ * documento de propuesta, ver docs/proposals/lock-screen-feedback-and-
+ * interruption-handling.md) — mostrar tiempo transcurrido reagendando la
+ * misma notificación periódicamente, en vez de una Live Activity (Fase 2).
+ * `startRecordingNotificationUpdates` es quien llama con el valor real.
  *
  * `delaySeconds` (default 0 = comportamiento normal, inmediato): existe para
  * la investigación de por qué la notificación no aparece en pantalla
@@ -223,7 +245,10 @@ async function ensureRecordingActionTypeRegistered(plugin: LocalNotificationsNat
  * `willPresent` siempre corre en foreground. Con un delay, la entrega real
  * puede caer con el teléfono ya bloqueado — un escenario que nunca se probó.
  */
-export async function showRecordingLockScreenNotification(delaySeconds = 0): Promise<void> {
+export async function showRecordingLockScreenNotification(
+  elapsedSeconds = 0,
+  delaySeconds = 0
+): Promise<void> {
   const plugin = getLocalNotificationsPlugin();
   if (!plugin) return;
   try {
@@ -235,12 +260,13 @@ export async function showRecordingLockScreenNotification(delaySeconds = 0): Pro
       const scheduledAt = new Date(Date.now() + delayMs);
       schedule = { at: scheduledAt };
     }
+    const body = buildRecordingNotificationBody(elapsedSeconds);
     await plugin.schedule({
       notifications: [
         {
           id: RECORDING_NOTIFICATION_ID,
           title: 'AiDux Air — grabando',
-          body: 'Sesión clínica en curso. Tocá "Detener grabación" para finalizarla sin desbloquear el teléfono.',
+          body,
           actionTypeId: RECORDING_ACTION_TYPE_ID,
           schedule,
         },
@@ -249,6 +275,27 @@ export async function showRecordingLockScreenNotification(delaySeconds = 0): Pro
   } catch (err) {
     console.warn('[nativeAudioBridge] No se pudo mostrar la notificación de grabación:', err);
   }
+}
+
+/** Cada cuánto se reagenda la notificación con el tiempo transcurrido actualizado. */
+const RECORDING_NOTIFICATION_UPDATE_INTERVAL_MS = 30000;
+
+/**
+ * Arranca la actualización periódica de la notificación con el tiempo
+ * transcurrido (Opción B, decisión CTO 2026-08-30). Devuelve una función de
+ * limpieza que detiene las actualizaciones.
+ */
+export function startRecordingNotificationUpdates(recordingStartedAtMs: number): () => void {
+  const intervalId = setInterval(() => {
+    const nowMs = Date.now();
+    const elapsedMs = nowMs - recordingStartedAtMs;
+    const elapsedSeconds = elapsedMs / 1000;
+    void showRecordingLockScreenNotification(elapsedSeconds);
+  }, RECORDING_NOTIFICATION_UPDATE_INTERVAL_MS);
+
+  return () => {
+    clearInterval(intervalId);
+  };
 }
 
 /** Cancela la notificación de "grabando". Se llama al detener por cualquier vía (in-app o desde la propia notificación). */

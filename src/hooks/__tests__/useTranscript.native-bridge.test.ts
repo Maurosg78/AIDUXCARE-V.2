@@ -23,6 +23,7 @@ const showRecordingLockScreenNotificationMock = vi.fn();
 const dismissRecordingLockScreenNotificationMock = vi.fn();
 const onRecordingStopRequestedFromNotificationMock = vi.fn();
 const watchAppBackgroundToShowRecordingNotificationMock = vi.fn();
+const startRecordingNotificationUpdatesMock = vi.fn();
 
 vi.mock('@/core/audio/nativeAudioBridge', () => ({
   isNativeAudioAvailable: () => isNativeAudioAvailableMock(),
@@ -33,6 +34,7 @@ vi.mock('@/core/audio/nativeAudioBridge', () => ({
   dismissRecordingLockScreenNotification: () => dismissRecordingLockScreenNotificationMock(),
   onRecordingStopRequestedFromNotification: (cb: () => void) => onRecordingStopRequestedFromNotificationMock(cb),
   watchAppBackgroundToShowRecordingNotification: () => watchAppBackgroundToShowRecordingNotificationMock(),
+  startRecordingNotificationUpdates: (...args: unknown[]) => startRecordingNotificationUpdatesMock(...args),
 }));
 
 import { useTranscript } from '../useTranscript';
@@ -53,6 +55,7 @@ describe('useTranscript — Hito 2c native/web branch selection', () => {
     dismissRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
     onRecordingStopRequestedFromNotificationMock.mockReset().mockReturnValue(() => {});
     watchAppBackgroundToShowRecordingNotificationMock.mockReset().mockReturnValue(() => {});
+    startRecordingNotificationUpdatesMock.mockReset().mockReturnValue(() => {});
 
     getUserMediaMock = vi.fn().mockResolvedValue({
       active: true,
@@ -172,6 +175,7 @@ describe('useTranscript — Hito 2e lock screen stop control', () => {
     dismissRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
     onRecordingStopRequestedFromNotificationMock.mockReset().mockReturnValue(() => {});
     watchAppBackgroundToShowRecordingNotificationMock.mockReset().mockReturnValue(() => {});
+    startRecordingNotificationUpdatesMock.mockReset().mockReturnValue(() => {});
 
     getUserMediaMock = vi.fn().mockResolvedValue({ active: true, getTracks: () => [] });
     Object.defineProperty(global.navigator, 'mediaDevices', {
@@ -283,6 +287,29 @@ describe('useTranscript — Hito 2e lock screen stop control', () => {
       await result.current.startRecording();
     });
 
+    expect(unsubscribeMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      result.current.stopRecording();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(unsubscribeMock).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it('arranca las actualizaciones periódicas de tiempo transcurrido (Opción B) al iniciar grabación nativa, y las detiene al parar', async () => {
+    const unsubscribeMock = vi.fn();
+    startRecordingNotificationUpdatesMock.mockReturnValue(unsubscribeMock);
+
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    expect(startRecordingNotificationUpdatesMock).toHaveBeenCalledTimes(1);
     expect(unsubscribeMock).not.toHaveBeenCalled();
 
     await act(async () => {

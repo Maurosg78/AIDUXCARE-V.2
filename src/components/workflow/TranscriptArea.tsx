@@ -32,7 +32,7 @@ const UI = esPilot
       startRecordingTitle: 'Iniciar grabación de voz para capturar la conversación clínica',
       finishAndStartNext: 'Finalizar y comenzar siguiente paciente',
       finishAndStartNextTitle: 'Cierra y sube esta grabación como sesión completa, y te lleva a elegir el próximo paciente',
-      finishAndStartNextConfirm: 'Esto va a cerrar la grabación actual como sesión terminada y te va a llevar a elegir el próximo paciente. ¿Confirmás?',
+      finishAndStartNextConfirm: 'Esto va a cerrar la grabación actual como sesión terminada y te va a llevar a elegir el próximo paciente. ¿Confirmas?',
       listening: 'Escuchando…',
       processingAudioTitle: 'Procesando audio…',
       processingAudioBody: 'Transcribiendo audio. Puede tardar unos momentos en grabaciones largas.',
