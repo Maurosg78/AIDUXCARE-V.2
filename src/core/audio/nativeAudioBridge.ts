@@ -228,7 +228,13 @@ export async function showRecordingLockScreenNotification(delaySeconds = 0): Pro
   if (!plugin) return;
   try {
     await ensureRecordingActionTypeRegistered(plugin);
-    const schedule = delaySeconds > 0 ? { at: new Date(Date.now() + delaySeconds * 1000) } : undefined;
+    const hasDelay = delaySeconds > 0;
+    let schedule: { at: Date } | undefined;
+    if (hasDelay) {
+      const delayMs = delaySeconds * 1000;
+      const scheduledAt = new Date(Date.now() + delayMs);
+      schedule = { at: scheduledAt };
+    }
     await plugin.schedule({
       notifications: [
         {
