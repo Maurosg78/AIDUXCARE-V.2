@@ -638,7 +638,9 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
 
           if (activeAudioBackupId && !hasTranscriptionFailed && hasFinalTranscript) {
             try {
-              await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'success', null);
+              // TD-013: persistir el texto junto con el estado de éxito —
+              // ver comentario en audioBackupService.updateAudioBackupTranscriptionStatus.
+              await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'success', null, finalTranscript);
             } catch (statusError) {
               console.error('[useTranscript] Failed to mark clinical audio backup as successful', statusError);
             }
