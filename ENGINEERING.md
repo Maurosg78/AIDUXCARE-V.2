@@ -1,8 +1,8 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.14
-**Fecha:** Agosto 2026
+**Versión:** 1.15
+**Fecha:** Septiembre 2026
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
 
@@ -1172,6 +1172,7 @@ La deuda técnica no documentada es el mayor riesgo de mantenibilidad en softwar
 | **TD-010** | `ClinicalAnalysisResults.tsx` tiene `useEffect` sin cleanup explícito | Baja | Histórico | Confirmar que no registra listeners/timers o documentar cleanup/no-op explícito |
 | **TD-011** | Gates `!isSpainPilot()` en `VisitIndicators`, `VisitRecordCard`, `AnalyticsDashboard` deben reemplazarse por `isSocratesEnabled()` cuando exista el módulo Sócrates V2 | Media | MVO Spain mode | Implementar `isSocratesEnabled()` con lógica de mercado + feature flag; migrar todos los `!isSpainPilot()` añadidos en commit MVO-Spain-mode |
 | **TD-012** | `finalizeNativeRecording` en `useTranscript.ts` (AiDux Air, path nativo Capacitor) sube el audio completo en una sola llamada a `whisperProxy`, sin trocear como sí hace el path web (MediaRecorder/WebM, segmentos ≤6.5MB). A 48 kbps AAC mono, una sesión entra cómoda hasta ~70min (~25MB), pero no hay guard duro ni fallback si se supera | Media | Spike AiDux Air (Hito 2c/2d) | Trocear el audio nativo en segmentos antes de subir (mismo patrón MAX_SEGMENT_BYTES del path web, adaptado a un contenedor AAC/MP4 en vez de WebM), o al menos un guard explícito que rechace/avise antes de intentar subir un archivo que supere el límite de Whisper (25MB) |
+| **TD-013** | El texto de la transcripción (resultado de `FirebaseWhisperService.transcribe` / `whisperProxy`) nunca se persiste server-side — `whisperProxy.js` es un proxy puro hacia OpenAI que devuelve el texto por HTTP y no escribe nada en Firestore; `useTranscript.ts` lo guarda solo en `useState` local. Si la pestaña/dispositivo que originó la transcripción se cierra o pierde energía antes de generar el SOAP, el texto se pierde para siempre — el único respaldo real es el audio crudo en `session_audio_backups`/Storage, que hay que volver a pasar por Whisper a mano. Ocurrió en producción el 2026-09-07 (sesión real, laptop sin batería); se recuperó manualmente re-transcribiendo el audio desde Storage. `transcriptionStatus: success` en `session_audio_backups` es engañoso — solo indica que la llamada a Whisper tuvo éxito, no que el texto resultante esté recuperable | Alta | Producto (gap estructural, afecta path web y nativo por igual, no es específico de AiDux Air) | Persistir el texto de la transcripción en Firestore (ligado a `sessionId`/`recordingId`, no solo en memoria del cliente) apenas vuelve de `whisperProxy`, antes de que el usuario tenga que hacer nada más — idealmente desde el propio Cloud Function como escritura server-side, no dependiente de que el cliente complete un segundo paso |
 
 ### 7.2 Deuda de producto (no código)
 
@@ -1365,6 +1366,7 @@ AiduxCare amplifica. Evidencia. Acompaña.
 | 1.12.1 | 2026-06-07 | Refuerza §8.4: limpieza remota obligatoria de `/var/www/pilot/dist/*` antes de cada deploy por `gcloud compute scp`, con verificación de un solo bundle principal `index-[hash].js`. |
 | 1.13 | 2026-06-08 | MVO Spain mode: TD-011 registrado. Gates `!isSpainPilot()` en componentes de sugerencias IA (`VisitIndicators`, `VisitRecordCard`, `AnalyticsDashboard`). Audit copy SaMD: reemplazo de lenguaje de recomendación clínica por lenguaje documental en 8 archivos. |
 | 1.14 | 2026-08-30 | TD-012 registrado: sin troceo de audio en el path nativo de AiDux Air (`finalizeNativeRecording`, `useTranscript.ts`) — sube completo en una llamada, sin guard duro sobre el límite de Whisper. Revisión de §3.1 (una operación por línea) sobre `nativeAudioBridge.ts`: refactorizados `getNativePlugin`, `getLocalNotificationsPlugin`, `isNativeAudioAvailable` y el listener de `onRecordingStopRequestedFromNotification` a variables intermedias explícitas. |
+| 1.15 | 2026-09-07 | TD-013 registrado, severidad Alta: el texto de transcripción no se persiste server-side (`whisperProxy.js` es proxy puro, `useTranscript.ts` lo guarda solo en memoria de cliente) — afecta path web y nativo por igual. Detectado en producción tras una sesión real con laptop sin batería; recuperado manualmente re-transcribiendo el audio ya respaldado en Storage. `transcriptionStatus: success` en `session_audio_backups` no garantiza que el texto sea recuperable. |
 
 ---
 

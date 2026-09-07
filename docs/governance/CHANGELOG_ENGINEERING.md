@@ -1,5 +1,14 @@
 # ENGINEERING.md Changelog
 
+## 2026-09-07 — v1.15 (TD-013 — texto de transcripción no persistido server-side)
+
+Detectado tras un incidente real: sesión clínica grabada desde laptop, batería agotada antes de generar el SOAP. El audio quedó a salvo en `session_audio_backups`/Storage, pero el texto de la transcripción se perdió — se recuperó a mano re-transcribiendo el audio original.
+
+- **TD-013 registrado, severidad Alta:** `whisperProxy.js` es un proxy puro hacia OpenAI — recibe audio, devuelve texto por HTTP, no escribe nada en Firestore. `useTranscript.ts` guarda el resultado solo en `useState` local (`setTranscriptState`). Si la pestaña/dispositivo que originó la llamada se cierra antes de que el usuario dispare la generación del SOAP, el texto no es recuperable por ningún camino normal de la app.
+- **No es específico de AiDux Air ni del path nativo** — afecta igual al flujo web de escritorio, que es donde ocurrió el incidente. Es deuda de producto general, no de una feature en spike.
+- **`transcriptionStatus: success` en `session_audio_backups` es una señal engañosa:** solo confirma que la llamada a Whisper tuvo éxito, no que el texto resultante esté guardado o sea recuperable en la UI.
+- Criterio de cierre propuesto: persistir el texto de transcripción server-side (ligado a `sessionId`/`recordingId`) en el propio `whisperProxy`, no dependiente de un segundo paso del cliente.
+
 ## 2026-08-30 — v1.14 (Auditoría de mejores prácticas — puente de audio nativo AiDux Air)
 
 Revisión solicitada explícitamente antes de presentación al CTO: cotejar el trabajo de Hito 2b–2e (AiDux Air — corte de sesión, puente al plugin nativo, compresión AAC, control desde pantalla de bloqueo) contra §3 (Convenciones de Código) y §7 (Deuda Técnica) de este documento.
