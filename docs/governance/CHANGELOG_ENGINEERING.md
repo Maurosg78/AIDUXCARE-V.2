@@ -1,5 +1,13 @@
 # ENGINEERING.md Changelog
 
+## 2026-09-07 — v1.14 (TD-013 — texto de transcripción no persistido server-side, registrado y resuelto)
+
+Detectado tras un incidente real: sesión clínica grabada desde laptop, batería agotada antes de generar el SOAP. El audio quedó a salvo en `session_audio_backups`/Storage, pero el texto de la transcripción se había perdido — se recuperó a mano re-transcribiendo el audio original mientras se preparaba este fix.
+
+- **TD-013 registrado y resuelto en el mismo cambio, severidad Alta:** `whisperProxy.js` es un proxy puro hacia OpenAI — recibe audio, devuelve texto por HTTP, no escribía nada en Firestore. `useTranscript.ts` guardaba el resultado solo en `useState` local (`setTranscriptState`). Si la pestaña/dispositivo que originó la llamada se cerraba antes de que el usuario disparara la generación del SOAP, el texto no era recuperable por ningún camino normal de la app.
+- **No es específico de AiDux Air ni del path nativo** — afectaba igual al flujo web de escritorio, que es donde ocurrió el incidente. Era deuda de producto general, no de una feature en spike.
+- **`transcriptionStatus: success` en `session_audio_backups` era una señal engañosa:** solo confirmaba que la llamada a Whisper tuvo éxito, no que el texto resultante estuviera guardado o fuera recuperable en la UI.
+- **Fix:** `updateAudioBackupTranscriptionStatus` (`src/services/audioBackupService.ts`) acepta ahora `transcriptText` opcional, escrito en el mismo documento de `session_audio_backups`. Los dos call sites de éxito en `useTranscript.ts` (web/`processChunksSequentially` y nativo/`finalizeNativeRecording`) lo pasan apenas Whisper responde con éxito — antes de que el usuario tenga que hacer nada más.
 ## 2026-06-09 — v1.13.1 (UX clínica — aceptación de sugerencia de medicamento)
 
 Cambio observable en UX clínica: el fisioterapeuta puede aceptar una coincidencia de medicamento sugerida sin perder trazabilidad clínica.
