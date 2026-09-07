@@ -786,7 +786,11 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
         }
 
         if (activeAudioBackupId) {
-          await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'success', null);
+          // TD-013: persistir el texto junto con el estado de éxito — mismo
+          // fix que el path web, ver audioBackupService.updateAudioBackupTranscriptionStatus.
+          // No persistir si fue descartado por alucinación (trimmed existe pero no es texto real).
+          const validTranscriptText = isHallucination ? null : (trimmed || null);
+          await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'success', null, validTranscriptText);
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : String(err);
