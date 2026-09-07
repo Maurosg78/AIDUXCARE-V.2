@@ -103,6 +103,7 @@ export async function updateAudioBackupTranscriptionStatus(
   audioBackupId: string,
   transcriptionStatus: AudioBackupTranscriptionStatus,
   lastError: string | null = null,
+  transcriptText: string | null = null,
 ): Promise<void> {
   if (!db) {
     throw new Error('Firestore no está disponible para actualizar respaldo de audio clínico.');
@@ -112,6 +113,13 @@ export async function updateAudioBackupTranscriptionStatus(
   const audioBackupUpdate = {
     transcriptionStatus,
     lastError,
+    // TD-013: el texto se persiste aquí, en el mismo documento que ya
+    // rastrea el audio crudo, apenas Whisper responde con éxito — antes
+    // de que el usuario tenga que hacer nada más (generar el SOAP,
+    // navegar a otra pantalla, etc.). Antes de este cambio, este texto
+    // solo vivía en useState del cliente y se perdía si la pestaña o el
+    // dispositivo se cerraban antes de ese paso posterior.
+    transcriptText,
     updatedAt: new Date().toISOString(),
   };
 
