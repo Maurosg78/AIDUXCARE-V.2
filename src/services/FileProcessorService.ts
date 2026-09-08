@@ -470,10 +470,17 @@ function cleanReliableUppercaseNameCandidate(value: string): string | null {
 }
 
 function detectExplicitPatientNameCandidate(extractedText: string): string | null {
-  const normalizedLines = extractedText
-    .replace(/\r\n?/g, '\n')
-    .replace(/[\x00-\x09\x0B-\x1F\x7F]/g, '')
-    .replace(/[^\S\n]+/g, ' ');
+  const textWithoutCarriageReturns = extractedText.replace(/\r\n?/g, '\n');
+  const textWithoutControlChars = textWithoutCarriageReturns.replace(/[\x00-\x09\x0B-\x1F\x7F]/g, '');
+  // Algunos extractores de PDF (visto en un informe de radiología real)
+  // no insertan saltos de línea entre campos — el layout visual queda
+  // representado solo por 2+ espacios seguidos, ej.
+  // "...IMAGEN  PACIENTE:   PEREZ RODRIGO...". Sin esto, "paciente:"
+  // nunca queda al inicio de una línea y explicitLabelPattern no
+  // matchea nunca, aunque el nombre esté ahí, legible. Se trata un
+  // run de 2+ espacios como un límite de campo (salto de línea).
+  const textWithFieldBoundariesAsNewlines = textWithoutControlChars.replace(/[^\S\n]{2,}/g, '\n');
+  const normalizedLines = textWithFieldBoundariesAsNewlines.replace(/[^\S\n]+/g, ' ');
   const candidateText = normalizedLines.slice(0, 5000);
   const explicitLabelPattern = /(?:^|\n)\s*(?:paciente|nombre|patient|name)\s*[:\-]\s*([^\n]{3,100})/i;
   const explicitLabelMatch = explicitLabelPattern.exec(candidateText);

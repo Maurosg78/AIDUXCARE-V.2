@@ -55,6 +55,35 @@ describe('evaluateAttachmentPatientIdentity', () => {
     expect(result.patientIdentityStatus).toBe('no_name_detected');
   });
 
+  it('detects an explicit patient name when the extractor collapsed fields onto one line (real radiology PDF, 2026-09-08)', () => {
+    // Extracción real: "PACIENTE:" no queda al inicio de línea, sino
+    // separado del texto anterior por 2+ espacios en vez de un salto de
+    // línea — antes de este fix, ningún patrón matcheaba, aunque el
+    // nombre estuviera legible en el texto. Esto cubre esa detección
+    // (el bug que se está arreglando acá) — no el matching de nombre,
+    // que es una limitación distinta, ver el test siguiente.
+    const extractedText =
+      'SERVICIO DE DIAGNÓSTICO POR IMAGEN  PACIENTE:   PEREZ RODRIGO, MARIA CARMEN  A/A Dr/a.:   CASTRO PIMENTEL, RAFAEL  FECHA:   25/08/2026';
+
+    const result = evaluateAttachmentPatientIdentity(extractedText, 'Maricarmen Perez');
+
+    expect(result.detectedPatientName).toBe('PEREZ RODRIGO, MARIA CARMEN');
+  });
+
+  it('flags a compound first name as suspected mismatch even for the same real person — known limitation, not fixed here', () => {
+    // "Maricarmen" (una palabra, como está guardada la paciente) vs.
+    // "MARIA CARMEN" (dos palabras, como aparece en el PDF real) no
+    // matchean por token exacto. Es la misma persona; el comparador de
+    // nombres no lo sabe. Test de caracterización, no de corrección —
+    // documenta el comportamiento actual para no perderlo de vista.
+    const extractedText = 'Paciente: PEREZ RODRIGO, MARIA CARMEN';
+
+    const result = evaluateAttachmentPatientIdentity(extractedText, 'Maricarmen Perez');
+
+    expect(result.detectedPatientName).toBe('PEREZ RODRIGO, MARIA CARMEN');
+    expect(result.patientIdentityStatus).toBe('suspected_mismatch');
+  });
+
   it('does not treat absence of an explicit patient name as mismatch', () => {
     const extractedText = 'Informe clínico sin identificación explícita del paciente.';
 
