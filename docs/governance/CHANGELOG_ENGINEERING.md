@@ -7,7 +7,15 @@ Detectado tras un incidente real: sesión clínica grabada desde laptop, baterí
 - **TD-013 registrado y resuelto en el mismo cambio, severidad Alta:** `whisperProxy.js` es un proxy puro hacia OpenAI — recibe audio, devuelve texto por HTTP, no escribía nada en Firestore. `useTranscript.ts` guardaba el resultado solo en `useState` local (`setTranscriptState`). Si la pestaña/dispositivo que originó la llamada se cerraba antes de que el usuario disparara la generación del SOAP, el texto no era recuperable por ningún camino normal de la app.
 - **No es específico de AiDux Air ni del path nativo** — afectaba igual al flujo web de escritorio, que es donde ocurrió el incidente. Era deuda de producto general, no de una feature en spike.
 - **`transcriptionStatus: success` en `session_audio_backups` era una señal engañosa:** solo confirmaba que la llamada a Whisper tuvo éxito, no que el texto resultante estuviera guardado o fuera recuperable en la UI.
-- **Fix:** `updateAudioBackupTranscriptionStatus` (`src/services/audioBackupService.ts`) acepta ahora `transcriptText` opcional, escrito en el mismo documento de `session_audio_backups`. Los dos call sites de éxito en `useTranscript.ts` (web/`processChunksSequentially` y nativo/`finalizeNativeRecording`) lo pasan apenas Whisper responde con éxito — antes de que el usuario tenga que hacer nada más.
+- **Fix:** `updateAudioBackupTranscriptionStatus` (`src/services/audioBackupService.ts`) acepta ahora `transcriptText` opcional, escrito en el mismo documento de `session_audio_backups`. El call site de éxito en `useTranscript.ts` (`processChunksSequentially`, path web — el único que existe en `stable`) lo pasa apenas Whisper responde con éxito, antes de que el usuario tenga que hacer nada más. El mismo fix se aplicó por separado al path nativo de AiDux Air (`finalizeNativeRecording`) en la rama de esa feature, que todavía no vive en `stable`.
+
+## 2026-09-08 — v1.14.1 (TD-013 acotado, TD-014 y TD-015 registrados)
+
+Al validar TD-013 con el usuario, dos gaps quedaron claros que el fix original no cerraba:
+
+- **TD-013 se resolvió solo del lado de escritura.** El dato queda a salvo y recuperable con una simple lectura de Firestore — ya no hace falta volver a llamar a Whisper a mano — pero no aparece solo en la UI al reanudar una sesión.
+- **TD-014 registrado (Media):** el flujo de reanudar sesión (`WO-IA-RESUME-01`) lee el transcript de `sessions`, que solo se llena al generar el SOAP — nunca lee `session_audio_backups.transcriptText`. Pendiente: hidratar el cuadro de texto desde ahí si `sessions.transcript` está vacío.
+- **TD-015 registrado (Baja, backlog explícito):** la persistencia de TD-013 ocurre solo al finalizar la grabación, no por segmento mientras sigue en curso. Si el dispositivo muere durante la grabación (no después de detenerla, que es lo que pasó en el incidente real), el texto se sigue perdiendo. Decisión del usuario: dejarlo en backlog, no es un escenario común.
 ## 2026-06-09 — v1.13.1 (UX clínica — aceptación de sugerencia de medicamento)
 
 Cambio observable en UX clínica: el fisioterapeuta puede aceptar una coincidencia de medicamento sugerida sin perder trazabilidad clínica.
