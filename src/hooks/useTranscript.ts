@@ -789,7 +789,8 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
           // TD-013: persistir el texto junto con el estado de éxito — mismo
           // fix que el path web, ver audioBackupService.updateAudioBackupTranscriptionStatus.
           // No persistir si fue descartado por alucinación (trimmed existe pero no es texto real).
-          const validTranscriptText = isHallucination ? null : (trimmed || null);
+          const hasValidSpeech = !isHallucination && Boolean(trimmed);
+          const validTranscriptText = hasValidSpeech ? trimmed : null;
           await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'success', null, validTranscriptText);
         }
       } catch (err) {
