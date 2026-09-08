@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, orderBy, query, updateDoc, where } from 'firebase/firestore';
 
 /**
  * TD-013: antes de este fix, updateAudioBackupTranscriptionStatus solo
@@ -18,7 +18,11 @@ vi.mock('firebase/firestore', async () => {
     doc: vi.fn(() => ({ id: 'mock-doc-ref' })),
     updateDoc: vi.fn(),
     addDoc: vi.fn(),
-    collection: vi.fn(),
+    collection: vi.fn(() => ({ id: 'mock-collection-ref' })),
+    query: vi.fn((...args: unknown[]) => args),
+    where: vi.fn((...args: unknown[]) => args),
+    orderBy: vi.fn((...args: unknown[]) => args),
+    getDocs: vi.fn(),
   };
 });
 
@@ -33,7 +37,17 @@ vi.mock('../../lib/firebase', () => ({
   auth: { currentUser: { uid: 'test-user-id' } },
 }));
 
-import { updateAudioBackupTranscriptionStatus } from '../audioBackupService';
+import { getTranscriptTextForSession, updateAudioBackupTranscriptionStatus } from '../audioBackupService';
+
+function buildMockQuerySnapshot(docs: Array<Record<string, unknown>>) {
+  return {
+    forEach: (callback: (doc: { data: () => Record<string, unknown> }) => void) => {
+      for (const docData of docs) {
+        callback({ data: () => docData });
+      }
+    },
+  };
+}
 
 describe('audioBackupService — updateAudioBackupTranscriptionStatus (TD-013)', () => {
   const mockUpdateDoc = vi.mocked(updateDoc);
@@ -75,5 +89,74 @@ describe('audioBackupService — updateAudioBackupTranscriptionStatus (TD-013)',
 
     const writtenPayload = mockUpdateDoc.mock.calls[0][1] as Record<string, unknown>;
     expect(writtenPayload.transcriptText).toBeNull();
+  });
+});
+
+/**
+ * TD-014: al reanudar una sesión que nunca generó un SOAP, sessions.transcript
+ * nunca se escribió — el único lugar donde el texto puede vivir es acá,
+ * en session_audio_backups.transcriptText (TD-013). Esta suite cubre la
+ * lectura, no la escritura.
+ */
+describe('audioBackupService — getTranscriptTextForSession (TD-014)', () => {
+  const mockGetDocs = vi.mocked(getDocs);
+  const mockQuery = vi.mocked(query);
+  const mockWhere = vi.mocked(where);
+  const mockOrderBy = vi.mocked(orderBy);
+  const mockCollection = vi.mocked(collection);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('devuelve el texto de un único respaldo exitoso', async () => {
+    mockGetDocs.mockResolvedValue(
+      buildMockQuerySnapshot([{ transcriptText: 'Dolor lumbar desde hace dos semanas.' }]) as any,
+    );
+
+    const result = await getTranscriptTextForSession('session-1', 'user-1');
+
+    expect(result).toBe('Dolor lumbar desde hace dos semanas.');
+    expect(mockCollection).toHaveBeenCalledWith({}, 'session_audio_backups');
+    expect(mockWhere).toHaveBeenCalledWith('sessionId', '==', 'session-1');
+    expect(mockWhere).toHaveBeenCalledWith('userId', '==', 'user-1');
+    expect(mockWhere).toHaveBeenCalledWith('transcriptionStatus', '==', 'success');
+    expect(mockOrderBy).toHaveBeenCalledWith('recordingStartedAt', 'asc');
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('concatena varios respaldos de la misma sesión en orden cronológico (caso real: laptop + móvil bajo el mismo sessionId)', async () => {
+    mockGetDocs.mockResolvedValue(
+      buildMockQuerySnapshot([
+        { transcriptText: 'Primera parte, grabada en la laptop.' },
+        { transcriptText: 'Segunda parte, grabada después en el móvil.' },
+      ]) as any,
+    );
+
+    const result = await getTranscriptTextForSession('session-1', 'user-1');
+
+    expect(result).toBe('Primera parte, grabada en la laptop.\nSegunda parte, grabada después en el móvil.');
+  });
+
+  it('ignora respaldos sin transcriptText utilizable (vacío o ausente)', async () => {
+    mockGetDocs.mockResolvedValue(
+      buildMockQuerySnapshot([
+        { transcriptText: null },
+        { transcriptText: '   ' },
+        { transcriptText: 'El único texto real.' },
+      ]) as any,
+    );
+
+    const result = await getTranscriptTextForSession('session-1', 'user-1');
+
+    expect(result).toBe('El único texto real.');
+  });
+
+  it('devuelve null cuando no hay ningún respaldo exitoso para la sesión', async () => {
+    mockGetDocs.mockResolvedValue(buildMockQuerySnapshot([]) as any);
+
+    const result = await getTranscriptTextForSession('session-sin-audio', 'user-1');
+
+    expect(result).toBeNull();
   });
 });

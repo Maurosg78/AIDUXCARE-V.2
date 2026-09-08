@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDocs, orderBy, query, updateDoc, where } from 'firebase/firestore';
 import { ref, uploadBytes } from 'firebase/storage';
 import { auth, db, storage } from '../lib/firebase';
 
@@ -124,4 +124,54 @@ export async function updateAudioBackupTranscriptionStatus(
   };
 
   await updateDoc(audioBackupDocumentRef, audioBackupUpdate);
+}
+
+/**
+ * TD-014: hidrata el transcript al reanudar una sesión que nunca llegó a
+ * generar un SOAP — `sessions.transcript` solo se escribe en ese paso
+ * (ver ProfessionalWorkflowPage.tsx), así que si el usuario nunca lo
+ * generó, el texto vive únicamente acá, en session_audio_backups (TD-013).
+ *
+ * Una sesión puede tener más de un respaldo de audio (ej. una grabación
+ * web larga + una nativa corta bajo el mismo sessionId, visto en el
+ * incidente real del 2026-09-07) — se concatenan en orden cronológico.
+ */
+export async function getTranscriptTextForSession(sessionId: string, userId: string): Promise<string | null> {
+  if (!db) {
+    throw new Error('Firestore no está disponible para leer el respaldo de audio clínico.');
+  }
+
+  // userId explícito en la query, no solo en la regla de seguridad: las
+  // reglas de Firestore evalúan cada documento devuelto por un list/query
+  // contra resource.data.userId (ver firestore.rules), pero incluirlo acá
+  // también deja la query auto-explicada y evita cualquier ambigüedad de
+  // evaluación para operaciones de lista compuestas.
+  const audioBackupCollectionRef = collection(db, AUDIO_BACKUP_COLLECTION);
+  const successfulBackupsQuery = query(
+    audioBackupCollectionRef,
+    where('sessionId', '==', sessionId),
+    where('userId', '==', userId),
+    where('transcriptionStatus', '==', 'success'),
+    orderBy('recordingStartedAt', 'asc'),
+  );
+
+  const matchingBackups = await getDocs(successfulBackupsQuery);
+  const transcriptTexts: string[] = [];
+
+  matchingBackups.forEach((backupDoc) => {
+    const backupData = backupDoc.data();
+    const backupTranscriptText = backupData.transcriptText;
+    const hasUsableText = typeof backupTranscriptText === 'string' && backupTranscriptText.trim().length > 0;
+    if (hasUsableText) {
+      transcriptTexts.push(backupTranscriptText.trim());
+    }
+  });
+
+  const hasAnyRecoveredText = transcriptTexts.length > 0;
+  if (!hasAnyRecoveredText) {
+    return null;
+  }
+
+  const combinedTranscriptText = transcriptTexts.join('\n');
+  return combinedTranscriptText;
 }

@@ -7,6 +7,7 @@ import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
 import { useTranscript } from "../hooks/useTranscript";
 import { useTimer } from "../hooks/useTimer";
 import sessionService from "../services/sessionService";
+import { getTranscriptTextForSession } from "../services/audioBackupService";
 import type { TreatmentDecision } from "../services/sessionService";
 import { useAuth } from "../hooks/useAuth";
 import { useProfessionalProfile as useProfessionalProfileContext } from "../context/ProfessionalProfileContext";
@@ -2585,6 +2586,34 @@ const ProfessionalWorkflowPage = () => {
             setEvaluationTests(sanitized);
             updatePhysicalEvaluation(sanitized);
           }
+          return;
+        }
+        // TD-014: la sesión existe pero nunca llegó a generar un SOAP —
+        // sessions.transcript nunca se escribió (ver Step 5 en
+        // handleAnalyzeWithAI), así que si hay texto recuperable, solo
+        // puede venir de session_audio_backups.transcriptText (TD-013).
+        // No es "sesión faltante": existe, solo está incompleta.
+        if (sessionData && !sessionData.soapNote) {
+          setSessionId(sessionIdFromUrl);
+          const resumeUserId = user?.uid ?? null;
+          const canLookUpAudioBackupText = Boolean(resumeUserId);
+          if (canLookUpAudioBackupText) {
+            try {
+              const recoveredTranscriptText = await getTranscriptTextForSession(sessionIdFromUrl, resumeUserId as string);
+              const hasRecoveredTranscriptText = Boolean(recoveredTranscriptText);
+              if (hasRecoveredTranscriptText) {
+                setTranscript(recoveredTranscriptText as string);
+                logger.info('[WO-IA-RESUME-01] hydrated transcript from session_audio_backups (TD-014)', {
+                  sessionId: sessionIdFromUrl,
+                  transcriptLength: (recoveredTranscriptText as string).length,
+                });
+              }
+            } catch (transcriptLookupError) {
+              console.error('[WO-IA-RESUME-01] Failed to look up session_audio_backups for TD-014 hydration', transcriptLookupError);
+            }
+          }
+          setAnalysisError(null);
+          setResumeLoadFailed(null);
           return;
         }
         // Fallback: session doc missing (e.g. note saved but session never written). Hydrate from consultation/note.
