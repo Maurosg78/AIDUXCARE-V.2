@@ -17,9 +17,13 @@
  * (MediaRecorder) queda exactamente igual que antes de este archivo existir.
  */
 
-export interface NativeAudioResult {
+export interface NativeAudioSegment {
   filePath: string;
   base64Audio: string;
+}
+
+export interface NativeAudioResult {
+  segments: NativeAudioSegment[];
   mimeType: string;
 }
 

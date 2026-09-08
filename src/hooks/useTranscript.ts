@@ -718,92 +718,132 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
   }, [appendTranscript, languagePreference, mode, isWebSpeechAvailable, getSpeechRecognitionLang, isRecording]);
 
   // ✅ Hito 2c (AiDux Air): finaliza una grabación nativa — detiene el
-  // plugin, arma el Blob desde el base64 devuelto, y sigue el MISMO
+  // plugin, arma un Blob por cada segmento devuelto, y sigue el MISMO
   // contrato hacia whisperProxy que el path web (FirebaseWhisperService.
   // transcribe recibe un Blob, no le importa de dónde salió).
   //
+  // TD-012 (Hito 2f, 2026-09-08): antes se transcribía el audio nativo
+  // entero en una sola llamada — confirmado en producción que eso falla
+  // con "Total number of tokens in instructions + audio is too large
+  // for this model" en sesiones reales de más de ~37min. El plugin ahora
+  // devuelve la grabación ya troceada en segmentos (~5min cada uno, ver
+  // BackgroundAudioPlugin.swift); acá se transcribe uno por uno y se
+  // concatenan los resultados, en vez de un intento único con el audio
+  // completo.
+  //
+  // Cada segmento se respalda como su propio documento de
+  // session_audio_backups (no se re-combinan en un solo blob) — esto es
+  // deliberado: si un segmento falla, los demás igual quedan
+  // transcritos y recuperables (getTranscriptTextForSession, TD-014, ya
+  // concatena todos los respaldos exitosos de una sesión en orden
+  // cronológico). Un fallo aislado ya no tira todo el resto del audio.
+  //
   // Deliberadamente NO reutiliza processChunksSequentially/transcribeChunk
-  // del path MediaRecorder: ese código trocea el audio en segmentos de
-  // ≤6.5MB reusando chunks[0] como header WebM — un truco específico del
-  // contenedor WebM que no aplica a un WAV completo de una sola pieza. Acá
-  // se transcribe entero, con la misma estrategia de "intento completo con
-  // timeout" que ya existe en handleLargeAudio para audio web grande.
-  // Duplicar esta lógica en vez de compartirla es intencional: el path web
-  // (MediaRecorder) no se toca ni un carácter — es el que corre hoy en
-  // producción en pilot.aiduxcare.com.
+  // del path MediaRecorder: ese código trocea reusando chunks[0] como
+  // header WebM — un truco específico de ese contenedor que no aplica a
+  // segmentos AAC/MP4 ya completos y decodificables por sí solos. El
+  // path web no se toca ni un carácter.
   const finalizeNativeRecording = useCallback(async () => {
     setIsTranscribing(true);
-    let activeAudioBackupId: string | null = null;
 
     try {
-      const { base64Audio, mimeType } = await stopNativeRecording();
-      const audioBlob = base64ToBlob(base64Audio, mimeType);
+      const { segments, mimeType } = await stopNativeRecording();
+      const segmentBlobs = segments.map((segment) => base64ToBlob(segment.base64Audio, mimeType));
+      const totalAudioSizeBytes = segmentBlobs.reduce((sum, blob) => sum + blob.size, 0);
 
-      if (audioBlob.size < MIN_AUDIO_SIZE_BYTES) {
-        console.log(`[useTranscript] Native recording too short to transcribe: ${audioBlob.size} bytes`);
+      if (totalAudioSizeBytes < MIN_AUDIO_SIZE_BYTES) {
+        console.log(`[useTranscript] Native recording too short to transcribe: ${totalAudioSizeBytes} bytes`);
         setError('No clear speech detected. Please record at least a few seconds of clear speech, then stop.');
         return;
       }
 
       const recordingStoppedAt = new Date().toISOString();
       const recordingStartedAt = recordingStartedAtRef.current ?? recordingStoppedAt;
+      const recordingStartedAtMs = new Date(recordingStartedAt).getTime();
       const audioBackupClinicalContext = getAudioBackupContextRef.current?.() ?? {};
-      const persistedAudioBackup = await persistAudioBackup({
-        audioBlob,
-        recordingStartedAt,
-        recordingStoppedAt,
-        ...audioBackupClinicalContext,
-      });
-      activeAudioBackupId = persistedAudioBackup.id;
 
-      console.info('[useTranscript] Native clinical audio backup persisted before transcription', {
-        audioBackupId: persistedAudioBackup.id,
-        storagePath: persistedAudioBackup.storagePath,
-        sizeBytes: audioBlob.size,
-      });
+      const transcribedSegmentTexts: string[] = [];
+      let firstSuccessfulMeta: WhisperTranscriptionResult | null = null;
+      let anySegmentFailed = false;
 
-      try {
-        const result = await FirebaseWhisperService.transcribe(audioBlob, {
-          languageHint: languagePreference,
-          mode,
-        });
+      for (let segmentIndex = 0; segmentIndex < segmentBlobs.length; segmentIndex++) {
+        const segmentBlob = segmentBlobs[segmentIndex];
+        // Offset sintético (no un timestamp real por segmento — el plugin
+        // no lo expone todavía): alcanza para que TD-014 los ordene bien
+        // cronológicamente, no para calcular duración real de cada uno.
+        const syntheticSegmentStartedAt = new Date(recordingStartedAtMs + segmentIndex).toISOString();
+        const isFinalSegment = segmentIndex === segmentBlobs.length - 1;
+        const syntheticSegmentStoppedAt = isFinalSegment ? recordingStoppedAt : syntheticSegmentStartedAt;
 
-        const trimmed = result.text?.trim() ?? '';
-        const isHallucination = trimmed && trimmed.startsWith(HALLUCINATION_PREFIX);
-
-        if (isHallucination) {
-          console.warn('[useTranscript] Discarding hallucinated transcript (short/silent native audio)');
-          setError('No clear speech detected. Please record at least a few seconds of clear speech, then stop.');
-        } else if (trimmed) {
-          appendTranscript(trimmed);
-          setMeta({
-            detectedLanguage: result.detectedLanguage ?? null,
-            averageLogProb: result.averageLogProb ?? null,
-            durationSeconds: result.durationSeconds,
+        let activeAudioBackupId: string | null = null;
+        try {
+          const persistedAudioBackup = await persistAudioBackup({
+            audioBlob: segmentBlob,
+            recordingStartedAt: syntheticSegmentStartedAt,
+            recordingStoppedAt: syntheticSegmentStoppedAt,
+            ...audioBackupClinicalContext,
           });
-          setError(null);
-          setTimeout(() => onTranscriptionCompleteRef.current?.(trimmed), 0);
-        }
+          activeAudioBackupId = persistedAudioBackup.id;
 
-        if (activeAudioBackupId) {
-          // TD-013: persistir el texto junto con el estado de éxito — mismo
-          // fix que el path web, ver audioBackupService.updateAudioBackupTranscriptionStatus.
-          // No persistir si fue descartado por alucinación (trimmed existe pero no es texto real).
+          console.info('[useTranscript] Native clinical audio segment backed up before transcription', {
+            audioBackupId: persistedAudioBackup.id,
+            storagePath: persistedAudioBackup.storagePath,
+            sizeBytes: segmentBlob.size,
+            segmentIndex,
+            segmentCount: segmentBlobs.length,
+          });
+
+          const result = await FirebaseWhisperService.transcribe(segmentBlob, {
+            languageHint: languagePreference,
+            mode,
+          });
+
+          const trimmed = result.text?.trim() ?? '';
+          const isHallucination = Boolean(trimmed) && trimmed.startsWith(HALLUCINATION_PREFIX);
           const hasValidSpeech = !isHallucination && Boolean(trimmed);
+
+          if (hasValidSpeech) {
+            transcribedSegmentTexts.push(trimmed);
+            firstSuccessfulMeta = firstSuccessfulMeta ?? result;
+          }
+
           const validTranscriptText = hasValidSpeech ? trimmed : null;
           await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'success', null, validTranscriptText);
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        console.error('[useTranscript] Error transcribing native recording:', errorMessage);
-        setError(`Transcription error: ${errorMessage}. La grabación quedó respaldada.`);
-        if (activeAudioBackupId) {
-          try {
-            await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'failed_retryable', errorMessage);
-          } catch (statusError) {
-            console.error('[useTranscript] Failed to mark native audio backup as retryable failure', statusError);
+        } catch (segmentError) {
+          anySegmentFailed = true;
+          const errorMessage = segmentError instanceof Error ? segmentError.message : String(segmentError);
+          console.error(`[useTranscript] Error transcribing native segment ${segmentIndex}:`, errorMessage);
+          if (activeAudioBackupId) {
+            try {
+              await updateAudioBackupTranscriptionStatus(activeAudioBackupId, 'failed_retryable', errorMessage);
+            } catch (statusError) {
+              console.error('[useTranscript] Failed to mark native audio segment as retryable failure', statusError);
+            }
           }
         }
+      }
+
+      const finalTranscript = transcribedSegmentTexts.join(' ').trim();
+      const hasFinalTranscript = finalTranscript.length > 0;
+
+      if (hasFinalTranscript) {
+        appendTranscript(finalTranscript);
+        setMeta({
+          detectedLanguage: firstSuccessfulMeta?.detectedLanguage ?? null,
+          averageLogProb: firstSuccessfulMeta?.averageLogProb ?? null,
+          durationSeconds: firstSuccessfulMeta?.durationSeconds,
+        });
+        setTimeout(() => onTranscriptionCompleteRef.current?.(finalTranscript), 0);
+      }
+
+      if (!hasFinalTranscript && !anySegmentFailed) {
+        setError('No clear speech detected. Please record at least a few seconds of clear speech, then stop.');
+      } else if (anySegmentFailed && hasFinalTranscript) {
+        setError('Parte de la grabación no se pudo transcribir, pero el resto quedó guardado. La grabación completa quedó respaldada.');
+      } else if (anySegmentFailed && !hasFinalTranscript) {
+        setError('No se pudo transcribir la grabación. La grabación quedó respaldada de todas formas.');
+      } else {
+        setError(null);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);

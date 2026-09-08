@@ -7,12 +7,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  * nativa, MediaRecorder/getUserMedia (sin cambios) en caso contrario.
  *
  * Crítico: el segundo caso es el que corre HOY en producción en
- * pilot.aiduxcare.com — no se mockea Firebase (persistAudioBackup /
- * FirebaseWhisperService.transcribe se dejan correr contra la config real
- * de test, y se les permite fallar internamente; el hook ya captura esos
- * errores con setError en vez de lanzar, así que no rompen el test). Solo
- * se mockea @/core/audio/nativeAudioBridge, que es código nuevo de este
- * mismo commit, no infraestructura de terceros.
+ * pilot.aiduxcare.com — en los dos primeros describe, no se mockea
+ * Firebase (persistAudioBackup / FirebaseWhisperService.transcribe se
+ * dejan correr contra la config real de test, y se les permite fallar
+ * internamente; el hook ya captura esos errores con setError en vez de
+ * lanzar, así que no rompen el test) — nunca se llega a esas funciones
+ * de todas formas, porque el blob simulado (1 byte) siempre cae en el
+ * guard de MIN_AUDIO_SIZE_BYTES antes de necesitarlas.
+ *
+ * TD-012 (Hito 2f): el tercer describe SÍ mockea persistAudioBackup/
+ * FirebaseWhisperService.transcribe — es la única forma de probar de
+ * forma determinística el loop de transcripción por segmento
+ * (concatenación en orden, resiliencia ante un segmento que falla).
+ * Van todos en este mismo archivo, no en uno aparte: con el aislamiento
+ * de Vitest desactivado (`isolate: false` en vitest.stable.config.ts,
+ * el que realmente corre en CI), dos archivos mockeando el mismo
+ * módulo @/core/audio/nativeAudioBridge por separado colisionan de
+ * forma garantizada — se confirmó al intentarlo.
  */
 
 const isNativeAudioAvailableMock = vi.fn();
@@ -37,6 +48,23 @@ vi.mock('@/core/audio/nativeAudioBridge', () => ({
   startRecordingNotificationUpdates: (...args: unknown[]) => startRecordingNotificationUpdatesMock(...args),
 }));
 
+// TD-012 (Hito 2f) — solo lo usa el tercer describe, ver comentario arriba.
+const persistAudioBackupMock = vi.fn();
+const updateAudioBackupTranscriptionStatusMock = vi.fn();
+
+vi.mock('../../services/audioBackupService', () => ({
+  persistAudioBackup: (...args: unknown[]) => persistAudioBackupMock(...args),
+  updateAudioBackupTranscriptionStatus: (...args: unknown[]) => updateAudioBackupTranscriptionStatusMock(...args),
+}));
+
+const transcribeMock = vi.fn();
+
+vi.mock('../../services/FirebaseWhisperService', () => ({
+  FirebaseWhisperService: {
+    transcribe: (...args: unknown[]) => transcribeMock(...args),
+  },
+}));
+
 import { useTranscript } from '../useTranscript';
 
 describe('useTranscript — Hito 2c native/web branch selection', () => {
@@ -46,8 +74,7 @@ describe('useTranscript — Hito 2c native/web branch selection', () => {
     isNativeAudioAvailableMock.mockReset().mockReturnValue(false);
     startNativeRecordingMock.mockReset().mockResolvedValue(undefined);
     stopNativeRecordingMock.mockReset().mockResolvedValue({
-      filePath: '/tmp/aidux_air_test.m4a',
-      base64Audio: 'AAAA',
+      segments: [{ filePath: '/tmp/aidux_air_test.m4a', base64Audio: 'AAAA' }],
       mimeType: 'audio/mp4',
     });
     base64ToBlobMock.mockReset().mockReturnValue(new Blob(['x'], { type: 'audio/mp4' }));
@@ -166,8 +193,7 @@ describe('useTranscript — Hito 2e lock screen stop control', () => {
     isNativeAudioAvailableMock.mockReset().mockReturnValue(true);
     startNativeRecordingMock.mockReset().mockResolvedValue(undefined);
     stopNativeRecordingMock.mockReset().mockResolvedValue({
-      filePath: '/tmp/aidux_air_test.m4a',
-      base64Audio: 'AAAA',
+      segments: [{ filePath: '/tmp/aidux_air_test.m4a', base64Audio: 'AAAA' }],
       mimeType: 'audio/mp4',
     });
     base64ToBlobMock.mockReset().mockReturnValue(new Blob(['x'], { type: 'audio/mp4' }));
@@ -319,6 +345,174 @@ describe('useTranscript — Hito 2e lock screen stop control', () => {
     });
 
     expect(unsubscribeMock).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+});
+
+describe('useTranscript — troceo de audio nativo por segmentos (TD-012)', () => {
+  /** Cada segmento simulado es "grande" a propósito — MIN_AUDIO_SIZE_BYTES es 40000. */
+  const LARGE_ENOUGH_BLOB_SIZE = 100000;
+
+  function buildSegments(count: number) {
+    return Array.from({ length: count }, (_, i) => ({
+      filePath: `/tmp/aidux_air_segment_${i}.m4a`,
+      base64Audio: `segment-${i}-base64`,
+    }));
+  }
+
+  beforeEach(() => {
+    isNativeAudioAvailableMock.mockReset().mockReturnValue(true);
+    startNativeRecordingMock.mockReset().mockResolvedValue(undefined);
+    showRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
+    dismissRecordingLockScreenNotificationMock.mockReset().mockResolvedValue(undefined);
+    onRecordingStopRequestedFromNotificationMock.mockReset().mockReturnValue(() => {});
+    watchAppBackgroundToShowRecordingNotificationMock.mockReset().mockReturnValue(() => {});
+    startRecordingNotificationUpdatesMock.mockReset().mockReturnValue(() => {});
+
+    base64ToBlobMock.mockReset().mockImplementation((base64: string) => new Blob([base64.padEnd(LARGE_ENOUGH_BLOB_SIZE, '0')]));
+
+    persistAudioBackupMock.mockReset().mockImplementation(async () => ({
+      id: `backup-${Math.random()}`,
+      recordingId: `recording-${Math.random()}`,
+      storagePath: 'session-audio-backups/fake/path.m4a',
+    }));
+    updateAudioBackupTranscriptionStatusMock.mockReset().mockResolvedValue(undefined);
+    transcribeMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('concatena los segmentos exitosos en orden cronológico', async () => {
+    stopNativeRecordingMock.mockResolvedValue({
+      segments: buildSegments(3),
+      mimeType: 'audio/mp4',
+    });
+    transcribeMock
+      .mockResolvedValueOnce({ text: 'Primera parte.' })
+      .mockResolvedValueOnce({ text: 'Segunda parte.' })
+      .mockResolvedValueOnce({ text: 'Tercera parte.' });
+
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+    await act(async () => {
+      result.current.stopRecording();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(transcribeMock).toHaveBeenCalledTimes(3);
+    expect(result.current.transcript).toBe('Primera parte. Segunda parte. Tercera parte.');
+    expect(result.current.error).toBeNull();
+    unmount();
+  });
+
+  it('un segmento que falla no descarta los demás — resiliencia real, no todo-o-nada', async () => {
+    stopNativeRecordingMock.mockResolvedValue({
+      segments: buildSegments(3),
+      mimeType: 'audio/mp4',
+    });
+    transcribeMock
+      .mockResolvedValueOnce({ text: 'Primera parte.' })
+      .mockRejectedValueOnce(new Error('Total number of tokens in instructions + audio is too large for this model'))
+      .mockResolvedValueOnce({ text: 'Tercera parte.' });
+
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+    await act(async () => {
+      result.current.stopRecording();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.transcript).toBe('Primera parte. Tercera parte.');
+    expect(result.current.error).toContain('Parte de la grabación no se pudo transcribir');
+
+    const failedCall = updateAudioBackupTranscriptionStatusMock.mock.calls.find(
+      (call) => call[1] === 'failed_retryable',
+    );
+    expect(failedCall).toBeDefined();
+    unmount();
+  });
+
+  it('todos los segmentos fallando deja transcript vacío pero avisa que el audio quedó respaldado', async () => {
+    stopNativeRecordingMock.mockResolvedValue({
+      segments: buildSegments(2),
+      mimeType: 'audio/mp4',
+    });
+    transcribeMock.mockRejectedValue(new Error('network error'));
+
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+    await act(async () => {
+      result.current.stopRecording();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.transcript).toBe('');
+    expect(result.current.error).toContain('quedó respaldada');
+    unmount();
+  });
+
+  it('descarta segmentos con alucinación (audio corto/silencioso) sin romper la concatenación del resto', async () => {
+    stopNativeRecordingMock.mockResolvedValue({
+      segments: buildSegments(2),
+      mimeType: 'audio/mp4',
+    });
+    transcribeMock
+      .mockResolvedValueOnce({ text: 'This is a clinical conversation between a healthcare professional...' })
+      .mockResolvedValueOnce({ text: 'Texto real del segundo segmento.' });
+
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+    await act(async () => {
+      result.current.stopRecording();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(result.current.transcript).toBe('Texto real del segundo segmento.');
+    unmount();
+  });
+
+  it('persiste cada segmento como su propio respaldo, no uno combinado', async () => {
+    stopNativeRecordingMock.mockResolvedValue({
+      segments: buildSegments(3),
+      mimeType: 'audio/mp4',
+    });
+    transcribeMock.mockResolvedValue({ text: 'texto' });
+
+    const { result, unmount } = renderHook(() => useTranscript());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+    await act(async () => {
+      result.current.stopRecording();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(persistAudioBackupMock).toHaveBeenCalledTimes(3);
     unmount();
   });
 });
