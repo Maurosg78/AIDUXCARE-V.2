@@ -27,6 +27,7 @@ import { resolvePromptBrainVersion } from "../core/prompts/v3/builders/resolvePr
 import { buildPromptV3 } from "../core/prompts/v3/builders/buildPromptV3";
 import { enforceContractOrBuildRepair } from "../core/prompts/v3/validators/contractRuntime";
 import { buildAuthenticatedJsonHeaders } from "./firebaseAuthHeaders";
+import { withRetry } from "@/core/audio-pipeline/retryWrapper";
 // ✅ WO-JSON-PARSER-001: Centralized JSON sanitizer — prevents silent parse failures
 // Handles trailing commas, single quotes, and code block wrappers from Vertex AI responses
 function sanitizeAndExtractJson(raw: string): string | null {
@@ -981,12 +982,27 @@ export async function generateFollowUpSOAPV2Raw(fullPrompt: string): Promise<{
 
   let response: Response;
   try {
-    const headers = await buildAuthenticatedJsonHeaders();
-    response = await fetch(VERTEX_PROXY_URL, {
-      method: 'POST',
-      headers,
-      body: bodyStr,
-    });
+    // TD-018 (2026-09-09): la sesión de Luciana Correa confirmó en producción
+    // que al volver del background tras una grabación larga, la red (y el token
+    // de Firebase Auth) tardan unos segundos en reestabilizarse — un fetch()
+    // disparado justo en ese momento fallaba de una sola vez y descartaba
+    // 30+ minutos de sesión ya grabada y transcrita. Reintenta con backoff
+    // (mismo helper que usa audio-pipeline) antes de rendirse.
+    response = await withRetry(
+      async () => {
+        const headers = await buildAuthenticatedJsonHeaders();
+        return fetch(VERTEX_PROXY_URL, {
+          method: 'POST',
+          headers,
+          body: bodyStr,
+        });
+      },
+      {
+        onRetry: (attempt, error) => {
+          console.warn('[FOLLOWUP-NETWORK-RETRY]', { traceId, attempt, error });
+        },
+      }
+    );
   } catch (err) {
     console.error('[FOLLOWUP-NETWORK-ERROR]', err);
     return {
