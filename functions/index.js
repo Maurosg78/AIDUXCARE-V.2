@@ -22,6 +22,14 @@ const APP_ALLOWED_ORIGINS = [
   'https://aiduxcare-v2-uat-dev.web.app',
   'https://pilot.aiduxcare.com',
   'https://aiduxcare.com',
+  // AiDux Air (Capacitor/iOS): el WKWebView de la app nativa sirve todo su
+  // contenido bajo este origen fijo, sin importar qué dominio real esté
+  // detrás. Confirmado en producción 2026-09-10 (sesión Luciana Correa):
+  // vertexAIProxy bloqueaba este origen mientras whisperProxy (cors: true,
+  // sin allowlist) siempre funcionó desde la misma app — por eso la
+  // grabación/transcripción nunca fallaba pero la generación de nota de
+  // seguimiento fallaba siempre, no de forma intermitente.
+  'capacitor://localhost',
 ];
 
 const maskIdentifierForLog = (value) => {

@@ -1,5 +1,12 @@
 # ENGINEERING.md Changelog
 
+## 2026-09-10 — v1.14 (TD-019 — CORS bloqueaba AiDux Air en vertexAIProxy)
+
+Bug de producción confirmado con logs de servidor y consola de dispositivo real (sesión Luciana Correa, AiDux Air) — determinístico, no intermitente: `vertexAIProxy` nunca aceptó peticiones desde `capacitor://localhost` (el origen fijo de cualquier app Capacitor/iOS), mientras `whisperProxy` (`cors: true`, sin allowlist) siempre funcionó desde el mismo cliente. Por eso grabar y transcribir nunca fallaba, pero generar la nota de seguimiento fallaba siempre desde el móvil.
+
+- Fix: `capacitor://localhost` agregado a `APP_ALLOWED_ORIGINS` en `functions/index.js` — compartido por `vertexAIProxy`, `apiErasePatientData`, `apiConsentVerify` y el envío de SMS, todas via `applyRestrictedCors`.
+- TD-019 registrado en `ENGINEERING.md` §7.1. Nota: TD-012–018 están repartidos en ramas sin mergear con numeración ya en conflicto — reconciliar todos los IDs al integrar.
+
 ## 2026-06-09 — v1.13.1 (UX clínica — aceptación de sugerencia de medicamento)
 
 Cambio observable en UX clínica: el fisioterapeuta puede aceptar una coincidencia de medicamento sugerida sin perder trazabilidad clínica.
