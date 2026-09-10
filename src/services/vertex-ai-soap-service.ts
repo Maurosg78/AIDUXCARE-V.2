@@ -1211,7 +1211,7 @@ export function parseConsiderationsFromResponse(text: string): string[] {
   }
 
   const sanitizedLines = mergedLines
-    .map((line) => line.replace(/^[\s•\-*"\[,]*|\d+\.\s*/g, '').replace(/[",\]]+$/g, '').trim())
+    .map((line) => line.replace(/^[\s•*"[,-]*|\d+\.\s*/g, '').replace(/[",\]]+$/g, '').trim())
     .filter((line) => line.length > 0 && line.length <= 200)
     .filter((line) => !/[{}[\]":]/.test(line) || /^[^:]+$/.test(line));
 

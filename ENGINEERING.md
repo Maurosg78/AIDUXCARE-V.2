@@ -1170,7 +1170,7 @@ La deuda técnica no documentada es el mayor riesgo de mantenibilidad en softwar
 | **TD-008** | Pre-población de tests desde transcripción no implementada | Alta (feature) | Roadmap | Implementar `extracted_measurements` en prompt de análisis + binding en `EvaluationTab` |
 | **TD-009** | `ClinicalAnalysisResults.tsx` mantiene `any` sin comentario justificativo | Media | Histórico | Tipar `ClinicalAnalysisResults` y entidades derivadas o añadir justificación explícita por campo |
 | **TD-010** | `ClinicalAnalysisResults.tsx` tiene `useEffect` sin cleanup explícito | Baja | Histórico | Confirmar que no registra listeners/timers o documentar cleanup/no-op explícito |
-| **TD-011** | Gates `!isSpainPilot()` en `VisitIndicators`, `VisitRecordCard`, `AnalyticsDashboard` deben reemplazarse por `isSocratesEnabled()` cuando exista el módulo Sócrates V2 | Media | MVO Spain mode | Implementar `isSocratesEnabled()` con lógica de mercado + feature flag; migrar todos los `!isSpainPilot()` añadidos en commit MVO-Spain-mode |
+| **TD-011** | **[Actualizado 2026-09-10, auditoría de modularización]** Gates `isSpainPilot()`/`!isSpainPilot()` deben reemplazarse por `isSocratesEnabled()` cuando exista el módulo Sócrates V2. La estimación original (3 archivos) quedó corta: hoy son **73 usos en 43 archivos** de todo el repo (páginas, componentes, features, servicios, router) — no un caso aislado de UI, es un patrón esparcido por toda la capa de presentación y servicios. `isSocratesEnabled()` no existe todavía en ningún punto del código. | Alta (alcance revisado de Media a Alta por el tamaño real) | MVO Spain mode | Implementar `isSocratesEnabled()` con lógica de mercado + feature flag; migrar los 73 usos de `isSpainPilot()`/`!isSpainPilot()` (ver `grep -rn "isSpainPilot()" src` para el listado completo) — probablemente requiere priorizar por capa (servicios/core primero, luego componentes de UI) en vez de un solo PR |
 
 ### 7.2 Deuda de producto (no código)
 
@@ -1363,6 +1363,7 @@ AiduxCare amplifica. Evidencia. Acompaña.
 | 1.12 | 2026-05-25 | ADR-010: arquitectura de interoperabilidad — AiduxCare FHIR-aware / Sócrates source-agnostic. ClinicalProvenance, confidenceOfMapping y schemaVersion definidos como canónicos. Referencia: docs/governance/INTEROPERABILITY_ARCHITECTURE.md v1.0. |
 | 1.12.1 | 2026-06-07 | Refuerza §8.4: limpieza remota obligatoria de `/var/www/pilot/dist/*` antes de cada deploy por `gcloud compute scp`, con verificación de un solo bundle principal `index-[hash].js`. |
 | 1.13 | 2026-06-08 | MVO Spain mode: TD-011 registrado. Gates `!isSpainPilot()` en componentes de sugerencias IA (`VisitIndicators`, `VisitRecordCard`, `AnalyticsDashboard`). Audit copy SaMD: reemplazo de lenguaje de recomendación clínica por lenguaje documental en 8 archivos. |
+| 1.14 | 2026-09-10 | Auditoría de modularización/CI: TD-011 actualizado con el alcance real (73 usos de `isSpainPilot()` en 43 archivos, no 3) y severidad revisada a Alta. *Nota de numeración: rama `fix/td-018-followup-network-retry` (sin mergear) también usa 1.14 para un fix distinto — reconciliar al integrar ambas ramas.* |
 
 ---
 

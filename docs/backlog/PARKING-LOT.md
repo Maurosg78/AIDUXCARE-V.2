@@ -4,28 +4,32 @@
 
 ---
 
+## Resueltos
+
+### CI sin protección real desde 2026-02-21 — RESUELTO 2026-09-10, causa real era doble
+
+- **Qué era:** los workflows `typecheck.yml`, `size.yml` y `ci.yml` no daban protección real en ningún push/PR desde el 21-feb-2026.
+- **Causa real, en dos capas — ninguna de las dos era "código roto" en el sentido de tests fallando:**
+  1. **`pnpm/action-setup@v4` comparaba `version:` contra el string completo de `packageManager`** (hash de integridad incluido) — nunca podía coincidir. Diagnosticado 2026-08-25, **corregido 2026-08-28** (commit `8b66d91`, PR #288) en `typecheck.yml` y `size.yml`. Confirmado con corridas reales en verde desde entonces (última antes de esta auditoría: 28-ago, PR de AiDux Air).
+  2. **Los tres workflows disparaban contra `main`, no contra `stable`** — `typecheck.yml`/`ci.yml` con `push: branches: [main]`, y `main` lleva 747 commits de atraso y cero pushes desde el 21-feb-2026 (coincide exactamente con la fecha de esta entrada). Todo el trabajo real vive en `stable`. Este segundo problema no se había identificado hasta la auditoría del 2026-09-10 — la capa 1 sola no explicaba por qué seguían sin proteger nada 2 semanas después de corregida.
+- **Arreglado 2026-09-10:** los tres workflows ahora disparan en `push` y `pull_request` contra `stable` (antes: `main`, o solo `pull_request` sin push en el caso de `size.yml`).
+- **Verificado localmente contra `stable` el mismo día:** typecheck ✅, build ✅, size-limit ✅, test:gate ✅. Lint también ✅ tras la limpieza (ver entrada de `ci.yml` abajo) — antes de esa limpieza, lint fallaba con 68 errores (32 en un archivo vendorizado sin excluir del linter, 36 reales y menores repartidos en 9 archivos).
+- **Impacto real durante la ventana rota:** ningún PR mergeado tuvo verificación automática de tipos/tamaño/lint en CI real durante ~6 meses. La red de seguridad fue `tsc`/`eslint` local, corridos manualmente.
+- **Encontrado:** 2026-08-25 (causa 1, PR #287) y 2026-09-10 (causa 2, auditoría de modularización/CI).
+
+---
+
+### `ci.yml` era siempre verde sin probar nada — RESUELTO 2026-09-10
+
+- **Qué era:** el job `build` de `.github/workflows/ci.yml` gateaba sus pasos reales (`Setup pnpm`, `Setup Node`, `Install dependencies`, `Lint`, `Typecheck`, `Build`, `Test`) con `if: ${{ steps.detect_node.outputs.has_node == true && ... }}`. Los outputs de un step en GitHub Actions son siempre strings — la comparación contra el booleano `true` (sin comillas) nunca era verdadera, así que la condición nunca se cumplía.
+- **Confirmado en ejecución real** (corrida `25397169992`, push a `main`, 2026-05-05, resultado: success): todos los pasos condicionales aparecían `skipped`. Solo corría el paso final incondicional: `ls -la && echo "✅ CI baseline ok"`.
+- **Arreglado 2026-09-10:** las 7 condiciones `== true` cambiadas a `== 'true'` (comparación contra el string real). También se quitó `version: 10.29.2` del step `Setup pnpm` de este archivo — tenía el mismo conflicto `version` + `packageManager` ya corregido en `typecheck.yml`/`size.yml`, pero no se había tocado porque el arreglo de agosto fue diagnóstico-only para este archivo. Sin ese segundo fix, el job habría empezado a ejecutar pasos reales por primera vez y fallado de inmediato en `Setup pnpm`.
+- **Trigger también corregido:** de `push`/`pull_request` contra `main` a contra `stable` (ver entrada anterior).
+- **Encontrado:** 2026-08-25 (diagnóstico). **Arreglado:** 2026-09-10.
+
+---
+
 ## Máxima prioridad
-
-### CI sin protección real desde 2026-02-21: typecheck.yml y size.yml fallan en todo push a main/stable
-
-- **Qué es:** los workflows de CI `typecheck.yml` y `size.yml` fallan en todo push a `main`/`stable` desde 2026-02-21. `e2e.yml` tiene el mismo fallo pero no bloquea por `continue-on-error: true` preexistente.
-- **Causa real (corregida 2026-08-25 — la atribución original de esta entrada estaba mal):** no fue un cambio de comportamiento de `pnpm/action-setup@v4`. Verificado en el código fuente de `v4.0.0` (el primer release de la línea v4): el chequeo que rechaza `version` + `packageManager` coexistiendo ya existía desde ahí, sin cambios. Lo que rompió esto fue el commit `4decf1b` (27 de marzo, "chore(ci): align pnpm version across workflows", del propio equipo): agregó `version: 10.29.2` al YAML para resolver un problema distinto (la acción caía a pnpm 9 por defecto sin `version:` explícito). Ese fix nunca pudo funcionar, porque `pnpm/action-setup` compara el `version:` del YAML contra el string **completo** de `packageManager`, hash de integridad incluido (`pnpm@10.29.2+sha512.bef43fa...`), no solo el número de versión — `"10.29.2" !== "10.29.2+sha512.bef43fa..."` como comparación de string literal, siempre, sin importar que ambos apunten a la misma versión real. Los dos fallos de 2026-02-21 (antes de que `version:` existiera en el YAML) fueron por la causa original — la caída a pnpm 9 — no por este conflicto; los logs de esas corridas ya expiraron en GitHub (retención de 90 días) y no se pudo confirmar con certeza absoluta, pero el comentario del propio commit `4decf1b` lo describe explícitamente.
-- **Impacto real:** ningún PR mergeado a este repo desde el 21 de febrero ha tenido verificación automática de tipos ni de tamaño de bundle en CI. La única red de seguridad de tipos ha sido `tsc` local, corrido manualmente por quien hace el cambio.
-- **Arreglo probable, no verificado:** fijar la versión de la acción a un tag exacto en vez de `@v4` flotante, o remover la duplicación entre `version` del workflow y `packageManager` de `package.json`, dejando una sola fuente de verdad.
-- **Por qué importa:** no es un bug de funcionalidad, es la ausencia de un gate de protección que el equipo asume que existe cada vez que ve un check en rojo o verde en un PR.
-- **Encontrado:** 2026-08-25, diagnóstico de los checks fallidos en el PR #287, confirmado preexistente comparando `stable` y el historial de corridas de ambos workflows (última corrida exitosa de `typecheck.yml`: 2026-02-07).
-
----
-
-### `ci.yml` está siempre verde, pero no prueba nada — su job entero es un no-op
-
-- **Qué es:** el job `build` de `.github/workflows/ci.yml` gatea sus pasos reales (`Setup pnpm`, `Setup Node`, `Install dependencies`, `Lint`, `Typecheck`, `Build`, `Test`) con `if: ${{ steps.detect_node.outputs.has_node == true && ... }}`. Los outputs de un step en GitHub Actions son siempre strings — `steps.detect_node.outputs.has_node` vale el string `"true"`, nunca el booleano `true`. La comparación `"true" == true` da `false` en la sintaxis de expresiones de GitHub Actions, así que la condición nunca se cumple.
-- **Confirmado en ejecución real** (corrida `25397169992`, push a `main`, 2026-05-05, resultado: success): `Setup Node`, `Install dependencies`, `Lint`, `Build`, `Test` aparecen todos como `skipped`. El único paso que corre de verdad es el último, incondicional: `ls -la && echo "✅ CI baseline ok"` — que siempre tiene éxito sin importar el contenido real del repo.
-- **Por qué importa igual de fuerte que la entrada anterior:** el check "build" en cada PR aparece verde, pero no corrió lint, no corrió typecheck, no corrió build, no corrió tests. Es una falsa sensación de seguridad idéntica en efecto a los gates rotos de `typecheck.yml`/`size.yml` — solo que estos al menos fallan visiblemente; este pasa en silencio.
-- **No tocado:** solo diagnóstico, por instrucción explícita. Arreglo probable: cambiar la condición a `steps.detect_node.outputs.has_node == 'true'` (comparar contra el string) en cada uno de los `if:` de ese job.
-- **Encontrado:** 2026-08-25, mismo diagnóstico que la entrada anterior — se investigó por qué `ci.yml` no mostraba el mismo fallo de `pnpm/action-setup` pese a tener el patrón idéntico `version:` + `packageManager`.
-
----
 
 ### `e2e.yml` lleva 9 meses sin ejecutar Playwright de verdad — los 42 tests que fallan no son regresiones
 
