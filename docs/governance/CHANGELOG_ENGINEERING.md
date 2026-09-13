@@ -1,5 +1,9 @@
 # ENGINEERING.md Changelog
 
+## 2026-09-14 — v1.19 (TD-024 resuelto)
+
+`recordingStartedAtMs` ahora se calcula en `useTranscript.ts` antes de suscribirse a `appStateChange`, y se pasa a `watchAppBackgroundToShowRecordingNotification(recordingStartedAtMs)`, que calcula `elapsedSeconds = (Date.now() - recordingStartedAtMs) / 1000` en el momento real del bloqueo de pantalla en vez de dejar el default de `showRecordingLockScreenNotification()` en 0. Commit `a8596f5b`, solo 3 archivos tocados (`nativeAudioBridge.ts`, `useTranscript.ts`, `nativeAudioBridge.test.ts`). Tests: `nativeAudioBridge.test.ts` 21/21, incluyendo caso nuevo que confirma que ya no se usa 0 por defecto. Pusheado a `origin/stable` (`da0351b9..a8596f5b`).
+
 ## 2026-09-13 — v1.18 (TD-022 actualizado, TD-024 registrado)
 
 Investigación de lockscreen/notification: se identificó un segundo mecanismo de desincronización del timer, distinto en naturaleza al reset 2x ya documentado en TD-022 y que probablemente coexiste con él.
