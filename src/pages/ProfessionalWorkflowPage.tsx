@@ -1419,6 +1419,18 @@ const ProfessionalWorkflowPage = () => {
     }
   }, [_stopRecording, mode]);
 
+  // Hito 2b (AiDux Air): corte explícito entre pacientes. Cierra la sesión
+  // actual por la misma vía que "detener" (whisperProxy la sube igual) y
+  // navega a /command-center para elegir el próximo paciente — un remount
+  // completo de esta página, que ya reinicia todo el estado de sesión
+  // (sessionId, transcript, consentimiento) sin ambigüedad de a qué
+  // paciente pertenece cada archivo. No es matching de identidad; es solo
+  // el corte manual.
+  const finishAndStartNextPatient = useCallback(() => {
+    stopRecording();
+    navigate('/command-center');
+  }, [stopRecording, navigate]);
+
   // WO-MIC-LIFECYCLE-001: ensure recording is stopped when leaving workflow
   useEffect(() => {
     console.log('[WORKFLOW] Mounted ProfessionalWorkflowPage');
@@ -7929,6 +7941,7 @@ const ProfessionalWorkflowPage = () => {
                     isRecording={isRecording}
                     startRecording={startRecording}
                     stopRecording={stopRecording}
+                    onFinishAndStartNext={finishAndStartNextPatient}
                     transcript={transcript}
                     setTranscript={setTranscript}
                     additionalNotes={physioNotes}
@@ -8102,6 +8115,7 @@ const ProfessionalWorkflowPage = () => {
                     isRecording={isRecording}
                     startRecording={startRecording}
                     stopRecording={stopRecording}
+                    onFinishAndStartNext={finishAndStartNextPatient}
                     transcript={transcript}
                     setTranscript={setTranscript}
                     transcriptError={transcriptError}
@@ -8234,6 +8248,7 @@ const ProfessionalWorkflowPage = () => {
                     isRecording={isRecording}
                     startRecording={startRecording}
                     stopRecording={stopRecording}
+                    onFinishAndStartNext={finishAndStartNextPatient}
                     setTranscript={setTranscript}
                     transcriptError={transcriptError}
                     transcriptMeta={transcriptMeta}
@@ -8418,6 +8433,7 @@ const ProfessionalWorkflowPage = () => {
                   isRecording={isRecording}
                   startRecording={startRecording}
                   stopRecording={stopRecording}
+                  onFinishAndStartNext={finishAndStartNextPatient}
                   transcript={transcript}
                   setTranscript={setTranscript}
                   transcriptError={transcriptError}

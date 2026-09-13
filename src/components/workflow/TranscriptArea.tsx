@@ -30,6 +30,9 @@ const UI = esPilot
       stopRecording: 'Detener grabación',
       startRecording: 'Iniciar grabación',
       startRecordingTitle: 'Iniciar grabación de voz para capturar la conversación clínica',
+      finishAndStartNext: 'Finalizar y comenzar siguiente paciente',
+      finishAndStartNextTitle: 'Cierra y sube esta grabación como sesión completa, y te lleva a elegir el próximo paciente',
+      finishAndStartNextConfirm: 'Esto va a cerrar la grabación actual como sesión terminada y te va a llevar a elegir el próximo paciente. ¿Confirmas?',
       listening: 'Escuchando…',
       processingAudioTitle: 'Procesando audio…',
       processingAudioBody: 'Transcribiendo audio. Puede tardar unos momentos en grabaciones largas.',
@@ -84,6 +87,9 @@ const UI = esPilot
       stopRecording: 'Stop Recording',
       startRecording: 'Start Recording',
       startRecordingTitle: 'Start voice recording to capture clinical conversation',
+      finishAndStartNext: 'Finish and start next patient',
+      finishAndStartNextTitle: 'Closes and uploads this recording as a completed session, then takes you to pick the next patient',
+      finishAndStartNextConfirm: 'This will close the current recording as a finished session and take you to pick the next patient. Confirm?',
       listening: 'Listening...',
       processingAudioTitle: 'Processing audio...',
       processingAudioBody: 'Transcribing audio. This may take a few moments for longer recordings.',
@@ -163,6 +169,13 @@ export interface TranscriptAreaProps {
   isRecording: boolean;
   startRecording: () => void;
   stopRecording: () => void;
+  /**
+   * Hito 2b (AiDux Air): cierra la grabación actual como sesión terminada
+   * (misma ruta de subida a whisperProxy que "detener") y navega para
+   * empezar una sesión nueva — corte explícito entre pacientes, sin
+   * matching automático de identidad todavía.
+   */
+  onFinishAndStartNext?: () => void;
 
   // Transcript state
   transcript: string;
@@ -214,6 +227,7 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
   isRecording,
   startRecording,
   stopRecording,
+  onFinishAndStartNext,
   transcript,
   setTranscript,
   additionalNotes,
@@ -282,6 +296,12 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
     return textarea?.value ?? '';
   }, []);
 
+  const handleFinishAndStartNext = useCallback(() => {
+    if (!onFinishAndStartNext) return;
+    if (!window.confirm(UI.finishAndStartNextConfirm)) return;
+    onFinishAndStartNext();
+  }, [onFinishAndStartNext]);
+
   const handlePaste = useCallback((event: React.ClipboardEvent<HTMLTextAreaElement>) => {
     isPastingRef.current = true;
     const textarea = event.currentTarget;
@@ -318,13 +338,25 @@ export const TranscriptArea: React.FC<TranscriptAreaProps> = React.memo(({
             {recordingTime}
           </span>
           {isRecording ? (
-            <button
-              onClick={stopRecording}
-              className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-danger hover:bg-gradient-danger-hover text-white shadow-sm transition font-apple text-[15px] font-medium"
-            >
-              <Square className="w-4 h-4" />
-              {UI.stopRecording}
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              <button
+                onClick={stopRecording}
+                className="inline-flex items-center gap-2 px-5 py-3 min-h-[48px] rounded-lg bg-gradient-danger hover:bg-gradient-danger-hover text-white shadow-sm transition font-apple text-[15px] font-medium"
+              >
+                <Square className="w-4 h-4" />
+                {UI.stopRecording}
+              </button>
+              {onFinishAndStartNext && (
+                <button
+                  onClick={handleFinishAndStartNext}
+                  title={UI.finishAndStartNextTitle}
+                  className="inline-flex items-center gap-2 px-4 py-2 min-h-[40px] rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 shadow-sm transition font-apple text-sm font-medium"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  {UI.finishAndStartNext}
+                </button>
+              )}
+            </div>
           ) : (
             <button
               onClick={startRecording}

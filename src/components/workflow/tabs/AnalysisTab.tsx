@@ -129,6 +129,8 @@ export interface AnalysisTabProps {
   isRecording: boolean;
   startRecording: () => void;
   stopRecording: () => void;
+  /** Hito 2b (AiDux Air): corte explícito entre pacientes — ver TranscriptArea. */
+  onFinishAndStartNext?: () => void;
   transcript: string;
   setTranscript: (value: string) => void;
   transcriptError: string | null;
@@ -242,6 +244,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
   isRecording,
   startRecording,
   stopRecording,
+  onFinishAndStartNext,
   transcript,
   setTranscript,
   transcriptError,
@@ -682,6 +685,7 @@ export const AnalysisTab: React.FC<AnalysisTabProps> = ({
             isRecording={isRecording}
             startRecording={startRecording}
             stopRecording={stopRecording}
+            onFinishAndStartNext={onFinishAndStartNext}
             transcript={transcript}
             setTranscript={setTranscript}
             additionalNotes={physioNotes}

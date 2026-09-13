@@ -54,7 +54,16 @@ Bug de producción confirmado con logs reales (sesión Luciana Correa, AiDux Air
 - TD-018 registrado en §7.1.
 - **Nota honesta añadida 2026-09-13:** la investigación de TD-019 (dos días después) reveló que `vertexAIProxy` rechazaba por CORS todo origen `capacitor://localhost`, de forma determinística. Es posible que este incidente fuera en realidad el mismo bloqueo de CORS y no inestabilidad de red — no se pudo confirmar retroactivamente, los logs de esa noche ya expiraron. El retry sigue siendo válido para fallos de red genuinos.
 
-## 2026-09-08 — v1.14.1 (TD-013 acotado, TD-014, TD-015 y TD-016 registrados)
+## 2026-09-08 — v1.14.2 (TD-013 resuelto en nativo, TD-012 confirmado en producción y resuelto, TD-017 registrado)
+
+Field-testing con una segunda paciente real (Luciana Correa, AiDux Air, sesión de 36:51):
+
+- **TD-013 resuelto también en el path nativo de AiDux Air:** `updateAudioBackupTranscriptionStatus` (con `transcriptText`) aplicado al call site de éxito de `finalizeNativeRecording` — el fix del 09-07 solo cubría el path web.
+- **TD-012 subido de Media a Alta, confirmado en producción:** `finalizeNativeRecording` subía el audio nativo completo en una sola llamada a `whisperProxy`, sin trocear — falló con `"Total number of tokens in instructions + audio is too large for this model"`, límite real de tokens alcanzado a ~37min (no ~70min como se estimaba). Recuperado a mano en 8 segmentos de 5min.
+- **TD-012 resuelto el mismo día:** `BackgroundAudioPlugin.swift` ahora rota a un nuevo segmento cada 5min (mismo tamaño validado en la recuperación manual) sin interrumpir el `AVAudioEngine`; `nativeAudioBridge.ts`/`useTranscript.ts` transcriben cada segmento por separado, con resiliencia por segmento (uno que falla no descarta el resto). Refactor posterior el mismo día corrigiendo una violación de §3.1 encontrada en el propio fix.
+- **TD-017 registrado (Alta):** el aviso de pantalla bloqueada usa `setInterval` de JS en el WKWebView, no un timer nativo — iOS lo limita en segundo plano durante sesiones largas. El audio se grabó completo y sin cortes; solo la capa de aviso/feedback falló. Pendiente confirmar la hipótesis con logs nativos reales antes de invertir en el fix.
+
+## 2026-09-08 — v1.14.3 (TD-013 acotado, TD-014, TD-015 y TD-016 registrados)
 
 Al validar TD-013 con el usuario, dos gaps quedaron claros que el fix original no cerraba:
 
@@ -70,7 +79,17 @@ Detectado tras un incidente real: sesión clínica grabada desde laptop, baterí
 - **TD-013 registrado y resuelto en el mismo cambio, severidad Alta:** `whisperProxy.js` es un proxy puro hacia OpenAI — recibe audio, devuelve texto por HTTP, no escribía nada en Firestore. `useTranscript.ts` guardaba el resultado solo en `useState` local (`setTranscriptState`). Si la pestaña/dispositivo que originó la llamada se cerraba antes de que el usuario disparara la generación del SOAP, el texto no era recuperable por ningún camino normal de la app.
 - **No es específico de AiDux Air ni del path nativo** — afectaba igual al flujo web de escritorio, que es donde ocurrió el incidente. Era deuda de producto general, no de una feature en spike.
 - **`transcriptionStatus: success` en `session_audio_backups` era una señal engañosa:** solo confirmaba que la llamada a Whisper tuvo éxito, no que el texto resultante estuviera guardado o fuera recuperable en la UI.
-- **Fix:** `updateAudioBackupTranscriptionStatus` (`src/services/audioBackupService.ts`) acepta ahora `transcriptText` opcional, escrito en el mismo documento de `session_audio_backups`. El call site de éxito en `useTranscript.ts` (`processChunksSequentially`, path web — el único que existe en `stable`) lo pasa apenas Whisper responde con éxito, antes de que el usuario tenga que hacer nada más. El mismo fix se aplicó por separado al path nativo de AiDux Air (`finalizeNativeRecording`) en la rama de esa feature, que todavía no vive en `stable`.
+- **Fix:** `updateAudioBackupTranscriptionStatus` (`src/services/audioBackupService.ts`) acepta ahora `transcriptText` opcional, escrito en el mismo documento de `session_audio_backups`. El call site de éxito en `useTranscript.ts` (`processChunksSequentially`, path web — el único que existe en `stable`) lo pasa apenas Whisper responde con éxito, antes de que el usuario tenga que hacer nada más. El mismo fix se aplicó por separado al path nativo de AiDux Air (`finalizeNativeRecording`), incorporado a `stable` el mismo día.
+
+## 2026-08-30 — v1.14 (Auditoría de mejores prácticas — puente de audio nativo AiDux Air)
+
+Revisión solicitada explícitamente antes de presentación al CTO: cotejar el trabajo de Hito 2b–2e (AiDux Air — corte de sesión, puente al plugin nativo, compresión AAC, control desde pantalla de bloqueo) contra §3 (Convenciones de Código) y §7 (Deuda Técnica) de este documento.
+
+- **TD-012 registrado:** `finalizeNativeRecording` (`src/hooks/useTranscript.ts`, path nativo Capacitor) sube el audio completo en una sola llamada a `whisperProxy`, sin trocear como sí hace el path web (MediaRecorder/WebM). A 48 kbps AAC mono entra cómodo hasta ~70min, pero no hay guard duro si se supera el límite de Whisper (25MB).
+- **§3.1 (una operación por línea) — corregido en `src/core/audio/nativeAudioBridge.ts`:** `getNativePlugin`, `getLocalNotificationsPlugin` e `isNativeAudioAvailable` encadenaban optional-chaining + `??`/`&&` en una sola línea; refactorizados a variables intermedias explícitas. El listener inline de `onRecordingStopRequestedFromNotification` se extrajo a una función nombrada (`handleNotificationAction`).
+- **§3.2 (TypeScript estricto), §3.4 (cleanup de efectos), §3.5 (sin PHI en logs):** verificado cumplimiento en todo el código nuevo de Hito 2b–2e — sin `any` sin justificar, listener de notificación con cleanup explícito, sin datos de paciente en `console.warn`/`console.error`.
+- **§3.3 (no crear componentes sin autorización):** no se crearon componentes React nuevos — el botón de corte de Hito 2b se agregó dentro de `TranscriptArea.tsx` existente.
+- Verificado post-fix: `npm run typecheck` limpio, 20/20 tests de `nativeAudioBridge`/`useTranscript` en verde tras el refactor de estilo (comportamiento sin cambios, confirmado por test).
 
 ## 2026-06-09 — v1.13.1 (UX clínica — aceptación de sugerencia de medicamento)
 
