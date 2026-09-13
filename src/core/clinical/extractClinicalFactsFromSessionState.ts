@@ -108,7 +108,7 @@ export function extractClinicalFactsFromSessionState(
     let resultado = 'ver nota objetiva';
     if (/lasegue\s*(\+|＋|positivo)/i.test(objectiveSource)) {
       resultado = 'positivo';
-    } else if (/lasegue\s*(\-|−|negativo)/i.test(objectiveSource)) {
+    } else if (/lasegue\s*(-|−|negativo)/i.test(objectiveSource)) {
       resultado = 'negativo';
     }
     tests.push({ nombre: 'Lasegue', resultado });
@@ -118,7 +118,7 @@ export function extractClinicalFactsFromSessionState(
     let resultado = 'ver nota objetiva';
     if (/slump\s*(\+|＋|positivo)/i.test(objectiveSource)) {
       resultado = 'positivo';
-    } else if (/slump\s*(\-|−|negativo)/i.test(objectiveSource)) {
+    } else if (/slump\s*(-|−|negativo)/i.test(objectiveSource)) {
       resultado = 'negativo';
     }
     tests.push({ nombre: 'Slump', resultado });

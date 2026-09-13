@@ -204,7 +204,7 @@ const evaluateCase = (syntheticCase: SyntheticCase, result: Awaited<ReturnType<t
   const objectiveIsHonest = objectiveTerms.length > 0 ? evaluateTextPresence(objective, objectiveTerms) : objective.length > 0;
   const expectedRedFlags = syntheticCase.expectedSignals.redFlags ?? [];
   const alertString = JSON.stringify(alerts);
-  const redFlagsHandled = expectedRedFlags.length > 0 ? evaluateTextPresence(alertString, expectedRedFlags) : !/red_flags\":\[[^\]]+\]/i.test(alertString);
+  const redFlagsHandled = expectedRedFlags.length > 0 ? evaluateTextPresence(alertString, expectedRedFlags) : !/red_flags":\[[^\]]+\]/i.test(alertString);
 
   return {
     caseId: syntheticCase.id,

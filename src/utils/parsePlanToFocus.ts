@@ -31,7 +31,7 @@ type PlanToFocusInput =
 
 /** WO-PLAN-TITLE-001: Discard section headers so they don't render as checklist items. */
 function isSectionHeaderLine(line: string): boolean {
-  const stripped = line.replace(/^[\d\.\)\-\•\*\s]+/, '').trim();
+  const stripped = line.replace(/^[\d.)\-•*\s]+/, '').trim();
   if (stripped.length < 4) return true;
   if (/^(plan|treatment\s+plan|home\s+program|hep|assessment|subjective|objective|soap|interventions?|modalities?|goals?|follow-?up|next):?\s*$/i.test(stripped)) return true;
   if (/^[A-Z][A-Z\s]+:?\s*$/.test(stripped)) return true;

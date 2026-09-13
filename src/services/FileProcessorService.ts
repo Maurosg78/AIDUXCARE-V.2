@@ -460,7 +460,7 @@ function cleanReliableUppercaseNameCandidate(value: string): string | null {
   const words = cleanedCandidate.split(/\s+/);
   const isUppercaseName = words.length >= 2
     && words.length <= 4
-    && words.every((word) => /^\p{Lu}[\p{Lu}\p{M}'´`.\-]+$/u.test(word));
+    && words.every((word) => /^\p{Lu}[\p{Lu}\p{M}'´`.-]+$/u.test(word));
 
   if (!isUppercaseName || NON_PATIENT_UPPERCASE_LABELS.has(normalizeNameSearchText(cleanedCandidate))) {
     return null;
@@ -471,6 +471,9 @@ function cleanReliableUppercaseNameCandidate(value: string): string | null {
 
 function detectExplicitPatientNameCandidate(extractedText: string): string | null {
   const textWithoutCarriageReturns = extractedText.replace(/\r\n?/g, '\n');
+  // Intentional: strips stray control bytes that some PDF text extractors leave
+  // behind (nulls, tabs-as-bytes, unit separators) before pattern matching below.
+  // eslint-disable-next-line no-control-regex
   const textWithoutControlChars = textWithoutCarriageReturns.replace(/[\x00-\x09\x0B-\x1F\x7F]/g, '');
   // Algunos extractores de PDF (visto en un informe de radiología real)
   // no insertan saltos de línea entre campos — el layout visual queda
@@ -482,7 +485,7 @@ function detectExplicitPatientNameCandidate(extractedText: string): string | nul
   const textWithFieldBoundariesAsNewlines = textWithoutControlChars.replace(/[^\S\n]{2,}/g, '\n');
   const normalizedLines = textWithFieldBoundariesAsNewlines.replace(/[^\S\n]+/g, ' ');
   const candidateText = normalizedLines.slice(0, 5000);
-  const explicitLabelPattern = /(?:^|\n)\s*(?:paciente|nombre|patient|name)\s*[:\-]\s*([^\n]{3,100})/i;
+  const explicitLabelPattern = /(?:^|\n)\s*(?:paciente|nombre|patient|name)\s*[:-]\s*([^\n]{3,100})/i;
   const explicitLabelMatch = explicitLabelPattern.exec(candidateText);
 
   if (explicitLabelMatch?.[1]) {
@@ -490,7 +493,7 @@ function detectExplicitPatientNameCandidate(extractedText: string): string | nul
   }
 
   const uppercaseNameBeforeIdentifierPattern =
-    /(?:^|\n)\s*([A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ'´`.\-]+(?:\s+[A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ'´`.\-]+){1,3})\s*\n\s*(?:N\s*[º°o.]?\s*Historia|Historia|SIP)\s*:?/im;
+    /(?:^|\n)\s*([A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ'´`.-]+(?:\s+[A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ'´`.-]+){1,3})\s*\n\s*(?:N\s*[º°o.]?\s*Historia|Historia|SIP)\s*:?/im;
   const uppercaseNameMatch = uppercaseNameBeforeIdentifierPattern.exec(candidateText);
 
   if (uppercaseNameMatch?.[1]) {
@@ -499,7 +502,7 @@ function detectExplicitPatientNameCandidate(extractedText: string): string | nul
 
   const flattenedCandidateText = candidateText.replace(/\s+/g, ' ');
   const flattenedLabNameBeforeIdentifierPattern =
-    /AN[ÁA]LISIS\s+CL[ÍI]NICOS\s+Y\s+HEMATOLOG[ÍI]A\s+([\p{L}\p{M}'´`.\-]+(?:\s+[\p{L}\p{M}'´`.\-]+){1,3}?)\s+(?=N\s*[º°o.]?\s*Historia\s*:|Historia\s*:|SIP\s*:)/iu;
+    /AN[ÁA]LISIS\s+CL[ÍI]NICOS\s+Y\s+HEMATOLOG[ÍI]A\s+([\p{L}\p{M}'´`.-]+(?:\s+[\p{L}\p{M}'´`.-]+){1,3}?)\s+(?=N\s*[º°o.]?\s*Historia\s*:|Historia\s*:|SIP\s*:)/iu;
   const flattenedLabNameMatch = flattenedLabNameBeforeIdentifierPattern.exec(flattenedCandidateText);
 
   if (flattenedLabNameMatch?.[1]) {

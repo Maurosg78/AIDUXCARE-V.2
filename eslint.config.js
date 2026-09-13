@@ -40,6 +40,9 @@ export default [
       'functions/**',
       'src/_deprecated/**',
       'src/z_trash/**',
+
+      // Vendorizado / generado — no es código de autoría propia
+      'bin/hashFiles/**',
   
       // Componentes excluidos en auditorías previas
       'src/components/wizard/**',

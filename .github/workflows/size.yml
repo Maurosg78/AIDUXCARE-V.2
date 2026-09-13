@@ -1,6 +1,8 @@
 name: Bundle Size Budget
 on:
   pull_request:
+  push:
+    branches: [ stable ]
 jobs:
   size:
     runs-on: ubuntu-latest

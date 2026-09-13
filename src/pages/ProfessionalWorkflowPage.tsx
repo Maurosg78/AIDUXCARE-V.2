@@ -8192,35 +8192,13 @@ const ProfessionalWorkflowPage = () => {
                     <p className="text-sm text-slate-700">{followUpPatternInsight.description}</p>
                   </div>
                 )}
-                {/* Hidden from UI - internal AI scaffolding, not for clinician view */}
-                {false && visitType === 'follow-up' && followUpConsiderations && followUpConsiderations.length > 0 && (
-                  <div className="mb-6 rounded-lg border border-slate-200 bg-amber-50/50 p-4">
-                    <h3 className="text-sm font-semibold text-slate-700 mb-1">
-                      {t('workflow.followupSurface.clinicalConsiderationsTitle')}
-                    </h3>
-                    <p className="text-xs text-slate-500 mb-3">{t('workflow.followupSurface.notPartOfMedicalRecord')}</p>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 mb-3">
-                      {followUpConsiderations.map((line, i) => (
-                        <li key={i}>{line}</li>
-                      ))}
-                    </ul>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const block = '\n\n[AI considerations reviewed]\n' + followUpConsiderations.map((c) => `- ${c}`).join('\n');
-                        setLocalSoapNote((prev) => {
-                          if (!prev) return prev;
-                          const current = (prev.plan || '').trim();
-                          return { ...prev, plan: current + block };
-                        });
-                        setFollowUpConsiderations(null);
-                      }}
-                      className="text-sm font-medium text-amber-800 hover:text-amber-900 underline"
-                    >
-                      {t('workflow.followupSurface.insertIntoPlan')}
-                    </button>
-                  </div>
-                )}
+                {/* WO-FOLLOWUP-CONSIDERATIONS: bloque de UI removido 2026-09-10, era
+                    inalcanzable ({false && ...}) desde su introducción — quedaba
+                    oculto a propósito ("internal AI scaffolding, not for clinician
+                    view"). followUpConsiderations sigue calculándose y guardándose
+                    en estado por si se reactiva esta superficie más adelante; solo
+                    se quitó el JSX muerto que disparaba no-constant-binary-expression
+                    en lint. */}
                 <Suspense fallback={<LoadingSpinner />}>
                   <SOAPTab
                     localSoapNote={localSoapNote}

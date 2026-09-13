@@ -16,7 +16,7 @@ export function buildReferralEvolutionSentence(
   painSeriesSummary: string,
   _confidence: TrajectoryConfidence
 ): string {
-  const series = painSeriesSummary.split(/\s*[→\-]\s*/).map((s) => s.trim()).filter(Boolean);
+  const series = painSeriesSummary.split(/\s*[→-]\s*/).map((s) => s.trim()).filter(Boolean);
   const first = series[0];
   const last = series[series.length - 1];
   const seriesWithScale = withScale(painSeriesSummary.trim()) || painSeriesSummary;

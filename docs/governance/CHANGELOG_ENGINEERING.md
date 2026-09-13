@@ -31,6 +31,18 @@ Bug de producción confirmado con logs de servidor y consola de dispositivo real
 - Fix: `capacitor://localhost` agregado a `APP_ALLOWED_ORIGINS` en `functions/index.js` — compartido por `vertexAIProxy`, `apiErasePatientData`, `apiConsentVerify` y el envío de SMS, todas via `applyRestrictedCors`.
 - TD-019 registrado en `ENGINEERING.md` §7.1.
 
+## 2026-09-10 — v1.15.1 (CI en verde + TD-011 actualizado con alcance real)
+
+Ejecutado tras auditoría de modularización/CI del mismo día (diagnóstico previo, sin cambios). Tres arreglos de infraestructura de CI, ninguno toca lógica de producto:
+
+- `typecheck.yml`, `size.yml`, `ci.yml` repuntados de `main` a `stable`: `main` lleva 747 commits de atraso y cero pushes desde 2026-02-21 — todo el trabajo real vive en `stable`, y ninguno de los tres workflows disparaba contra esa rama.
+- `ci.yml`: corregidas las 7 condiciones `steps.<id>.outputs.<x> == true` (comparación string-vs-booleano, siempre falsa) a `== '<x>'`. También se quitó `version: 10.29.2` del step `Setup pnpm` — mismo conflicto `version`+`packageManager` ya corregido en `typecheck.yml`/`size.yml` el 28-ago, pero no tocado entonces por ser diagnóstico-only.
+- Lint: excluido `bin/hashFiles/index.js` (bundle webpack de terceros, no código propio) del linteo; resueltos los ~36 errores/warnings reales repartidos en 9 archivos (`no-useless-escape` en clases de regex, un `no-control-regex` intencional documentado con `eslint-disable` justificado, y un bloque de UI muerto `{false && ...}` eliminado de `ProfessionalWorkflowPage.tsx` tras confirmar que era inalcanzable). Verificado con node que cada cambio de regex produce output idéntico antes/después — dos casos tenían el guion en posición de rango (`[•\-*]`, `[\d\.\)\-\•\*\s]`) donde quitar el escape a ciegas habría roto la clase o cambiado su significado; se reordenó el guion al final en vez de solo quitar la barra.
+- Verificado localmente contra `stable`: typecheck ✅, build ✅, size-limit ✅, lint ✅ (0 errores), test:gate ✅, tests de los archivos de regex tocados ✅ (incluye snapshot test, confirma que el valor de los strings no cambió).
+- `docs/backlog/PARKING-LOT.md`: las dos entradas de CI movidas a nueva sección "Resueltos", corregidas para reflejar que la causa real incluía el branch equivocado, no solo el bug ya arreglado en agosto.
+- TD-011 (`ENGINEERING.md` §7.1) actualizado: 73 usos de `isSpainPilot()`/`!isSpainPilot()` en 43 archivos, no los 3 originalmente estimados. Severidad revisada de Media a Alta.
+- Modularización de `ProfessionalWorkflowPage.tsx` explícitamente no tocada — decisión aparte, pendiente.
+
 ## 2026-09-09 — v1.14.2 (TD-018 — reintento de red en generación de nota de seguimiento)
 
 Bug de producción confirmado con logs reales (sesión Luciana Correa, AiDux Air), no reproducido en local: al volver de background tras una grabación larga (~90 min suspendido), la red tardaba unos segundos en reestabilizarse y el primer intento de `generateFollowUpSOAPV2Raw` fallaba sin reintentar, descartando 30+ minutos de sesión ya grabada y transcrita.
