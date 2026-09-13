@@ -1,5 +1,12 @@
 # ENGINEERING.md Changelog
 
+## 2026-09-13 — v1.18 (TD-022 actualizado, TD-024 registrado)
+
+Investigación de lockscreen/notification: se identificó un segundo mecanismo de desincronización del timer, distinto en naturaleza al reset 2x ya documentado en TD-022 y que probablemente coexiste con él.
+
+- **TD-022 actualizado, sigue abierto:** además del reset de `isActive` (mecanismo a, produce el salto 2x limpio), se identificó un mecanismo (b) — `useTimer.ts` acumula segundos vía `setSeconds(s => s + 1)` en cada tick de `setInterval`, y los ticks perdidos por suspensión/throttling del WebView en background no se recuperan, dejando el contador permanentemente atrasado. `startRecordingNotificationUpdates` (`nativeAudioBridge.ts:292-298`), en cambio, recalcula `elapsedMs = Date.now() - recordingStartedAtMs` en cada disparo y se autocorrige solo. Esta asimetría predice un offset aditivo y constante, no proporcional — distinto del salto 2x limpio. Evidencia de campo: desfase de 25s y 26s entre el timer de UI y el aviso de bloqueo en dos capturas separadas por 60s reales, insuficiente todavía para confirmar si el offset es constante o creciente. Próximo paso: logs nativos comparando timestamp de cada tick de `useTimer` contra `Date.now()`.
+- **TD-024 registrado (nuevo, severidad media):** `showRecordingLockScreenNotification()` usa `elapsedSeconds = 0` por defecto (`nativeAudioBridge.ts:252-254`) y se invoca sin argumentos tanto al iniciar la grabación (`useTranscript.ts:176`) como en cada paso a background (`nativeAudioBridge.ts:396`), por lo que el aviso de pantalla bloqueada se reescribe a "00:00" cada vez que se bloquea el teléfono durante una grabación en curso. Bug de contenido, no de sincronización — pero invalidó uno de los tres puntos de datos recolectados para TD-022. Fix sugerido: calcular `elapsedSeconds` desde `recordingStartedAtMs` al reprogramar el aviso en background.
+
 ## 2026-09-13 — TD-023 confirmado READY
 
 Los 6 índices compuestos de Firestore desplegados la noche del 2026-09-11 (ver entrada abajo) terminaron de construirse y pasaron a `READY` (confirmado con `gcloud firestore indexes composite list`). TD-023 queda cerrado del todo — no solo desplegado, sino verificado activo.
