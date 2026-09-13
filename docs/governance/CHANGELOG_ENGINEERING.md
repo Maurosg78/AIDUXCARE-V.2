@@ -1,6 +1,18 @@
 # ENGINEERING.md Changelog
 
-## 2026-09-11 — v1.15 (TD-020 — red_flags/yellow_flags: objeto tratado como string)
+## 2026-09-13 — TD-023 confirmado READY
+
+Los 6 índices compuestos de Firestore desplegados la noche del 2026-09-11 (ver entrada abajo) terminaron de construirse y pasaron a `READY` (confirmado con `gcloud firestore indexes composite list`). TD-023 queda cerrado del todo — no solo desplegado, sino verificado activo.
+
+## 2026-09-11 — v1.17 (TD-021 documentado, TD-022 documentado, TD-023 — índices de Firestore faltantes desplegados)
+
+Mismo día que TD-020, con el celular en mano durante la sesión de field-testing:
+
+- **TD-021 registrado, sin arreglar:** hallazgo nuevo, reproducido 1 de 4 veces en la misma sesión — el flujo de generar nota de seguimiento puede colgarse indefinidamente sin ningún error, entre `[HEP-ADHERENCE-PROVENANCE]` y `generateFollowUpSOAPV2Raw`. Causa probable: `resolveFollowUpClinicalContext()` dentro de un `try/catch` que no protege contra una promesa que nunca resuelve ni rechaza (solo contra rechazo) — ninguna llamada de red de esta cadena tiene timeout. Sigue sin confirmarse con reproducción controlada.
+- **TD-022 registrado, sin arreglar:** el reloj visible en la app (`useTimer.ts`) y el aviso de pantalla bloqueada (tiempo real de grabación) mostraron valores muy distintos para la misma grabación (03:14 vs. 01:37, exactamente el doble). Confirmado por observación directa que ambos relojes visibles se detienen al bloquear el teléfono con el botón lateral, mientras la grabación nativa sigue corriendo. Distinto de TD-017 — ese era sobre el aviso, este es sobre que el reloj *dentro* de la app no es confiable.
+- **TD-023 registrado y resuelto:** `getLatestFinalizedTreatmentDecision` fallaba su consulta ordenada para los 6 campos de ownership posibles, siempre, no de forma intermitente — confirmado con `gcloud` que los índices compuestos que necesita (ya definidos en `firestore.indexes.json`) nunca se habían desplegado a la base real. `firebase deploy --only firestore:indexes` ejecutado; los 6 índices quedaron `CREATING` (confirmados `READY` el 2026-09-13, ver arriba). Fix de infraestructura puro, sin tocar código de la app.
+
+## 2026-09-11 — v1.16 (TD-020 — red_flags/yellow_flags: objeto tratado como string)
 
 Bug de producción confirmado con stack trace mapeado al bundle real (sesión Luciana Correa, AiDux Air), aparecido justo después de desplegar el fix de TD-019 — antes ni siquiera llegaba a este código porque la petición nunca completaba.
 
@@ -10,14 +22,32 @@ Bug de producción confirmado con stack trace mapeado al bundle real (sesión Lu
 - Tests: primer archivo de test para `clinicalDecisionService.ts` (no existía ninguno) — incluye un caso que reproduce el `TypeError` exacto si un caller vuelve a pasar objetos sin extraer `.label`.
 - TD-020 registrado en `ENGINEERING.md` §7.1.
 - Verificación post-deploy de TD-019 (CORS): 4/4 intentos reales completaron `[FOLLOWUP-REQUEST]` → `[FOLLOWUP-RESPONSE] status:200 ok:true` sin error de CORS — 3 de esos 4 cayeron en el bug de TD-020 (confirmando que era real y reproducible), el cuarto se coló silenciosamente antes de llegar a la llamada de red (ver TD-021).
-- **TD-021 registrado, sin arreglar:** hallazgo nuevo, reproducido 1 de 4 veces en la misma sesión — el flujo puede colgarse indefinidamente sin ningún error, entre `[HEP-ADHERENCE-PROVENANCE]` y `generateFollowUpSOAPV2Raw`. Causa probable: `resolveFollowUpClinicalContext()` dentro de un `try/catch` que no protege contra una promesa que nunca resuelve ni rechaza (solo contra rechazo) — ninguna llamada de red de esta cadena tiene timeout. Queda como trabajo de mañana: agregar timeout explícito, no solo try/catch.
+- **Mergeado a `stable` y desplegado 2026-09-13** — el deploy automático (`deploy-pilot.yml`) cubrió el pilot web; falta rebuild + `cap sync` + reinstalar manualmente para que llegue al bundle nativo de AiDux Air.
 
-## 2026-09-10 — v1.14 (TD-019 — CORS bloqueaba AiDux Air en vertexAIProxy)
+## 2026-09-10 — v1.15 (TD-019 — CORS bloqueaba AiDux Air en vertexAIProxy)
 
 Bug de producción confirmado con logs de servidor y consola de dispositivo real (sesión Luciana Correa, AiDux Air) — determinístico, no intermitente: `vertexAIProxy` nunca aceptó peticiones desde `capacitor://localhost` (el origen fijo de cualquier app Capacitor/iOS), mientras `whisperProxy` (`cors: true`, sin allowlist) siempre funcionó desde el mismo cliente. Por eso grabar y transcribir nunca fallaba, pero generar la nota de seguimiento fallaba siempre desde el móvil.
 
 - Fix: `capacitor://localhost` agregado a `APP_ALLOWED_ORIGINS` en `functions/index.js` — compartido por `vertexAIProxy`, `apiErasePatientData`, `apiConsentVerify` y el envío de SMS, todas via `applyRestrictedCors`.
-- TD-019 registrado en `ENGINEERING.md` §7.1. Nota: TD-012–018 están repartidos en ramas sin mergear con numeración ya en conflicto — reconciliar todos los IDs al integrar.
+- TD-019 registrado en `ENGINEERING.md` §7.1.
+
+## 2026-09-08 — v1.14.1 (TD-013 acotado, TD-014, TD-015 y TD-016 registrados)
+
+Al validar TD-013 con el usuario, dos gaps quedaron claros que el fix original no cerraba:
+
+- **TD-013 se resolvió solo del lado de escritura.** El dato queda a salvo y recuperable con una simple lectura de Firestore — ya no hace falta volver a llamar a Whisper a mano — pero no aparece solo en la UI al reanudar una sesión.
+- **TD-014 registrado (Media), resuelto el mismo día:** el flujo de reanudar sesión (`WO-IA-RESUME-01`) lee el transcript de `sessions`, que solo se llena al generar el SOAP — nunca lee `session_audio_backups.transcriptText`. Fix: `getTranscriptTextForSession` hidrata el cuadro de texto desde ahí si `sessions.transcript` está vacío. Corrección posterior: `sessions.transcript` (auto-guardado por `WO-BUG-011` mientras se graba) tiene prioridad sobre `session_audio_backups` — un caso real mostró texto legítimo del profesional que el fix original hubiera ignorado.
+- **TD-015 registrado (Baja, backlog explícito):** la persistencia de TD-013 ocurre solo al finalizar la grabación, no por segmento mientras sigue en curso. Si el dispositivo muere durante la grabación (no después de detenerla, que es lo que pasó en el incidente real), el texto se sigue perdiendo. Decisión del usuario: dejarlo en backlog, no es un escenario común.
+- **TD-016 registrado (Media, backlog explícito):** los 4 resultados del análisis de IA (`niagaraResults` — red flags, medicamentos, highlights, biopsicosocial) no se persisten hasta el SOAP final — misma clase de riesgo que TD-013, un paso más adelante en el pipeline. Decisión del usuario: esperar a confirmar que el flujo completo funciona bien antes de decidir si se aborda.
+
+## 2026-09-07 — v1.14 (TD-013 — texto de transcripción no persistido server-side, registrado y resuelto)
+
+Detectado tras un incidente real: sesión clínica grabada desde laptop, batería agotada antes de generar el SOAP. El audio quedó a salvo en `session_audio_backups`/Storage, pero el texto de la transcripción se había perdido — se recuperó a mano re-transcribiendo el audio original mientras se preparaba este fix.
+
+- **TD-013 registrado y resuelto en el mismo cambio, severidad Alta:** `whisperProxy.js` es un proxy puro hacia OpenAI — recibe audio, devuelve texto por HTTP, no escribía nada en Firestore. `useTranscript.ts` guardaba el resultado solo en `useState` local (`setTranscriptState`). Si la pestaña/dispositivo que originó la llamada se cerraba antes de que el usuario disparara la generación del SOAP, el texto no era recuperable por ningún camino normal de la app.
+- **No es específico de AiDux Air ni del path nativo** — afectaba igual al flujo web de escritorio, que es donde ocurrió el incidente. Era deuda de producto general, no de una feature en spike.
+- **`transcriptionStatus: success` en `session_audio_backups` era una señal engañosa:** solo confirmaba que la llamada a Whisper tuvo éxito, no que el texto resultante estuviera guardado o fuera recuperable en la UI.
+- **Fix:** `updateAudioBackupTranscriptionStatus` (`src/services/audioBackupService.ts`) acepta ahora `transcriptText` opcional, escrito en el mismo documento de `session_audio_backups`. El call site de éxito en `useTranscript.ts` (`processChunksSequentially`, path web — el único que existe en `stable`) lo pasa apenas Whisper responde con éxito, antes de que el usuario tenga que hacer nada más. El mismo fix se aplicó por separado al path nativo de AiDux Air (`finalizeNativeRecording`) en la rama de esa feature, que todavía no vive en `stable`.
 
 ## 2026-06-09 — v1.13.1 (UX clínica — aceptación de sugerencia de medicamento)
 

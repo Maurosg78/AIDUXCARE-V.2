@@ -7,6 +7,7 @@ import { useNiagaraProcessor } from "../hooks/useNiagaraProcessor";
 import { useTranscript } from "../hooks/useTranscript";
 import { useTimer } from "../hooks/useTimer";
 import sessionService from "../services/sessionService";
+import { getTranscriptTextForSession } from "../services/audioBackupService";
 import type { TreatmentDecision } from "../services/sessionService";
 import { useAuth } from "../hooks/useAuth";
 import { useProfessionalProfile as useProfessionalProfileContext } from "../context/ProfessionalProfileContext";
@@ -2585,6 +2586,52 @@ const ProfessionalWorkflowPage = () => {
             setEvaluationTests(sanitized);
             updatePhysicalEvaluation(sanitized);
           }
+          return;
+        }
+        // TD-014: la sesión existe pero nunca llegó a generar un SOAP —
+        // no es "sesión faltante", existe, solo está incompleta.
+        // Corrección 2026-09-08: sessions.transcript SÍ puede tener texto
+        // sin SOAP (WO-BUG-011 autoguarda a Firestore cada 30s mientras
+        // isRecording es true) — confirmado con un caso real, donde
+        // contenía un resumen clínico escrito por el propio profesional,
+        // distinto del audio crudo. Ese texto es prioritario: viene del
+        // propio profesional, no hay que pisarlo con el de
+        // session_audio_backups (TD-013), que solo se consulta si
+        // sessions.transcript está vacío.
+        if (sessionData && !sessionData.soapNote) {
+          setSessionId(sessionIdFromUrl);
+          const existingSessionTranscript =
+            sessionData.transcript && typeof sessionData.transcript === 'string'
+              ? sessionData.transcript
+              : '';
+          const hasExistingSessionTranscript = existingSessionTranscript.trim().length > 0;
+          if (hasExistingSessionTranscript) {
+            setTranscript(existingSessionTranscript);
+            logger.info('[WO-IA-RESUME-01] hydrated transcript from sessions.transcript (WO-BUG-011 autosave)', {
+              sessionId: sessionIdFromUrl,
+              transcriptLength: existingSessionTranscript.length,
+            });
+          } else {
+            const resumeUserId = user?.uid ?? null;
+            const canLookUpAudioBackupText = Boolean(resumeUserId);
+            if (canLookUpAudioBackupText) {
+              try {
+                const recoveredTranscriptText = await getTranscriptTextForSession(sessionIdFromUrl, resumeUserId as string);
+                const hasRecoveredTranscriptText = Boolean(recoveredTranscriptText);
+                if (hasRecoveredTranscriptText) {
+                  setTranscript(recoveredTranscriptText as string);
+                  logger.info('[WO-IA-RESUME-01] hydrated transcript from session_audio_backups (TD-014)', {
+                    sessionId: sessionIdFromUrl,
+                    transcriptLength: (recoveredTranscriptText as string).length,
+                  });
+                }
+              } catch (transcriptLookupError) {
+                console.error('[WO-IA-RESUME-01] Failed to look up session_audio_backups for TD-014 hydration', transcriptLookupError);
+              }
+            }
+          }
+          setAnalysisError(null);
+          setResumeLoadFailed(null);
           return;
         }
         // Fallback: session doc missing (e.g. note saved but session never written). Hydrate from consultation/note.

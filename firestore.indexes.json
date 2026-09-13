@@ -201,6 +201,16 @@
         { "fieldPath": "patientId", "order": "ASCENDING" },
         { "fieldPath": "grantedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "session_audio_backups",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sessionId", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "transcriptionStatus", "order": "ASCENDING" },
+        { "fieldPath": "recordingStartedAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
