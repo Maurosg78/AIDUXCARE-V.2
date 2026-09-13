@@ -1,5 +1,17 @@
 # ENGINEERING.md Changelog
 
+## 2026-09-11 — v1.15 (TD-020 — red_flags/yellow_flags: objeto tratado como string)
+
+Bug de producción confirmado con stack trace mapeado al bundle real (sesión Luciana Correa, AiDux Air), aparecido justo después de desplegar el fix de TD-019 — antes ni siquiera llegaba a este código porque la petición nunca completaba.
+
+- `alerts.red_flags`/`alerts.yellow_flags` son `FollowUpAlertFlag[]` (`{label, evidence, suggested_action}`), no `string[]`. `ProfessionalWorkflowPage.tsx` los casteaba con `as any` a `string[]` antes de pasarlos a `filterRedFlagsAgainstDecisions()`, que sí espera strings de verdad y llama `.normalize('NFD')` sobre cada elemento — de ahí `TypeError: t.normalize is not a function`.
+- Solo se disparaba cuando el modelo devolvía al menos un red flag real; con `red_flags` vacío el código nunca tocaba esa rama, por eso no había aparecido en pruebas previas.
+- Fix: extracción explícita de `.label` en ambos casos (`red_flags` y el `yellow_flags` con el mismo riesgo latente, sin evidencia de haberse disparado); los dos `as any` removidos — el tipo real (`FollowUpAlerts`) ya existía y hubiera detectado esto en compilación de no ser por el cast.
+- Tests: primer archivo de test para `clinicalDecisionService.ts` (no existía ninguno) — incluye un caso que reproduce el `TypeError` exacto si un caller vuelve a pasar objetos sin extraer `.label`.
+- TD-020 registrado en `ENGINEERING.md` §7.1.
+- Verificación post-deploy de TD-019 (CORS): 4/4 intentos reales completaron `[FOLLOWUP-REQUEST]` → `[FOLLOWUP-RESPONSE] status:200 ok:true` sin error de CORS — 3 de esos 4 cayeron en el bug de TD-020 (confirmando que era real y reproducible), el cuarto se coló silenciosamente antes de llegar a la llamada de red (ver TD-021).
+- **TD-021 registrado, sin arreglar:** hallazgo nuevo, reproducido 1 de 4 veces en la misma sesión — el flujo puede colgarse indefinidamente sin ningún error, entre `[HEP-ADHERENCE-PROVENANCE]` y `generateFollowUpSOAPV2Raw`. Causa probable: `resolveFollowUpClinicalContext()` dentro de un `try/catch` que no protege contra una promesa que nunca resuelve ni rechaza (solo contra rechazo) — ninguna llamada de red de esta cadena tiene timeout. Queda como trabajo de mañana: agregar timeout explícito, no solo try/catch.
+
 ## 2026-09-10 — v1.14 (TD-019 — CORS bloqueaba AiDux Air en vertexAIProxy)
 
 Bug de producción confirmado con logs de servidor y consola de dispositivo real (sesión Luciana Correa, AiDux Air) — determinístico, no intermitente: `vertexAIProxy` nunca aceptó peticiones desde `capacitor://localhost` (el origen fijo de cualquier app Capacitor/iOS), mientras `whisperProxy` (`cors: true`, sin allowlist) siempre funcionó desde el mismo cliente. Por eso grabar y transcribir nunca fallaba, pero generar la nota de seguimiento fallaba siempre desde el móvil.

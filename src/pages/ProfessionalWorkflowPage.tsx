@@ -12,7 +12,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useProfessionalProfile as useProfessionalProfileContext } from "../context/ProfessionalProfileContext";
 import type { ClinicalAnalysis } from "../utils/cleanVertexResponse";
 import { filterTrivialRedFlagEntries, normalizeRedFlagsForDisplay } from "../utils/normalizeRedFlagsForDisplay";
-import type { SOAPNote } from "../types/vertex-ai";
+import type { SOAPNote, FollowUpAlertFlag } from "../types/vertex-ai";
 import { ClinicalAnalysisResults } from "../components/ClinicalAnalysisResults";
 import ClinicalAttachmentService, {
   isAttachmentEligibleForClinicalAI,
@@ -6016,9 +6016,16 @@ const ProfessionalWorkflowPage = () => {
       } catch {
         setFollowUpPatternInsight(null);
       }
-      const rawRedFlags = Array.isArray((alerts as any)?.red_flags)
-        ? (alerts as any).red_flags as string[]
+      // TD-020 (2026-09-11): alerts.red_flags es FollowUpAlertFlag[] (objetos
+      // {label, evidence, suggested_action}), no string[] — el `as any` de
+      // acá abajo hasta hoy ocultaba ese desajuste al compilador.
+      // filterRedFlagsAgainstDecisions() sí espera string[] de verdad, y
+      // llamaba .normalize() sobre un objeto, reventando en producción
+      // (confirmado: sesión Luciana Correa, "t.normalize is not a function").
+      const redFlagEntries: FollowUpAlertFlag[] = Array.isArray(alerts?.red_flags)
+        ? alerts.red_flags
         : [];
+      const rawRedFlags = redFlagEntries.map((flag) => flag.label);
       const patientIdForDecisions = patientIdFromUrl || currentPatient?.id || demoPatient.id;
       const resolvedRedFlags = await filterRedFlagsAgainstDecisions(
         patientIdForDecisions,
@@ -6053,10 +6060,17 @@ const ProfessionalWorkflowPage = () => {
       // WO-REDFLAG-FOLLOWUP-002/003: if red flags detected, stay in Analysis; otherwise go to SOAP
       // Set followUpAlerts first; navigation to Analysis is done in useEffect so the same render has both (avoids async state race).
       if (activeRedFlags.length > 0) {
-        setFollowUpAlerts({ ...alerts, red_flags: activeRedFlags } as any);
+        // TD-020: mismo riesgo que rawRedFlags arriba — yellow_flags también
+        // es FollowUpAlertFlag[], no string[]. followUpAlerts (línea ~633)
+        // espera string[] para ambos campos.
+        const yellowFlagEntries: FollowUpAlertFlag[] = Array.isArray(alerts?.yellow_flags)
+          ? alerts.yellow_flags
+          : [];
+        const activeYellowFlags = yellowFlagEntries.map((flag) => flag.label);
+        setFollowUpAlerts({ red_flags: activeRedFlags, yellow_flags: activeYellowFlags });
         console.log('[WORKFLOW] ⚠️ Follow-up red flags from alerts — staying in Analysis tab', {
           redFlagCount: activeRedFlags.length,
-          yellowFlagCount: Array.isArray((alerts as any)?.yellow_flags) ? (alerts as any).yellow_flags.length : 0,
+          yellowFlagCount: activeYellowFlags.length,
         });
         // Do NOT setActiveTab('analysis') here — see useEffect below so AnalysisTab mounts with followUpAlerts already in state
       } else {
