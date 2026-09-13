@@ -31,6 +31,17 @@ Bug de producción confirmado con logs de servidor y consola de dispositivo real
 - Fix: `capacitor://localhost` agregado a `APP_ALLOWED_ORIGINS` en `functions/index.js` — compartido por `vertexAIProxy`, `apiErasePatientData`, `apiConsentVerify` y el envío de SMS, todas via `applyRestrictedCors`.
 - TD-019 registrado en `ENGINEERING.md` §7.1.
 
+## 2026-09-09 — v1.14.2 (TD-018 — reintento de red en generación de nota de seguimiento)
+
+Bug de producción confirmado con logs reales (sesión Luciana Correa, AiDux Air), no reproducido en local: al volver de background tras una grabación larga (~90 min suspendido), la red tardaba unos segundos en reestabilizarse y el primer intento de `generateFollowUpSOAPV2Raw` fallaba sin reintentar, descartando 30+ minutos de sesión ya grabada y transcrita.
+
+- Diagnóstico: logs de Cloud Run confirmaron cero peticiones HTTP a `vertexAIProxy` en el momento del fallo (ni siquiera el preflight OPTIONS), aislando la falla al lado cliente, antes del `fetch()`.
+- Consola del dispositivo (Safari Web Inspector) confirmó el canal de tiempo real de Firestore reconectando (`network lost` / `WebKit internal error` / 400s) en la misma ventana — la red genuinamente no estaba estable al volver de background.
+- Fix: `generateFollowUpSOAPV2Raw` (`vertex-ai-soap-service.ts`) ahora envuelve `buildAuthenticatedJsonHeaders()` + `fetch()` con `withRetry` (reutilizado de `core/audio-pipeline/retryWrapper.ts`, sin duplicar lógica). Solo reintenta fallos de red/`fetch`, no respuestas HTTP de error del servidor.
+- Tests: 2 casos nuevos en `vertex-ai-soap-service.test.ts` (reintento exitoso tras un fallo transitorio; `AI_UNAVAILABLE` solo tras agotar los reintentos, no en el primer fallo).
+- TD-018 registrado en §7.1.
+- **Nota honesta añadida 2026-09-13:** la investigación de TD-019 (dos días después) reveló que `vertexAIProxy` rechazaba por CORS todo origen `capacitor://localhost`, de forma determinística. Es posible que este incidente fuera en realidad el mismo bloqueo de CORS y no inestabilidad de red — no se pudo confirmar retroactivamente, los logs de esa noche ya expiraron. El retry sigue siendo válido para fallos de red genuinos.
+
 ## 2026-09-08 — v1.14.1 (TD-013 acotado, TD-014, TD-015 y TD-016 registrados)
 
 Al validar TD-013 con el usuario, dos gaps quedaron claros que el fix original no cerraba:

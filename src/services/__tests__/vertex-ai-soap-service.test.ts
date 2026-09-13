@@ -1,6 +1,15 @@
-import { describe, it, expect } from 'vitest';
-import { normalizeSpanishObjectiveField, parseConsiderationsFromResponse } from '../vertex-ai-soap-service';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  normalizeSpanishObjectiveField,
+  parseConsiderationsFromResponse,
+  generateFollowUpSOAPV2Raw,
+} from '../vertex-ai-soap-service';
 import { ensureSpanishClinicalText } from '@/utils/normalizers/es/ensureSpanishClinicalText';
+
+const buildAuthenticatedJsonHeadersMock = vi.fn();
+vi.mock('../firebaseAuthHeaders', () => ({
+  buildAuthenticatedJsonHeaders: (...args: unknown[]) => buildAuthenticatedJsonHeadersMock(...args),
+}));
 
 describe('parseConsiderationsFromResponse', () => {
   it('merges wrapped bullet lines before sanitizing', () => {
@@ -53,5 +62,64 @@ describe('ensureSpanishClinicalText', () => {
     expect(normalizedSubjective).toContain('apófisis estiloides del cúbito');
     expect(normalizedPlan).toContain('fuerza y acondicionamiento');
     expect(normalizedPlan).toContain('programa de ejercicios en casa');
+  });
+});
+
+// TD-018 (2026-09-09): confirmado en producción (sesión de Luciana Correa)
+// que un fetch() disparado justo al volver de background pierde la red por
+// unos segundos y descartaba una sesión de 30+ min ya grabada y transcrita.
+describe('generateFollowUpSOAPV2Raw — reintento ante fallo transitorio de red (TD-018)', () => {
+  const okSoapResponse = () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      text: JSON.stringify({
+        soap: { subjective: 'S', objective: 'O', assessment: 'A', plan: 'P' },
+        alerts: { red_flags: [] },
+      }),
+    }),
+  });
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    buildAuthenticatedJsonHeadersMock.mockResolvedValue({ Authorization: 'Bearer test-token' });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('retries after a transient network failure and returns the parsed SOAP on the next attempt', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('La conexión de red se perdió'))
+      .mockResolvedValueOnce(okSoapResponse());
+    vi.stubGlobal('fetch', fetchMock);
+
+    const resultPromise = generateFollowUpSOAPV2Raw('prompt de prueba');
+    await vi.runAllTimersAsync();
+    const result = await resultPromise;
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.error).toBeUndefined();
+    expect(result.soap).toEqual({ subjective: 'S', objective: 'O', assessment: 'A', plan: 'P' });
+  });
+
+  it('returns AI_UNAVAILABLE only after exhausting all retries, not on the first failure', async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error('La conexión de red se perdió'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const resultPromise = generateFollowUpSOAPV2Raw('prompt de prueba');
+    await vi.runAllTimersAsync();
+    const result = await resultPromise;
+
+    // withRetry por defecto: 1 intento inicial + 3 reintentos = 4 llamadas.
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(result.error).toEqual({
+      type: 'AI_UNAVAILABLE',
+      message: 'Follow-up AI generation failed or returned invalid response',
+    });
+    expect(result.soap).toBeNull();
   });
 });
