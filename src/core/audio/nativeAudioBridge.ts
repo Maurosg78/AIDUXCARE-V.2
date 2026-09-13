@@ -382,8 +382,16 @@ export function onRecordingStopRequestedFromNotification(callback: () => void): 
  * bloqueado"; la solución real es entregarla exactamente en ese momento,
  * usando `@capacitor/app`'s `appStateChange` (isActive: false = la app dejó
  * de estar activa — pantalla bloqueada o cambio de app).
+ *
+ * TD-024 fix (2026-09-14): antes se llamaba a
+ * `showRecordingLockScreenNotification()` sin argumentos acá, así que cada
+ * bloqueo de pantalla reescribía el aviso a "00:00" (default de
+ * `elapsedSeconds`), sin importar cuánto llevaba grabando realmente. Ahora
+ * recibe `recordingStartedAtMs` (el mismo valor que usa
+ * `startRecordingNotificationUpdates`) y calcula el tiempo real
+ * transcurrido en el momento del bloqueo.
  */
-export function watchAppBackgroundToShowRecordingNotification(): () => void {
+export function watchAppBackgroundToShowRecordingNotification(recordingStartedAtMs: number): () => void {
   const appPlugin = getAppPlugin();
   if (!appPlugin) return () => {};
 
@@ -393,7 +401,8 @@ export function watchAppBackgroundToShowRecordingNotification(): () => void {
   const handleAppStateChange = (state: AppStateChange) => {
     const wentToBackground = !state.isActive;
     if (wentToBackground) {
-      void showRecordingLockScreenNotification();
+      const elapsedSeconds = (Date.now() - recordingStartedAtMs) / 1000;
+      void showRecordingLockScreenNotification(elapsedSeconds);
     }
   };
 

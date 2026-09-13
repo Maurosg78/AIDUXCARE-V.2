@@ -174,13 +174,19 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
         // porqué (un delay fijo, probado en dispositivo real, funciona pero
         // no es robusto: el usuario bloquea en cualquier momento).
         void showRecordingLockScreenNotification();
-        appBackgroundWatchUnsubscribeRef.current = watchAppBackgroundToShowRecordingNotification();
+        // TD-024 fix (2026-09-14): recordingStartedAtMs se calcula ahora
+        // ANTES de suscribirse a appStateChange, para que
+        // watchAppBackgroundToShowRecordingNotification pueda calcular el
+        // tiempo real transcurrido en vez de mostrar siempre "00:00" al
+        // bloquear la pantalla.
+        const recordingStartedAtMs = Date.now();
+        appBackgroundWatchUnsubscribeRef.current =
+          watchAppBackgroundToShowRecordingNotification(recordingStartedAtMs);
         // Hito 2e (Opción B, decisión CTO 2026-08-30): reagenda la
         // notificación cada 30s con el tiempo transcurrido — feedback
         // visual real en pantalla bloqueada sin invertir en Live Activity
         // todavía (eso queda para Fase 2, ver docs/proposals/lock-screen-
         // feedback-and-interruption-handling.md).
-        const recordingStartedAtMs = Date.now();
         recordingNotificationUpdatesUnsubscribeRef.current = startRecordingNotificationUpdates(recordingStartedAtMs);
         return;
       }

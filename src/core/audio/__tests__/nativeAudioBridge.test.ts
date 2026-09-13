@@ -261,7 +261,7 @@ describe('nativeAudioBridge', () => {
 
   describe('watchAppBackgroundToShowRecordingNotification — fix real (reemplaza la hipótesis del delay fijo)', () => {
     it('no revienta cuando el plugin App no está disponible', () => {
-      expect(() => watchAppBackgroundToShowRecordingNotification()()).not.toThrow();
+      expect(() => watchAppBackgroundToShowRecordingNotification(Date.now())()).not.toThrow();
     });
 
     it('muestra la notificación cuando appStateChange reporta isActive: false (la app pasó a background)', async () => {
@@ -286,7 +286,7 @@ describe('nativeAudioBridge', () => {
         },
       };
 
-      watchAppBackgroundToShowRecordingNotification();
+      watchAppBackgroundToShowRecordingNotification(Date.now());
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(capturedCallback).not.toBeNull();
@@ -318,13 +318,47 @@ describe('nativeAudioBridge', () => {
         },
       };
 
-      watchAppBackgroundToShowRecordingNotification();
+      watchAppBackgroundToShowRecordingNotification(Date.now());
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       capturedCallback!({ isActive: true });
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(schedule).not.toHaveBeenCalled();
+    });
+
+    it('TD-024: usa el tiempo real transcurrido (no 0) al reescribir la notificación al bloquear', async () => {
+      let capturedCallback: ((state: { isActive: boolean }) => void) | null = null;
+      const appAddListener = vi.fn((_eventName: string, cb: (state: { isActive: boolean }) => void) => {
+        capturedCallback = cb;
+        return Promise.resolve({ remove: vi.fn() });
+      });
+      const schedule = vi.fn().mockResolvedValue({ notifications: [{ id: 778821 }] });
+
+      window.Capacitor = {
+        isNativePlatform: () => true,
+        Plugins: {
+          App: { addListener: appAddListener },
+          LocalNotifications: {
+            requestPermissions: vi.fn().mockResolvedValue({ display: 'granted' }),
+            registerActionTypes: vi.fn().mockResolvedValue(undefined),
+            schedule,
+            cancel: vi.fn(),
+            addListener: vi.fn(),
+          },
+        },
+      };
+
+      const recordingStartedAtMs = Date.now() - 65_000; // grabando hace 1:05
+      watchAppBackgroundToShowRecordingNotification(recordingStartedAtMs);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      capturedCallback!({ isActive: false });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      const scheduledNotification = schedule.mock.calls[0][0].notifications[0];
+      expect(scheduledNotification.body).not.toContain('00:00');
+      expect(scheduledNotification.body).toContain('01:0');
     });
 
     it('la función de limpieza remueve el listener de appStateChange', async () => {
@@ -338,7 +372,7 @@ describe('nativeAudioBridge', () => {
         },
       };
 
-      const unsubscribe = watchAppBackgroundToShowRecordingNotification();
+      const unsubscribe = watchAppBackgroundToShowRecordingNotification(Date.now());
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       unsubscribe();
