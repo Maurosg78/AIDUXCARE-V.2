@@ -124,3 +124,7 @@ actions-runner-linux-x64-*.tar.gz
 /safe_sleep.sh
 /run-helper.cmd.template
 /run-helper.sh.template
+
+# Claude Code / Claude desktop local artifacts (never commit)
+.claude/
+Claude outputs/
