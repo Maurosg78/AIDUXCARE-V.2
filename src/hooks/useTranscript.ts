@@ -756,9 +756,31 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
       const { segments, mimeType } = await stopNativeRecording();
       const segmentBlobs = segments.map((segment) => base64ToBlob(segment.base64Audio, mimeType));
       const totalAudioSizeBytes = segmentBlobs.reduce((sum, blob) => sum + blob.size, 0);
+      // TD-025 fix (2026-09-15): leído ANTES del guard de tamaño mínimo (se
+      // leía después, ver abajo) específicamente para poder identificar la
+      // sesión en el log de abajo — antes este guard no dejaba ningún rastro
+      // de qué sesión quedó sin audio, ni en Firestore ni en un log que
+      // permitiera identificarla después de los hechos.
+      const audioBackupClinicalContext = getAudioBackupContextRef.current?.() ?? {};
 
       if (totalAudioSizeBytes < MIN_AUDIO_SIZE_BYTES) {
-        console.log(`[useTranscript] Native recording too short to transcribe: ${totalAudioSizeBytes} bytes`);
+        // TD-025 (2026-09-14, paciente real Luciana Correa Ben Moshe, dos
+        // sesiones): este guard es el único camino de finalizeNativeRecording
+        // que produce sesión creada + cero audio + cero transcripción sin
+        // ninguna excepción — antes solo dejaba un console.log de una línea,
+        // fácil de perder en medio de una consulta real. Ahora es un
+        // console.error con el detalle completo por segmento y la sesión
+        // afectada, para que la próxima vez no haga falta reconstruir esto
+        // leyendo Firestore a mano.
+        console.error('[useTranscript][TD-025] Native recording below MIN_AUDIO_SIZE_BYTES — no audio backup will be uploaded', {
+          totalAudioSizeBytes,
+          minAudioSizeBytes: MIN_AUDIO_SIZE_BYTES,
+          segmentCount: segmentBlobs.length,
+          segmentSizesBytes: segmentBlobs.map((blob) => blob.size),
+          mimeType,
+          sessionId: audioBackupClinicalContext.sessionId ?? null,
+          patientId: audioBackupClinicalContext.patientId ?? null,
+        });
         setError('No clear speech detected. Please record at least a few seconds of clear speech, then stop.');
         return;
       }
@@ -766,7 +788,6 @@ export const useTranscript = (options?: UseTranscriptOptions) => {
       const recordingStoppedAt = new Date().toISOString();
       const recordingStartedAt = recordingStartedAtRef.current ?? recordingStoppedAt;
       const recordingStartedAtMs = new Date(recordingStartedAt).getTime();
-      const audioBackupClinicalContext = getAudioBackupContextRef.current?.() ?? {};
 
       const transcribedSegmentTexts: string[] = [];
       let firstSuccessfulMeta: WhisperTranscriptionResult | null = null;
