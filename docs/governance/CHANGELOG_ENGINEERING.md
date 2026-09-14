@@ -1,5 +1,9 @@
 # ENGINEERING.md Changelog
 
+## 2026-09-14 — v1.20 (TD-025 registrado — reporte de campo, posible pérdida de contenido)
+
+Sesión real con paciente (Luciana Correa Ben Moshe, AiDux Air) el 2026-09-14: la sesión quedó creada en el listado del paciente pero sin audio ni transcripción, a diferencia de TD-012 (donde el audio siempre se conservó en Storage). Sin causa raíz confirmada todavía — no se pudo verificar Storage/Firestore desde esta sesión de trabajo por falta de acceso a `gcloud`/`firebase` CLI. Severidad Alta: es el primer caso reportado de posible pérdida real de contenido clínico, distinto de los problemas de UI/reloj vistos hasta ahora. Mismo reporte confirmó que TD-024 no llegó al bundle nativo (pop-up seguía en "00:00") y reconfirmó TD-022 en campo, con un dato nuevo: el tiempo real correcto sí aparece al detener la grabación, repetidamente — acota el problema al timer en vivo, no al flujo de cierre. Próximo paso: confirmar si el audio llegó a Storage para esa sesión específica antes de diagnosticar más.
+
 ## 2026-09-14 — v1.19 (TD-024 resuelto)
 
 `recordingStartedAtMs` ahora se calcula en `useTranscript.ts` antes de suscribirse a `appStateChange`, y se pasa a `watchAppBackgroundToShowRecordingNotification(recordingStartedAtMs)`, que calcula `elapsedSeconds = (Date.now() - recordingStartedAtMs) / 1000` en el momento real del bloqueo de pantalla en vez de dejar el default de `showRecordingLockScreenNotification()` en 0. Commit `a8596f5b`, solo 3 archivos tocados (`nativeAudioBridge.ts`, `useTranscript.ts`, `nativeAudioBridge.test.ts`). Tests: `nativeAudioBridge.test.ts` 21/21, incluyendo caso nuevo que confirma que ya no se usa 0 por defecto. Pusheado a `origin/stable` (`da0351b9..a8596f5b`).
