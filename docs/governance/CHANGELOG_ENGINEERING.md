@@ -1,5 +1,9 @@
 # ENGINEERING.md Changelog
 
+## 2026-09-14 — v1.22 (nota operativa: locks de git + .gitignore)
+
+§8.2.1 nuevo: nota operativa sobre `.git/index.lock` trabado tras un commit/push cortado a medio camino — procedimiento seguro de limpieza (confirmar que no hay proceso `git` real corriendo antes de borrar) y el hallazgo de que zsh aborta `rm -f a b c*.lock` completo si `c*.lock` no matchea nada (`nomatch` activo por default) — ningún archivo se borra, ni los que sí existían. Separar en comandos individuales lo evita. También: `.gitignore` actualizado (commit `ed242336`) para excluir `.claude/` y `Claude outputs/`, artefactos locales (el bridge de archivos de Claude Code y los PDFs de referencia del CTO) que no correspondía versionar.
+
 ## 2026-09-15 — v1.21 (TD-025 acotado — causa raíz encontrada, logging agregado)
 
 Diagnóstico completo de TD-025: las dos sesiones reales de Luciana Correa Ben Moshe (2026-09-14) tienen cero documentos en `session_audio_backups` — el audio nunca se subió a Storage. Descartada la pista falsa de 8 backups "huérfanos" en las 48h previas (verificados uno por uno contra `sessions`: pertenecen a pacientes distintos, solo coincidencia de horario). Causa en código: `finalizeNativeRecording` (`useTranscript.ts`) retorna antes de `persistAudioBackup()` cuando el audio total pesa menos de `MIN_AUDIO_SIZE_BYTES` (40 000 bytes) — único camino que produce sesión creada + cero backups + cero transcripción sin excepción. Fix aplicado: el guard silencioso (`console.log` de una línea) ahora es `console.error` con tamaño total, tamaño por segmento, `sessionId` y `patientId`. Sigue abierto: por qué el plugin nativo devolvió audio casi vacío esas dos veces (falla de captura vs. relacionado con TD-022/background) — requiere logs de dispositivo en el momento o reproducción controlada; el logging nuevo es lo que permitirá capturar esa evidencia la próxima vez.

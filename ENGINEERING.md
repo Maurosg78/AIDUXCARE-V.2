@@ -1,7 +1,7 @@
 # ENGINEERING.md — AiduxCare V2
 ## Estándares de Ingeniería, Gobernanza de Código y Deuda Técnica
 
-**Versión:** 1.21
+**Versión:** 1.22
 **Fecha:** Septiembre 2026
 **Autor:** Mauricio Sobarzo (CEO/CTO, Fisioterapeuta)
 **Repositorio:** `aiduxcare-stable` · Branch: `stable`
@@ -1220,6 +1220,22 @@ cp .env.example .env.local  # Variables de Firebase — solicitar al CEO
 pnpm dev
 ```
 
+### 8.2.1 Nota operativa: `.git/index.lock` trabado
+
+Si un commit/push se corta a medio camino (crash, cierre forzado de terminal), puede quedar un lock de 0 bytes en `.git/` (`index.lock`, `HEAD.lock`, `index.tmp*.lock`) que bloquea cualquier operación git siguiente. Antes de borrar, confirmar que no hay ningún proceso `git` real corriendo (`pgrep -fl git` — los procesos de extensiones como GitLens/GitKraken MCP no cuentan) y luego:
+
+```bash
+rm -f .git/index.lock .git/HEAD.lock .git/index.tmp*.lock
+```
+
+**Cuidado con zsh:** si `index.tmp*.lock` no matchea ningún archivo, zsh aborta el `rm` completo con `no matches found` (por `nomatch` activo por default) — **ninguno** de los archivos listados se borra, ni siquiera los que sí existen. Confirmado en la práctica (2026-09-14): el primer intento pareció no hacer nada porque `index.lock` seguía ahí después de correr el comando combinado. Separar en comandos individuales evita el problema:
+
+```bash
+rm -f .git/index.lock
+rm -f .git/HEAD.lock
+rm -f .git/index.tmp*.lock 2>/dev/null
+```
+
 ### 8.3 Verificación de calidad
 
 ```bash
@@ -1390,6 +1406,7 @@ AiduxCare amplifica. Evidencia. Acompaña.
 | 1.19 | 2026-09-14 | TD-024 resuelto (commit `a8596f5b`): `recordingStartedAtMs` se calcula antes de suscribirse a `appStateChange` en `useTranscript.ts` y se pasa a `watchAppBackgroundToShowRecordingNotification`, que ahora calcula el tiempo real transcurrido en vez de mostrar siempre "00:00" al bloquear pantalla. Tests: `nativeAudioBridge.test.ts` 21/21. |
 | 1.20 | 2026-09-14 | TD-025 registrado (Alta, sin resolver): reporte de campo con paciente real — sesión creada sin audio/transcripción, causa raíz sin confirmar. Mismo reporte confirma que TD-024 no llegó al bundle nativo y reconfirma TD-022 en campo, con dato nuevo (tiempo real correcto al detener grabación). |
 | 1.21 | 2026-09-15 | TD-025 acotado (Media, parcialmente resuelto): causa raíz identificada en `finalizeNativeRecording` (`useTranscript.ts`) — guard de `MIN_AUDIO_SIZE_BYTES` retornaba antes de subir audio, sin dejar rastro. Confirmado en Firestore que las dos sesiones reales de Luciana Correa Ben Moshe tienen cero `session_audio_backups`. Fix: logging explícito (`console.error`) con detalle por segmento y sesión afectada. Falta confirmar por qué el plugin nativo devolvió audio casi vacío. |
+| 1.22 | 2026-09-14 | Nota operativa agregada en §8.2.1: `.git/index.lock` trabado tras un commit/push cortado a medio camino — cómo limpiarlo con seguridad, y el hallazgo de que zsh aborta `rm -f a b c*.lock` completo (ningún archivo se borra, ni los que sí matchean) si el glob `c*.lock` no tiene coincidencias, por `nomatch` activo por default. Separar en comandos individuales evita el problema. `.gitignore` actualizado (commit `ed242336`): `.claude/` y `Claude outputs/` agregados, artefactos locales que no correspondía versionar. |
 
 ---
 
