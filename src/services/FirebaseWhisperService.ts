@@ -5,6 +5,20 @@ const FUNCTION_REGION = import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'north
 const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID || 'aiduxcare-v2-uat-dev';
 const WHISPER_PROXY_URL = `https://${FUNCTION_REGION}-${PROJECT_ID}.cloudfunctions.net/whisperProxy`;
 
+// TD-026 (2026-09-15): whisperProxy en sí tiene timeoutSeconds: 300 del lado
+// del servidor (functions/src/whisperProxy.js), pero este fetch del cliente
+// no tenía ningún límite — si la promesa nunca se resolvía ni rechazaba (ej.
+// la app pasa a background/pantalla bloqueada justo mientras espera, como
+// ocurrió en el incidente real de Marta Santamaria: el servidor transcribió
+// con éxito en 11s pero el cliente nunca procesó la respuesta), el backup en
+// `session_audio_backups` quedaba en `transcriptionStatus: 'pending'` para
+// siempre, sin error, sin forma de que el usuario supiera que hacía falta
+// reintentar. 180s da margen generoso sobre los ~11s observados en un
+// segmento real, y queda cómodamente por debajo del límite de 300s del
+// servidor — así el timeout del cliente nunca compite con uno legítimo del
+// lado del servidor.
+const WHISPER_FETCH_TIMEOUT_MS = 180_000;
+
 export interface WhisperTranscriptionResult {
     // Bloque 3B: Campos opcionales agregados para compatibilidad
     detectedLanguage?: string | null;
@@ -67,14 +81,25 @@ export class FirebaseWhisperService {
             }
 
             // Llamar a la callable vía POST (mismo formato que el SDK: body.data)
-            const response = await fetch(WHISPER_PROXY_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${idToken}`
-                },
-                body: JSON.stringify({ data: payload })
-            });
+            // TD-026: AbortController con timeout — sin esto, un fetch que
+            // nunca resuelve deja el respaldo de audio en 'pending' para
+            // siempre, sin ningún error que dispare un reintento.
+            const timeoutController = new AbortController();
+            const timeoutId = setTimeout(() => timeoutController.abort(), WHISPER_FETCH_TIMEOUT_MS);
+            let response: Response;
+            try {
+                response = await fetch(WHISPER_PROXY_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({ data: payload }),
+                    signal: timeoutController.signal
+                });
+            } finally {
+                clearTimeout(timeoutId);
+            }
 
             const json = await response.json().catch(() => ({}));
 
@@ -112,6 +137,16 @@ export class FirebaseWhisperService {
             throw new Error(errMsg);
         } catch (error: any) {
             console.error('[FirebaseWhisper] ❌ Transcription error:', error);
+            // TD-026: fetch abortado por WHISPER_FETCH_TIMEOUT_MS — distinguirlo
+            // del resto de errores para que quien lea el log (o el usuario, si
+            // el mensaje llega a mostrarse) sepa que fue un timeout del cliente,
+            // no un rechazo del servidor.
+            const isClientTimeout = error?.name === 'AbortError';
+            if (isClientTimeout) {
+                throw new Error(
+                    `La transcripción no respondió en ${WHISPER_FETCH_TIMEOUT_MS / 1000}s. La grabación quedó respaldada; puede reintentar la transcripción.`
+                );
+            }
             throw new Error(
                 error?.message || 'Error al transcribir el audio. Por favor, intente nuevamente.'
             );
